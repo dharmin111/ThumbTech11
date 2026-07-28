@@ -142,8 +142,9 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
     final weekAgo = today.subtract(const Duration(days: 7));
     final monthAgo = today.subtract(const Duration(days: 30));
 
-    final snapshot =
-    await FirebaseFirestore.instance.collection('service_requests').get();
+    final snapshot = await FirebaseFirestore.instance
+        .collection('service_requests')
+        .get();
 
     _totalTasksToday = snapshot.docs.where((doc) {
       final data = doc.data();
@@ -212,32 +213,32 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
             SliverToBoxAdapter(
               child: _isLoading
                   ? SizedBox(
-                height: MediaQuery.of(context).size.height * 0.6,
-                child: _buildLoadingState(),
-              )
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      child: _buildLoadingState(),
+                    )
                   : Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _sectionLabel('Overview'),
-                    const SizedBox(height: 12),
-                    _buildSummaryCards(context),
-                    const SizedBox(height: 24),
-                    _sectionLabel('Daily Trends'),
-                    const SizedBox(height: 12),
-                    _buildDailyStatsSection(),
-                    const SizedBox(height: 24),
-                    _sectionLabel('Monthly Overview'),
-                    const SizedBox(height: 12),
-                    _buildMonthlyStatsSection(),
-                    const SizedBox(height: 24),
-                    _sectionLabel('Detailed Summary'),
-                    const SizedBox(height: 12),
-                    _buildDetailedStats(),
-                  ],
-                ),
-              ),
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _sectionLabel('Overview'),
+                          const SizedBox(height: 12),
+                          _buildSummaryCards(context),
+                          const SizedBox(height: 24),
+                          _sectionLabel('Daily Trends'),
+                          const SizedBox(height: 12),
+                          _buildDailyStatsSection(),
+                          const SizedBox(height: 24),
+                          _sectionLabel('Monthly Overview'),
+                          const SizedBox(height: 12),
+                          _buildMonthlyStatsSection(),
+                          const SizedBox(height: 24),
+                          _sectionLabel('Detailed Summary'),
+                          const SizedBox(height: 12),
+                          _buildDetailedStats(),
+                        ],
+                      ),
+                    ),
             ),
           ],
         ),
@@ -277,12 +278,12 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
               Positioned(
                 right: -30,
                 top: -30,
-                child: _decoCircle(140, Colors.white.withOpacity(0.08)),
+                child: _decoCircle(140, Colors.white.withValues(alpha: 0.08)),
               ),
               Positioned(
                 right: 60,
                 bottom: -40,
-                child: _decoCircle(90, Colors.white.withOpacity(0.06)),
+                child: _decoCircle(90, Colors.white.withValues(alpha: 0.06)),
               ),
               if (_lastUpdated != null)
                 Positioned(
@@ -292,7 +293,7 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
                     'Updated ${DateFormat('h:mm a').format(_lastUpdated!)}',
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -435,14 +436,14 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: isHovering
-                  ? data.colors[0].withOpacity(0.35)
-                  : Colors.grey.withOpacity(0.06),
+                  ? data.colors[0].withValues(alpha: 0.35)
+                  : Colors.grey.withValues(alpha: 0.06),
             ),
             boxShadow: [
               BoxShadow(
                 color: isHovering
-                    ? data.colors[0].withOpacity(0.28)
-                    : Colors.grey.withOpacity(0.10),
+                    ? data.colors[0].withValues(alpha: 0.28)
+                    : Colors.grey.withValues(alpha: 0.10),
                 blurRadius: isHovering ? 22 : 10,
                 offset: Offset(0, isHovering ? 10 : 3),
               ),
@@ -459,7 +460,7 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
                   borderRadius: BorderRadius.circular(11),
                   boxShadow: [
                     BoxShadow(
-                      color: data.colors[0].withOpacity(0.35),
+                      color: data.colors[0].withValues(alpha: 0.35),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -561,7 +562,7 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: colors[0].withOpacity(0.10),
+                color: colors[0].withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -580,23 +581,28 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
           height: 110,
           child: allZero
               ? Center(
-            child: Text(
-              'No activity in the last 7 days',
-              style: TextStyle(fontSize: 11.5, color: Colors.grey.shade400),
-            ),
-          )
+                  child: Text(
+                    'No activity in the last 7 days',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
+                )
               : Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: data
-                .map((stat) => Expanded(
-              child: _HoverBar(
-                stat: stat,
-                colors: colors,
-                maxValue: safeMax,
-              ),
-            ))
-                .toList(),
-          ),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: data
+                      .map(
+                        (stat) => Expanded(
+                          child: _HoverBar(
+                            stat: stat,
+                            colors: colors,
+                            maxValue: safeMax,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
         ),
       ],
     );
@@ -606,7 +612,9 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
   Widget _buildMonthlyStatsSection() {
     final maxCount = _monthlyStats.isEmpty
         ? 1
-        : _monthlyStats.map((e) => e.count).fold<int>(0, (a, b) => a > b ? a : b);
+        : _monthlyStats
+              .map((e) => e.count)
+              .fold<int>(0, (a, b) => a > b ? a : b);
     final safeMax = maxCount == 0 ? 1 : maxCount;
 
     return _card(
@@ -623,9 +631,11 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: _monthlyStats
-                  .map((stat) => Expanded(
-                child: _HoverMonthBar(stat: stat, maxValue: safeMax),
-              ))
+                  .map(
+                    (stat) => Expanded(
+                      child: _HoverMonthBar(stat: stat, maxValue: safeMax),
+                    ),
+                  )
                   .toList(),
             ),
           ),
@@ -640,26 +650,54 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildDetailRow('Total Technicians', _totalTechnicians.toString(),
-              Icons.build_rounded, kIndigo),
+          _buildDetailRow(
+            'Total Technicians',
+            _totalTechnicians.toString(),
+            Icons.build_rounded,
+            kIndigo,
+          ),
           _divider(),
-          _buildDetailRow('Total Customers', _totalCustomers.toString(),
-              Icons.people_alt_rounded, kTeal),
+          _buildDetailRow(
+            'Total Customers',
+            _totalCustomers.toString(),
+            Icons.people_alt_rounded,
+            kTeal,
+          ),
           _divider(),
-          _buildDetailRow('Tasks Today', _totalTasksToday.toString(),
-              Icons.today_rounded, kAmber),
+          _buildDetailRow(
+            'Tasks Today',
+            _totalTasksToday.toString(),
+            Icons.today_rounded,
+            kAmber,
+          ),
           _divider(),
-          _buildDetailRow('Tasks This Week', _totalTasksThisWeek.toString(),
-              Icons.date_range_rounded, kViolet),
+          _buildDetailRow(
+            'Tasks This Week',
+            _totalTasksThisWeek.toString(),
+            Icons.date_range_rounded,
+            kViolet,
+          ),
           _divider(),
-          _buildDetailRow('Tasks This Month', _totalTasksThisMonth.toString(),
-              Icons.calendar_month_rounded, kRose),
+          _buildDetailRow(
+            'Tasks This Month',
+            _totalTasksThisMonth.toString(),
+            Icons.calendar_month_rounded,
+            kRose,
+          ),
           _divider(),
-          _buildDetailRow('New Technicians Today', '+$_newTechniciansToday',
-              Icons.person_add_rounded, kIndigo),
+          _buildDetailRow(
+            'New Technicians Today',
+            '+$_newTechniciansToday',
+            Icons.person_add_rounded,
+            kIndigo,
+          ),
           _divider(),
-          _buildDetailRow('New Customers Today', '+$_newCustomersToday',
-              Icons.person_add_alt_1_rounded, kTeal),
+          _buildDetailRow(
+            'New Customers Today',
+            '+$_newCustomersToday',
+            Icons.person_add_alt_1_rounded,
+            kTeal,
+          ),
         ],
       ),
     );
@@ -667,7 +705,12 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
 
   Widget _divider() => Divider(height: 1, color: Colors.grey.shade100);
 
-  Widget _buildDetailRow(String title, String value, IconData icon, Color color) {
+  Widget _buildDetailRow(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return HoverScale(
       hoverScale: 1.0,
       builder: (context, isHovering, isPressed) {
@@ -675,7 +718,9 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
-            color: isHovering ? color.withOpacity(0.05) : Colors.transparent,
+            color: isHovering
+                ? color.withValues(alpha: 0.05)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -683,7 +728,7 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
               Container(
                 padding: const EdgeInsets.all(9),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.10),
+                  color: color.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 18),
@@ -718,10 +763,10 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.withOpacity(0.06)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.06)),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -791,8 +836,10 @@ class _HoverBar extends StatelessWidget {
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final barHeight =
-                  (constraints.maxHeight * fraction).clamp(4.0, constraints.maxHeight);
+                  final barHeight = (constraints.maxHeight * fraction).clamp(
+                    4.0,
+                    constraints.maxHeight,
+                  );
                   return Align(
                     alignment: Alignment.bottomCenter,
                     child: AnimatedContainer(
@@ -803,19 +850,19 @@ class _HoverBar extends StatelessWidget {
                         borderRadius: BorderRadius.circular(6),
                         boxShadow: isHovering
                             ? [
-                          BoxShadow(
-                            color: colors[0].withOpacity(0.4),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
+                                BoxShadow(
+                                  color: colors[0].withValues(alpha: 0.4),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ]
                             : [],
                         gradient: LinearGradient(
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
                           colors: [
                             colors[0],
-                            colors[1].withOpacity(isHovering ? 0.9 : 0.6),
+                            colors[1].withValues(alpha: isHovering ? 0.9 : 0.6),
                           ],
                         ),
                       ),
@@ -869,8 +916,10 @@ class _HoverMonthBar extends StatelessWidget {
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final barHeight =
-                  (constraints.maxHeight * fraction).clamp(4.0, constraints.maxHeight);
+                  final barHeight = (constraints.maxHeight * fraction).clamp(
+                    4.0,
+                    constraints.maxHeight,
+                  );
                   return Align(
                     alignment: Alignment.bottomCenter,
                     child: AnimatedContainer(
@@ -881,12 +930,12 @@ class _HoverMonthBar extends StatelessWidget {
                         borderRadius: BorderRadius.circular(7),
                         boxShadow: isHovering
                             ? [
-                          const BoxShadow(
-                            color: Color(0x556366F1),
-                            blurRadius: 12,
-                            offset: Offset(0, 4),
-                          ),
-                        ]
+                                const BoxShadow(
+                                  color: Color(0x556366F1),
+                                  blurRadius: 12,
+                                  offset: Offset(0, 4),
+                                ),
+                              ]
                             : [],
                         gradient: const LinearGradient(
                           begin: Alignment.bottomCenter,

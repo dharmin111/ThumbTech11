@@ -81,31 +81,40 @@ class _AdminDashboardState extends State<AdminDashboard>
     _usersSubscription = FirebaseFirestore.instance
         .collection('users')
         .snapshots()
-        .listen((snapshot) {
-      _processUsersData(snapshot);
-    }, onError: (error) {
-      print('❌ Users stream error: $error');
-    });
+        .listen(
+          (snapshot) {
+            _processUsersData(snapshot);
+          },
+          onError: (error) {
+            print('❌ Users stream error: $error');
+          },
+        );
 
     // ✅ Requests Real-time Listener
     _requestsSubscription = FirebaseFirestore.instance
         .collection('service_requests')
         .snapshots()
-        .listen((snapshot) {
-      _processRequestsData(snapshot);
-    }, onError: (error) {
-      print('❌ Requests stream error: $error');
-    });
+        .listen(
+          (snapshot) {
+            _processRequestsData(snapshot);
+          },
+          onError: (error) {
+            print('❌ Requests stream error: $error');
+          },
+        );
 
     // ✅ Bookings Real-time Listener
     _bookingsSubscription = FirebaseFirestore.instance
         .collection('bookings')
         .snapshots()
-        .listen((snapshot) {
-      _processBookingsData(snapshot);
-    }, onError: (error) {
-      print('❌ Bookings stream error: $error');
-    });
+        .listen(
+          (snapshot) {
+            _processBookingsData(snapshot);
+          },
+          onError: (error) {
+            print('❌ Bookings stream error: $error');
+          },
+        );
 
     // ✅ Set loading false after initial data
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -156,9 +165,9 @@ class _AdminDashboardState extends State<AdminDashboard>
     // Recent Users (Last 5 non-admin users)
     final usersList = snapshot.docs
         .where((doc) {
-      final data = doc.data() as Map<String, dynamic>;
-      return data['role'] != 'admin';
-    })
+          final data = doc.data() as Map<String, dynamic>;
+          return data['role'] != 'admin';
+        })
         .map((doc) => doc.data() as Map<String, dynamic>)
         .toList();
 
@@ -236,7 +245,7 @@ class _AdminDashboardState extends State<AdminDashboard>
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> _screens = [
+    final List<Widget> screens = [
       _buildDashboard(),
       const AdminUsersScreen(),
       const AdminRequestsScreen(),
@@ -246,7 +255,7 @@ class _AdminDashboardState extends State<AdminDashboard>
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      body: _screens[_selectedIndex],
+      body: screens[_selectedIndex],
       bottomNavigationBar: _buildBottomNavBar(),
     );
   }
@@ -258,7 +267,7 @@ class _AdminDashboardState extends State<AdminDashboard>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -279,9 +288,7 @@ class _AdminDashboardState extends State<AdminDashboard>
           fontWeight: FontWeight.bold,
           fontSize: 12,
         ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 11,
-        ),
+        unselectedLabelStyle: const TextStyle(fontSize: 11),
         elevation: 0,
         backgroundColor: Colors.transparent,
         items: const [
@@ -289,10 +296,7 @@ class _AdminDashboardState extends State<AdminDashboard>
             icon: Icon(Icons.dashboard),
             label: 'Dashboard',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Users',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Users'),
           BottomNavigationBarItem(
             icon: Icon(Icons.request_page),
             label: 'Requests',
@@ -325,10 +329,7 @@ class _AdminDashboardState extends State<AdminDashboard>
       appBar: AppBar(
         title: const Text(
           'Admin Dashboard',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
@@ -370,10 +371,7 @@ class _AdminDashboardState extends State<AdminDashboard>
               const SizedBox(height: 20),
 
               // Main Stats Grid
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: _buildStatsGrid(),
-              ),
+              FadeTransition(opacity: _fadeAnimation, child: _buildStatsGrid()),
               const SizedBox(height: 24),
 
               // ✅ Recent Users
@@ -402,18 +400,14 @@ class _AdminDashboardState extends State<AdminDashboard>
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF2563EB),
-            Color(0xFF1D4ED8),
-            Color(0xFF1E40AF),
-          ],
+          colors: [Color(0xFF2563EB), Color(0xFF1D4ED8), Color(0xFF1E40AF)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2563EB).withOpacity(0.3),
+            color: const Color(0xFF2563EB).withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -427,7 +421,7 @@ class _AdminDashboardState extends State<AdminDashboard>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -453,7 +447,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                       'Live data updating in real-time',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                       ),
                     ),
                   ],
@@ -461,11 +455,16 @@ class _AdminDashboardState extends State<AdminDashboard>
               ),
               // ✅ Live Indicator
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.2),
+                  color: Colors.green.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.green.withOpacity(0.5)),
+                  border: Border.all(
+                    color: Colors.green.withValues(alpha: 0.5),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -507,7 +506,7 @@ class _AdminDashboardState extends State<AdminDashboard>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -522,10 +521,7 @@ class _AdminDashboardState extends State<AdminDashboard>
               SizedBox(width: 8),
               Text(
                 "Today's Activity",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -625,20 +621,22 @@ class _AdminDashboardState extends State<AdminDashboard>
             margin: const EdgeInsets.symmetric(horizontal: 4),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: isHovering ? color.withOpacity(0.15) : color.withOpacity(0.05),
+              color: isHovering
+                  ? color.withValues(alpha: 0.15)
+                  : color.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isHovering ? color : color.withOpacity(0.1),
+                color: isHovering ? color : color.withValues(alpha: 0.1),
                 width: isHovering ? 1.5 : 1,
               ),
               boxShadow: isHovering
                   ? [
-                BoxShadow(
-                  color: color.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ]
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
                   : [],
             ),
             child: Column(
@@ -660,10 +658,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                 ),
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
                 ),
               ],
             ),
@@ -757,7 +752,7 @@ class _AdminDashboardState extends State<AdminDashboard>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: isHovering
-                  ? colors.map((c) => c.withOpacity(1)).toList()
+                  ? colors.map((c) => c.withValues(alpha: 1)).toList()
                   : colors,
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -765,7 +760,7 @@ class _AdminDashboardState extends State<AdminDashboard>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: colors[0].withOpacity(isHovering ? 0.45 : 0.3),
+                color: colors[0].withValues(alpha: isHovering ? 0.45 : 0.3),
                 blurRadius: isHovering ? 22 : 12,
                 offset: Offset(0, isHovering ? 10 : 4),
               ),
@@ -782,7 +777,9 @@ class _AdminDashboardState extends State<AdminDashboard>
                     duration: const Duration(milliseconds: 220),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(isHovering ? 0.3 : 0.2),
+                      color: Colors.white.withValues(
+                        alpha: isHovering ? 0.3 : 0.2,
+                      ),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: AnimatedRotation(
@@ -795,7 +792,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                     width: 6,
                     height: 6,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -816,7 +813,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                     title,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -824,7 +821,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                     subtitle,
                     style: TextStyle(
                       fontSize: 10,
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -849,7 +846,7 @@ class _AdminDashboardState extends State<AdminDashboard>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -867,19 +864,13 @@ class _AdminDashboardState extends State<AdminDashboard>
                   SizedBox(width: 8),
                   Text(
                     'Recent Users',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
               Text(
                 'Live updates',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.green,
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.green),
               ),
             ],
           ),
@@ -893,7 +884,9 @@ class _AdminDashboardState extends State<AdminDashboard>
             final isActive = user['isActive'] ?? true;
 
             Color roleColor = role == 'technician' ? Colors.blue : Colors.green;
-            IconData roleIcon = role == 'technician' ? Icons.build : Icons.person;
+            IconData roleIcon = role == 'technician'
+                ? Icons.build
+                : Icons.person;
 
             return HoverScale(
               onTap: () {
@@ -910,16 +903,25 @@ class _AdminDashboardState extends State<AdminDashboard>
               builder: (context, isHovering, isPressed) {
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: isHovering ? Colors.grey.shade50 : Colors.transparent,
+                    color: isHovering
+                        ? Colors.grey.shade50
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  transform: Matrix4.translationValues(isHovering ? 4 : 0, 0, 0),
+                  transform: Matrix4.translationValues(
+                    isHovering ? 4 : 0,
+                    0,
+                    0,
+                  ),
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: CircleAvatar(
-                      backgroundColor: roleColor.withOpacity(0.1),
+                      backgroundColor: roleColor.withValues(alpha: 0.1),
                       child: Icon(roleIcon, color: roleColor, size: 16),
                     ),
                     title: Text(
@@ -940,9 +942,12 @@ class _AdminDashboardState extends State<AdminDashboard>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
+                            color: Colors.green.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -969,7 +974,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                 );
               },
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -984,7 +989,7 @@ class _AdminDashboardState extends State<AdminDashboard>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -1002,10 +1007,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                   SizedBox(width: 8),
                   Text(
                     'Recent Activities',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -1039,9 +1041,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                     color: Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Center(
-                    child: Text('No recent activities'),
-                  ),
+                  child: const Center(child: Text('No recent activities')),
                 );
               }
 
@@ -1098,29 +1098,23 @@ class _AdminDashboardState extends State<AdminDashboard>
             leading: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(statusIcon, color: statusColor, size: 20),
             ),
             title: Text(
               data['serviceName'] ?? 'Service Request',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
             subtitle: Text(
               '${data['userName'] ?? 'User'} • ${_formatTime((data['createdAt'] as Timestamp?)?.toDate())}',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -1191,7 +1185,9 @@ class _HoverIconButton extends StatelessWidget {
             duration: const Duration(milliseconds: 180),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: isHovering ? color.withOpacity(0.1) : Colors.transparent,
+              color: isHovering
+                  ? color.withValues(alpha: 0.1)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color),

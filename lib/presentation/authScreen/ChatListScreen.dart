@@ -29,10 +29,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       appBar: AppBar(
         title: const Text(
           'Chats',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -51,9 +48,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF2563EB),
-              ),
+              child: CircularProgressIndicator(color: Color(0xFF2563EB)),
             );
           }
 
@@ -70,18 +65,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'Error loading chats',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     snapshot.error.toString(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -126,10 +115,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Start chatting with your service providers',
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
                   ),
                 ],
               ),
@@ -155,8 +141,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
     // Determine other user info
     final bool isCustomer = conversation.customerId == currentUser.uid;
-    final String otherUserId = isCustomer ? conversation.technicianId : conversation.customerId;
-    final String otherUserName = isCustomer ? conversation.technicianName : conversation.customerName;
+    final String otherUserId = isCustomer
+        ? conversation.technicianId
+        : conversation.customerId;
+    final String otherUserName = isCustomer
+        ? conversation.technicianName
+        : conversation.customerName;
     final String otherUserRole = isCustomer ? 'technician' : 'customer';
 
     // ✅ Get unread count for current user using the method
@@ -188,14 +178,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.05),
+              color: Colors.grey.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
           ],
         ),
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
           leading: Stack(
             children: [
               CircleAvatar(
@@ -203,7 +196,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     ? Colors.blue.shade100
                     : Colors.green.shade100,
                 child: Text(
-                  otherUserName.isNotEmpty ? otherUserName[0].toUpperCase() : '?',
+                  otherUserName.isNotEmpty
+                      ? otherUserName[0].toUpperCase()
+                      : '?',
                   style: TextStyle(
                     color: otherUserRole == 'technician'
                         ? Colors.blue.shade700
@@ -244,10 +239,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               const SizedBox(width: 8),
               Text(
                 timeString,
-                style: TextStyle(
-                  color: Colors.grey.shade500,
-                  fontSize: 11,
-                ),
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
               ),
             ],
           ),
@@ -283,15 +275,16 @@ class _ChatListScreenState extends State<ChatListScreen> {
               if (unreadCount > 0) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2563EB),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    unreadCount > 99
-                        ? '99+'
-                        : unreadCount.toString(),
+                    unreadCount > 99 ? '99+' : unreadCount.toString(),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
@@ -302,17 +295,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
               ],
             ],
           ),
-          trailing: Icon(
-            Icons.chevron_right,
-            color: Colors.grey.shade400,
-          ),
+          trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
         ),
       ),
     );
   }
 
   // ✅ New method to show last message status with correct double tick logic
-  Widget _buildLastMessageStatus(ConversationModel conversation, String currentUserId) {
+  Widget _buildLastMessageStatus(
+    ConversationModel conversation,
+    String currentUserId,
+  ) {
     // Check if current user is the sender of the last message
     // We need to fetch the last message to check its sender
 
@@ -329,7 +322,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
           return const SizedBox.shrink();
         }
 
-        final lastMessageData = snapshot.data!.docs.first.data() as Map<String, dynamic>;
+        final lastMessageData =
+            snapshot.data!.docs.first.data() as Map<String, dynamic>;
         final String senderId = lastMessageData['senderId'] ?? '';
         final bool isRead = lastMessageData['isRead'] ?? false;
 
@@ -357,7 +351,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
         dateTime.month == now.month &&
         dateTime.year == now.year) {
       // Today - show time
-      final hour = dateTime.hour == 0 ? 12 : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
+      final hour = dateTime.hour == 0
+          ? 12
+          : (dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour);
       final period = dateTime.hour >= 12 ? 'PM' : 'AM';
       return '$hour:${dateTime.minute.toString().padLeft(2, '0')} $period';
     } else if (dateTime.day == now.day - 1 &&
@@ -366,7 +362,20 @@ class _ChatListScreenState extends State<ChatListScreen> {
       return 'Yesterday';
     } else if (dateTime.year == now.year) {
       // This year - show month/day
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       return '${months[dateTime.month - 1]} ${dateTime.day}';
     } else {
       // Different year

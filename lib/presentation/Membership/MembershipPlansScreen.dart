@@ -36,7 +36,11 @@ class _MembershipPlansScreenState extends State<MembershipPlansScreen> {
   }
 
   // 🔥 Subscribe to Plan (Web/App both)
-  Future<void> _subscribeToPlan(String planType, int durationDays, int price) async {
+  Future<void> _subscribeToPlan(
+    String planType,
+    int durationDays,
+    int price,
+  ) async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -70,14 +74,8 @@ class _MembershipPlansScreenState extends State<MembershipPlansScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: const Icon(
-          Icons.check_circle,
-          color: Colors.green,
-          size: 64,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Icon(Icons.check_circle, color: Colors.green, size: 64),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -92,10 +90,7 @@ class _MembershipPlansScreenState extends State<MembershipPlansScreen> {
             const SizedBox(height: 12),
             Text(
               'Your $planType membership has been activated successfully.',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
           ],
@@ -128,7 +123,8 @@ class _MembershipPlansScreenState extends State<MembershipPlansScreen> {
     final TargetPlatform platform = Theme.of(context).platform;
 
     // 🔥 Better way to check if mobile
-    _isMobile = platform == TargetPlatform.android || platform == TargetPlatform.iOS;
+    _isMobile =
+        platform == TargetPlatform.android || platform == TargetPlatform.iOS;
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -158,104 +154,100 @@ class _MembershipPlansScreenState extends State<MembershipPlansScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              // Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFF42D7D7).withOpacity(0.1),
-                      const Color(0xFF42D7D7).withOpacity(0.05),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    const Icon(
-                      Icons.star,
-                      size: 48,
-                      color: Color(0xFF42D7D7),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Choose Your Plan',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0C1B4D),
+                    // Header
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xFF42D7D7).withValues(alpha: 0.1),
+                            const Color(0xFF42D7D7).withValues(alpha: 0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.star,
+                            size: 48,
+                            color: Color(0xFF42D7D7),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Choose Your Plan',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0C1B4D),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Subscribe to continue using Thumb Tech',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Subscribe to continue using Thumb Tech',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
+                    const SizedBox(height: 24),
+
+                    // Error Message
+                    if (_errorMessage != null)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              color: Colors.red.shade700,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _errorMessage!,
+                                style: TextStyle(color: Colors.red.shade700),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (_errorMessage != null) const SizedBox(height: 16),
+
+                    // Plans Grid
+                    _buildPlansGrid(),
+
+                    const SizedBox(height: 24),
+
+                    // Back to Dashboard
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/dashboard');
+                      },
+                      child: const Text(
+                        '← Back to Dashboard',
+                        style: TextStyle(color: Color(0xFF42D7D7)),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
-
-              // Error Message
-              if (_errorMessage != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        color: Colors.red.shade700,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: TextStyle(
-                            color: Colors.red.shade700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (_errorMessage != null) const SizedBox(height: 16),
-
-              // Plans Grid
-              _buildPlansGrid(),
-
-              const SizedBox(height: 24),
-
-              // Back to Dashboard
-              TextButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/dashboard');
-                },
-                child: const Text(
-                  '← Back to Dashboard',
-                  style: TextStyle(
-                    color: Color(0xFF42D7D7),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 
@@ -362,8 +354,8 @@ class _MembershipPlansScreenState extends State<MembershipPlansScreen> {
         boxShadow: [
           BoxShadow(
             color: isPopular
-                ? const Color(0xFF42D7D7).withOpacity(0.2)
-                : Colors.grey.withOpacity(0.05),
+                ? const Color(0xFF42D7D7).withValues(alpha: 0.2)
+                : Colors.grey.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -388,7 +380,10 @@ class _MembershipPlansScreenState extends State<MembershipPlansScreen> {
                 ),
                 if (badge.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: isPopular
                           ? const Color(0xFFFF6B35)
@@ -421,26 +416,25 @@ class _MembershipPlansScreenState extends State<MembershipPlansScreen> {
                 const SizedBox(width: 4),
                 Text(
                   '/ $duration',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
                 ),
               ],
             ),
             const SizedBox(height: 12),
 
             // Features
-            ...features.map((feature) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text(
-                feature,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF0C1B4D),
+            ...features.map(
+              (feature) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  feature,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF0C1B4D),
+                  ),
                 ),
               ),
-            )),
+            ),
 
             const Spacer(),
 
@@ -461,10 +455,7 @@ class _MembershipPlansScreenState extends State<MembershipPlansScreen> {
                 ),
                 child: const Text(
                   'Subscribe Now',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),

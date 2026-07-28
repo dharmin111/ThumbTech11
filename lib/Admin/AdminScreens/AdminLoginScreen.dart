@@ -38,7 +38,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   width: kIsWeb ? 120 : 100,
                   height: kIsWeb ? 120 : 100,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withOpacity(0.1),
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -59,10 +59,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 const SizedBox(height: 8),
                 Text(
                   kIsWeb ? 'ThumbTech999' : 'ThumbTech999',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 32),
 
@@ -82,7 +79,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   obscureText: _obscurePassword,
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                       color: Colors.grey.shade600,
                     ),
                     onPressed: () {
@@ -109,20 +108,20 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     ),
                     child: _isLoading
                         ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
                         : const Text(
-                      'Login',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                            'Login',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -163,10 +162,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   },
                   child: const Text(
                     '← Back to User Login',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.grey, fontSize: 14),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -207,8 +203,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     );
   }
 
-// Admin/AdminScreens/AdminLoginScreen.dart
-// ✅ Add this method for login
+  // Admin/AdminScreens/AdminLoginScreen.dart
+  // ✅ Add this method for login
 
   Future<void> _loginAdmin() async {
     final email = _emailController.text.trim();
@@ -223,10 +219,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
     try {
       final userCredential = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+          .signInWithEmailAndPassword(email: email, password: password);
 
       final admin = await _adminService.getAdmin(userCredential.user!.uid);
 
@@ -239,9 +232,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       if (!admin.isApproved) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => const AdminPendingScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const AdminPendingScreen()),
         );
         return;
       }
@@ -257,14 +248,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       // ✅ Web: Remove all history, Mobile: Replace
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (context) => const AdminDashboard(),
-        ),
-            (route) => false, // ✅ Remove all previous routes
+        MaterialPageRoute(builder: (context) => const AdminDashboard()),
+        (route) => false, // ✅ Remove all previous routes
       );
 
       _showSnackbar('Welcome Admin!', Colors.green);
-
     } on FirebaseAuthException catch (e) {
       String message = 'Login failed';
       if (e.code == 'user-not-found') {
@@ -281,6 +269,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       }
     }
   }
+
   void _showSnackbar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

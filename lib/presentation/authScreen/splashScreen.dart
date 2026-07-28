@@ -74,9 +74,7 @@ class _SplashScreenState extends State<SplashScreen> {
             await FirebaseAuth.instance.signOut();
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (context) => const AdminLoginScreen(),
-              ),
+              MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
             );
             return;
           }
@@ -85,9 +83,7 @@ class _SplashScreenState extends State<SplashScreen> {
           if (role == 'admin' && isApproved) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (context) => const AdminDashboard(),
-              ),
+              MaterialPageRoute(builder: (context) => const AdminDashboard()),
             );
             return;
           }
@@ -111,9 +107,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // ✅ Default: Admin Login
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AdminLoginScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
     );
   }
 
@@ -128,9 +122,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (user == null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => const LoginScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
       );
       return;
     }
@@ -145,9 +137,7 @@ class _SplashScreenState extends State<SplashScreen> {
         await FirebaseAuth.instance.signOut();
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => const LoginScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
         return;
       }
@@ -162,9 +152,7 @@ class _SplashScreenState extends State<SplashScreen> {
         await FirebaseAuth.instance.signOut();
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => const LoginScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
         return;
       }
@@ -185,9 +173,7 @@ class _SplashScreenState extends State<SplashScreen> {
           if (isApproved) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (context) => const AdminDashboard(),
-              ),
+              MaterialPageRoute(builder: (context) => const AdminDashboard()),
             );
           } else {
             Navigator.pushReplacement(
@@ -201,18 +187,14 @@ class _SplashScreenState extends State<SplashScreen> {
         default:
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const CustomerDashboard(),
-            ),
+            MaterialPageRoute(builder: (context) => const CustomerDashboard()),
           );
       }
     } catch (e) {
       print('❌ Error checking user role: $e');
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => const LoginScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
       );
     }
   }
@@ -233,7 +215,7 @@ class _SplashScreenState extends State<SplashScreen> {
               width: 180,
               height: 180,
               decoration: BoxDecoration(
-                color: const Color(0xFF42D7D7).withOpacity(0.1),
+                color: const Color(0xFF42D7D7).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(

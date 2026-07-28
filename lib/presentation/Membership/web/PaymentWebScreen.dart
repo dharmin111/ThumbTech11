@@ -78,7 +78,9 @@ class _PaymentWebScreenState extends State<PaymentWebScreen> {
           final isActive = planData['isActive'] ?? false;
           final expiryDate = (planData['expiryDate'] as Timestamp?)?.toDate();
 
-          if (isActive && expiryDate != null && expiryDate.isAfter(DateTime.now())) {
+          if (isActive &&
+              expiryDate != null &&
+              expiryDate.isAfter(DateTime.now())) {
             setState(() {
               _errorMessage = 'You already have an active plan!';
             });
@@ -154,7 +156,6 @@ class _PaymentWebScreenState extends State<PaymentWebScreen> {
 
       // 🔥 Show success message
       _showSuccessAndRedirect();
-
     } catch (e) {
       print('❌ Error updating plan: $e');
       setState(() {
@@ -169,14 +170,8 @@ class _PaymentWebScreenState extends State<PaymentWebScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: const Icon(
-          Icons.check_circle,
-          color: Colors.green,
-          size: 64,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Icon(Icons.check_circle, color: Colors.green, size: 64),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -191,19 +186,13 @@ class _PaymentWebScreenState extends State<PaymentWebScreen> {
             const SizedBox(height: 12),
             const Text(
               'Your membership has been activated successfully.',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               'You can close this window now.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade500,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
             ),
           ],
         ),
@@ -257,14 +246,8 @@ class _PaymentWebScreenState extends State<PaymentWebScreen> {
         'amount': (plan['price'] as int) * 100, // Amount in paise
         'name': 'Thumb Tech',
         'description': '${plan['name']} Membership',
-        'prefill': {
-          'contact': userPhone,
-          'email': userEmail,
-          'name': userName,
-        },
-        'theme': {
-          'color': '#42D7D7',
-        },
+        'prefill': {'contact': userPhone, 'email': userEmail, 'name': userName},
+        'theme': {'color': '#42D7D7'},
         'notes': {
           'userId': _userId,
           'planType': planType,
@@ -318,184 +301,183 @@ class _PaymentWebScreenState extends State<PaymentWebScreen> {
       ),
       body: _isProcessing
           ? const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF42D7D7)),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Processing payment...',
-              style: TextStyle(
-                fontSize: 16,
-                color: Color(0xFF0C1B4D),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFF42D7D7),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Processing payment...',
+                    style: TextStyle(fontSize: 16, color: Color(0xFF0C1B4D)),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
-      )
+            )
           : SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFF42D7D7).withOpacity(0.1),
-                      const Color(0xFF42D7D7).withOpacity(0.05),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.star,
-                      size: 48,
-                      color: Color(0xFF42D7D7),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Choose Your Plan',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0C1B4D),
+                    // Header
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xFF42D7D7).withValues(alpha: 0.1),
+                            const Color(0xFF42D7D7).withValues(alpha: 0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.star,
+                            size: 48,
+                            color: Color(0xFF42D7D7),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Choose Your Plan',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0C1B4D),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Select a plan to continue using Thumb Tech',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Select a plan to continue using Thumb Tech',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-              // 🔥 Error/Success Message
-              if (_errorMessage != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _errorMessage!.contains('✅')
-                        ? Colors.green.shade50
-                        : Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: _errorMessage!.contains('✅')
-                          ? Colors.green.shade200
-                          : Colors.red.shade200,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _errorMessage!.contains('✅')
-                            ? Icons.check_circle
-                            : Icons.error_outline,
-                        color: _errorMessage!.contains('✅')
-                            ? Colors.green.shade700
-                            : Colors.red.shade700,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: TextStyle(
+                    // 🔥 Error/Success Message
+                    if (_errorMessage != null)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _errorMessage!.contains('✅')
+                              ? Colors.green.shade50
+                              : Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
                             color: _errorMessage!.contains('✅')
-                                ? Colors.green.shade700
-                                : Colors.red.shade700,
-                            fontSize: 14,
+                                ? Colors.green.shade200
+                                : Colors.red.shade200,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (_errorMessage != null) const SizedBox(height: 16),
-
-              // 🔥 Plans Grid
-              _buildPlansGrid(),
-
-              const SizedBox(height: 16),
-
-              // 🔥 Note
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: Colors.blue.shade700,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Secure payment powered by Razorpay. You will be redirected to complete payment.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.blue.shade700,
+                        child: Row(
+                          children: [
+                            Icon(
+                              _errorMessage!.contains('✅')
+                                  ? Icons.check_circle
+                                  : Icons.error_outline,
+                              color: _errorMessage!.contains('✅')
+                                  ? Colors.green.shade700
+                                  : Colors.red.shade700,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _errorMessage!,
+                                style: TextStyle(
+                                  color: _errorMessage!.contains('✅')
+                                      ? Colors.green.shade700
+                                      : Colors.red.shade700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                      ),
+                    if (_errorMessage != null) const SizedBox(height: 16),
+
+                    // 🔥 Plans Grid
+                    _buildPlansGrid(),
+
+                    const SizedBox(height: 16),
+
+                    // 🔥 Note
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.blue.shade700,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Secure payment powered by Razorpay. You will be redirected to complete payment.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 
   Widget _buildPlansGrid() {
     final plans = [
-    {
-      'key': '2_days',
-      'title': '2 Days',
-      'price': '₹99',
-      'duration': '2 Days',
-      'badge': 'QUICK',
-      'color': Colors.blue,
-    },
-    {
-      'key': '5_days',
-      'title': '5 Days',
-      'price': '₹249',
-      'duration': '5 Days',
-      'badge': 'POPULAR',
-      'color': const Color(0xFF42D7D7),
-    },
-    // 🔥 Commented - 30 Days Plan
-    // {
-    //   'key': '30_days',
-    //   'title': '30 Days',
-    //   'price': '₹1499',
-    //   'duration': '30 Days',
-    //   'badge': 'BEST VALUE',
-    //   'color': Colors.orange,
-    // },
-  ];
+      {
+        'key': '2_days',
+        'title': '2 Days',
+        'price': '₹99',
+        'duration': '2 Days',
+        'badge': 'QUICK',
+        'color': Colors.blue,
+      },
+      {
+        'key': '5_days',
+        'title': '5 Days',
+        'price': '₹249',
+        'duration': '5 Days',
+        'badge': 'POPULAR',
+        'color': const Color(0xFF42D7D7),
+      },
+      // 🔥 Commented - 30 Days Plan
+      // {
+      //   'key': '30_days',
+      //   'title': '30 Days',
+      //   'price': '₹1499',
+      //   'duration': '30 Days',
+      //   'badge': 'BEST VALUE',
+      //   'color': Colors.orange,
+      // },
+    ];
 
     return GridView.builder(
       shrinkWrap: true,
@@ -522,8 +504,8 @@ class _PaymentWebScreenState extends State<PaymentWebScreen> {
             boxShadow: [
               BoxShadow(
                 color: isPopular
-                    ? const Color(0xFF42D7D7).withOpacity(0.2)
-                    : Colors.grey.withOpacity(0.05),
+                    ? const Color(0xFF42D7D7).withValues(alpha: 0.2)
+                    : Colors.grey.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -547,7 +529,10 @@ class _PaymentWebScreenState extends State<PaymentWebScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: isPopular
                             ? const Color(0xFFFF6B35)

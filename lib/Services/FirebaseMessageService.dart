@@ -24,7 +24,10 @@ class FirebaseMessageService {
       final currentUser = _auth.currentUser;
       if (currentUser == null) throw Exception('User not logged in');
 
-      final userDoc = await _firestore.collection('users').doc(currentUser.uid).get();
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
       final userData = userDoc.data();
       final senderName = userData?['name'] ?? 'User';
       final senderRole = userData?['role'] ?? 'customer';
@@ -34,10 +37,18 @@ class FirebaseMessageService {
       print('   To: $receiverName ($receiverRole)');
       print('   Message: $message');
 
-      final String customerId = senderRole == 'customer' ? currentUser.uid : receiverId;
-      final String technicianId = senderRole == 'technician' ? currentUser.uid : receiverId;
-      final String customerName = senderRole == 'customer' ? senderName : receiverName;
-      final String technicianName = senderRole == 'technician' ? senderName : receiverName;
+      final String customerId = senderRole == 'customer'
+          ? currentUser.uid
+          : receiverId;
+      final String technicianId = senderRole == 'technician'
+          ? currentUser.uid
+          : receiverId;
+      final String customerName = senderRole == 'customer'
+          ? senderName
+          : receiverName;
+      final String technicianName = senderRole == 'technician'
+          ? senderName
+          : receiverName;
 
       final conversationId = _getConversationId(
         requestId: requestId,
@@ -63,22 +74,24 @@ class FirebaseMessageService {
           .doc(conversationId)
           .collection('messages')
           .add({
-        'senderId': currentUser.uid,
-        'senderName': senderName,
-        'senderRole': senderRole,
-        'receiverId': receiverId,
-        'receiverName': receiverName,
-        'receiverRole': receiverRole,
-        'message': message,
-        'messageType': imageUrl != null ? 'image' : 'text',
-        'imageUrl': imageUrl,
-        'isRead': false,
-        'sentAt': FieldValue.serverTimestamp(),
-        'requestId': requestId,
-      });
+            'senderId': currentUser.uid,
+            'senderName': senderName,
+            'senderRole': senderRole,
+            'receiverId': receiverId,
+            'receiverName': receiverName,
+            'receiverRole': receiverRole,
+            'message': message,
+            'messageType': imageUrl != null ? 'image' : 'text',
+            'imageUrl': imageUrl,
+            'isRead': false,
+            'sentAt': FieldValue.serverTimestamp(),
+            'requestId': requestId,
+          });
 
       // ✅ Increment ONLY the receiver's unread count
-      final conversationRef = _firestore.collection('conversations').doc(conversationId);
+      final conversationRef = _firestore
+          .collection('conversations')
+          .doc(conversationId);
 
       if (receiverRole == 'customer') {
         await conversationRef.update({
@@ -115,7 +128,6 @@ class FirebaseMessageService {
       );
 
       print('✅ Message sent and notification delivered');
-
     } catch (e) {
       print('Error sending message: $e');
       rethrow;
@@ -131,7 +143,10 @@ class FirebaseMessageService {
     required String requestId,
   }) async {
     try {
-      final userDoc = await _firestore.collection('users').doc(receiverId).get();
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(receiverId)
+          .get();
       final oneSignalId = userDoc.data()?['oneSignalId'];
 
       if (oneSignalId == null || oneSignalId.isEmpty) {
@@ -149,13 +164,17 @@ class FirebaseMessageService {
       final result = await OneSignalNotificationService.sendNotificationToUser(
         userId: receiverId,
         title: notificationTitle,
-        body: message.length > 100 ? '${message.substring(0, 100)}...' : message,
+        body: message.length > 100
+            ? '${message.substring(0, 100)}...'
+            : message,
         data: {
           'type': 'new_message',
           'conversationId': conversationId,
           'requestId': requestId,
           'senderName': senderName,
-          'senderRole': receiverRole == 'technician' ? 'customer' : 'technician',
+          'senderRole': receiverRole == 'technician'
+              ? 'customer'
+              : 'technician',
         },
       );
 
@@ -203,7 +222,9 @@ class FirebaseMessageService {
     required String lastMessage,
     required String serviceName,
   }) async {
-    final conversationRef = _firestore.collection('conversations').doc(conversationId);
+    final conversationRef = _firestore
+        .collection('conversations')
+        .doc(conversationId);
     final conversationDoc = await conversationRef.get();
 
     if (!conversationDoc.exists) {
@@ -234,10 +255,10 @@ class FirebaseMessageService {
         .orderBy('sentAt', descending: false)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => MessageModel.fromMap(doc.data(), doc.id))
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) => MessageModel.fromMap(doc.data(), doc.id))
+              .toList();
+        });
   }
 
   // ✅ FIXED: No status filter in query - local filtering
@@ -251,11 +272,11 @@ class FirebaseMessageService {
         .where('customerId', isEqualTo: currentUser.uid)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => ConversationModel.fromMap(doc.data(), doc.id))
-          .where((conv) => conv.status == 'active') // ✅ Local filter
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) => ConversationModel.fromMap(doc.data(), doc.id))
+              .where((conv) => conv.status == 'active') // ✅ Local filter
+              .toList();
+        });
 
     // ✅ Get conversations where user is technician (NO status filter)
     final technicianConversations = _firestore
@@ -263,26 +284,29 @@ class FirebaseMessageService {
         .where('technicianId', isEqualTo: currentUser.uid)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => ConversationModel.fromMap(doc.data(), doc.id))
-          .where((conv) => conv.status == 'active') // ✅ Local filter
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) => ConversationModel.fromMap(doc.data(), doc.id))
+              .where((conv) => conv.status == 'active') // ✅ Local filter
+              .toList();
+        });
 
-    return Rx.combineLatest2<List<ConversationModel>, List<ConversationModel>, List<ConversationModel>>(
-      customerConversations,
-      technicianConversations,
-          (customerList, technicianList) {
-        final all = [...customerList, ...technicianList];
-        final uniqueMap = <String, ConversationModel>{};
-        for (var conversation in all) {
-          uniqueMap[conversation.id] = conversation;
-        }
-        final uniqueList = uniqueMap.values.toList();
-        uniqueList.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
-        return uniqueList;
-      },
-    );
+    return Rx.combineLatest2<
+      List<ConversationModel>,
+      List<ConversationModel>,
+      List<ConversationModel>
+    >(customerConversations, technicianConversations, (
+      customerList,
+      technicianList,
+    ) {
+      final all = [...customerList, ...technicianList];
+      final uniqueMap = <String, ConversationModel>{};
+      for (var conversation in all) {
+        uniqueMap[conversation.id] = conversation;
+      }
+      final uniqueList = uniqueMap.values.toList();
+      uniqueList.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
+      return uniqueList;
+    });
   }
 
   // ✅ FIXED: Mark messages as read
@@ -309,13 +333,15 @@ class FirebaseMessageService {
       for (var doc in unreadMessages.docs) {
         batch.update(doc.reference, {
           'isRead': true,
-          'readAt': FieldValue.serverTimestamp()
+          'readAt': FieldValue.serverTimestamp(),
         });
       }
       await batch.commit();
 
       // Reset ONLY the current user's unread count
-      final conversationRef = _firestore.collection('conversations').doc(conversationId);
+      final conversationRef = _firestore
+          .collection('conversations')
+          .doc(conversationId);
       final conversationDoc = await conversationRef.get();
 
       if (conversationDoc.exists) {
@@ -323,14 +349,13 @@ class FirebaseMessageService {
         final bool isCustomer = data['customerId'] == currentUser.uid;
 
         if (isCustomer) {
-          await conversationRef.update({ 'customerUnreadCount': 0 });
+          await conversationRef.update({'customerUnreadCount': 0});
           print('✅ Customer unread count reset to 0');
         } else {
-          await conversationRef.update({ 'technicianUnreadCount': 0 });
+          await conversationRef.update({'technicianUnreadCount': 0});
           print('✅ Technician unread count reset to 0');
         }
       }
-
     } catch (e) {
       print('Error marking messages as read: $e');
     }
@@ -342,10 +367,7 @@ class FirebaseMessageService {
     if (currentUser == null) return Stream.value(0);
 
     // ✅ Query without status filter (to avoid permission error)
-    return _firestore
-        .collection('conversations')
-        .snapshots()
-        .map((snapshot) {
+    return _firestore.collection('conversations').snapshots().map((snapshot) {
       int count = 0;
       for (var doc in snapshot.docs) {
         final data = doc.data();
@@ -375,13 +397,16 @@ class FirebaseMessageService {
     required String customerId,
     required String technicianId,
   }) {
-    return '${requestId}_${customerId}_${technicianId}';
+    return '${requestId}_${customerId}_$technicianId';
   }
 
   // Get service name from request ID
   Future<String> _getServiceName(String requestId) async {
     try {
-      final doc = await _firestore.collection('service_requests').doc(requestId).get();
+      final doc = await _firestore
+          .collection('service_requests')
+          .doc(requestId)
+          .get();
       if (doc.exists) {
         return doc.data()?['serviceName'] ?? 'Service Request';
       }
@@ -400,7 +425,9 @@ class FirebaseMessageService {
     try {
       final storage = FirebaseStorage.instance;
       final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final ref = storage.ref().child('messages/$conversationId/$senderId/$fileName');
+      final ref = storage.ref().child(
+        'messages/$conversationId/$senderId/$fileName',
+      );
       await ref.putFile(imageFile);
       return await ref.getDownloadURL();
     } catch (e) {

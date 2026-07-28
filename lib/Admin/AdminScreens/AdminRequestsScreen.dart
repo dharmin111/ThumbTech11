@@ -45,7 +45,7 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
                   _buildFilterChip('All', 'All'),
                   _buildFilterChip('Pending', 'pending'),
                   _buildFilterChip('Accepted', 'accepted'),
-                 // _buildFilterChip('In Progress', 'in_progress'),
+                  // _buildFilterChip('In Progress', 'in_progress'),
                   _buildFilterChip('Completed', 'completed'),
                   _buildFilterChip('Cancelled', 'cancelled'),
                 ],
@@ -110,7 +110,7 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
             _selectedFilter = selected ? value : 'All';
           });
         },
-        selectedColor: const Color(0xFF2563EB).withOpacity(0.1),
+        selectedColor: const Color(0xFF2563EB).withValues(alpha: 0.1),
         checkmarkColor: const Color(0xFF2563EB),
       ),
     );
@@ -150,10 +150,8 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => AdminTaskDetailScreen(
-              taskId: requestId,
-              taskData: data,
-            ),
+            builder: (context) =>
+                AdminTaskDetailScreen(taskId: requestId, taskData: data),
           ),
         );
       },
@@ -166,13 +164,15 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isHovering ? statusColor.withOpacity(0.3) : Colors.transparent,
+              color: isHovering
+                  ? statusColor.withValues(alpha: 0.3)
+                  : Colors.transparent,
             ),
             boxShadow: [
               BoxShadow(
                 color: isHovering
-                    ? statusColor.withOpacity(0.15)
-                    : Colors.grey.withOpacity(0.05),
+                    ? statusColor.withValues(alpha: 0.15)
+                    : Colors.grey.withValues(alpha: 0.05),
                 blurRadius: isHovering ? 16 : 8,
                 offset: Offset(0, isHovering ? 6 : 2),
               ),
@@ -183,7 +183,7 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(statusIcon, color: statusColor, size: 22),
@@ -212,9 +212,12 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.1),
+                            color: statusColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -250,14 +253,18 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
   }
 
   // ✅ FIXED: Status Dropdown with proper items
-  Widget _buildStatusDropdown(String requestId, String currentStatus, Color statusColor) {
+  Widget _buildStatusDropdown(
+    String requestId,
+    String currentStatus,
+    Color statusColor,
+  ) {
     // ✅ All possible status options
     final List<String> allStatuses = [
       'pending',
       'accepted',
       //'in_progress',
       'completed',
-      'cancelled'
+      'cancelled',
     ];
 
     // ✅ Ensure current status is in the list
@@ -271,11 +278,13 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.1),
+            color: statusColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: DropdownButton<String>(
-            value: validStatuses.contains(currentStatus) ? currentStatus : 'pending',
+            value: validStatuses.contains(currentStatus)
+                ? currentStatus
+                : 'pending',
             icon: const Icon(Icons.arrow_drop_down, size: 20),
             iconSize: 20,
             elevation: 2,
@@ -293,12 +302,21 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
             items: validStatuses.map((status) {
               String label;
               switch (status) {
-                case 'pending': label = 'Pending'; break;
-                case 'accepted': label = 'Accepted'; break;
+                case 'pending':
+                  label = 'Pending';
+                  break;
+                case 'accepted':
+                  label = 'Accepted';
+                  break;
                 //case 'in_progress': label = 'In Progress'; break;
-                case 'completed': label = 'Completed'; break;
-                case 'cancelled': label = 'Cancelled'; break;
-                default: label = status;
+                case 'completed':
+                  label = 'Completed';
+                  break;
+                case 'cancelled':
+                  label = 'Cancelled';
+                  break;
+                default:
+                  label = status;
               }
               return DropdownMenuItem<String>(
                 value: status,
@@ -320,11 +338,15 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'completed': return Colors.green;
-      case 'accepted': return Colors.blue;
-      case 'cancelled': return Colors.red;
+      case 'completed':
+        return Colors.green;
+      case 'accepted':
+        return Colors.blue;
+      case 'cancelled':
+        return Colors.red;
       // case 'in_progress': return Colors.orange;
-      default: return Colors.orange;
+      default:
+        return Colors.orange;
     }
   }
 
@@ -334,11 +356,13 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
           .collection('service_requests')
           .doc(requestId)
           .update({
-        'status': newStatus,
-        'updatedAt': FieldValue.serverTimestamp(),
-        if (newStatus == 'completed') 'completedAt': FieldValue.serverTimestamp(),
-        if (newStatus == 'accepted') 'assignedAt': FieldValue.serverTimestamp(),
-      });
+            'status': newStatus,
+            'updatedAt': FieldValue.serverTimestamp(),
+            if (newStatus == 'completed')
+              'completedAt': FieldValue.serverTimestamp(),
+            if (newStatus == 'accepted')
+              'assignedAt': FieldValue.serverTimestamp(),
+          });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -351,10 +375,7 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 class CustomerFillingScreen extends StatefulWidget {
   const CustomerFillingScreen({super.key});
 
@@ -49,8 +48,8 @@ class _CustomerFillingScreenState extends State<CustomerFillingScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    const Color(0xFF2563EB).withOpacity(0.1),
-                    const Color(0xFF2563EB).withOpacity(0.05),
+                    const Color(0xFF2563EB).withValues(alpha: 0.1),
+                    const Color(0xFF2563EB).withValues(alpha: 0.05),
                   ],
                 ),
               ),
@@ -68,10 +67,7 @@ class _CustomerFillingScreenState extends State<CustomerFillingScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Please provide your contact details to get started',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -85,7 +81,10 @@ class _CustomerFillingScreenState extends State<CustomerFillingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Personal Information Section
-                    _buildSectionTitle('Personal Information', Icons.person_outline),
+                    _buildSectionTitle(
+                      'Personal Information',
+                      Icons.person_outline,
+                    ),
                     const SizedBox(height: 16),
 
                     // Name Field
@@ -171,7 +170,9 @@ class _CustomerFillingScreenState extends State<CustomerFillingScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2563EB).withOpacity(0.3),
+                            color: const Color(
+                              0xFF2563EB,
+                            ).withValues(alpha: 0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
@@ -180,7 +181,7 @@ class _CustomerFillingScreenState extends State<CustomerFillingScreen> {
                       child: ElevatedButton(
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
-                          //  _goToNextScreen();
+                            //  _goToNextScreen();
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -265,7 +266,7 @@ class _CustomerFillingScreenState extends State<CustomerFillingScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

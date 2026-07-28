@@ -117,7 +117,7 @@ class _AdminTaskDetailScreenState extends State<AdminTaskDetailScreen>
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [statusColor, statusColor.withOpacity(0.7)],
+                    colors: [statusColor, statusColor.withValues(alpha: 0.7)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -130,10 +130,14 @@ class _AdminTaskDetailScreenState extends State<AdminTaskDetailScreen>
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(statusIcon, color: Colors.white, size: 28),
+                          child: Icon(
+                            statusIcon,
+                            color: Colors.white,
+                            size: 28,
+                          ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -152,16 +156,19 @@ class _AdminTaskDetailScreenState extends State<AdminTaskDetailScreen>
                                 'Status: $statusLabel',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: Colors.white.withOpacity(0.8),
+                                  color: Colors.white.withValues(alpha: 0.8),
                                 ),
                               ),
                             ],
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -200,9 +207,11 @@ class _AdminTaskDetailScreenState extends State<AdminTaskDetailScreen>
                   _buildInfoRow('Service Type', data['serviceType'] ?? 'N/A'),
                   _buildInfoRow('Budget', '₹${data['budget'] ?? 0}'),
                   _buildInfoRow('Issue', data['issue'] ?? 'N/A'),
-                  if (data['description'] != null && data['description'].isNotEmpty)
+                  if (data['description'] != null &&
+                      data['description'].isNotEmpty)
                     _buildInfoRow('Description', data['description']),
-                  if (data['additionalNote'] != null && data['additionalNote'].isNotEmpty)
+                  if (data['additionalNote'] != null &&
+                      data['additionalNote'].isNotEmpty)
                     _buildInfoRow('Additional Note', data['additionalNote']),
                 ],
               ),
@@ -240,23 +249,23 @@ class _AdminTaskDetailScreenState extends State<AdminTaskDetailScreen>
                   if (data['updatedAt'] != null)
                     _buildInfoRow(
                       'Last Updated',
-                      DateFormat('dd MMM yyyy, hh:mm a').format(
-                        (data['updatedAt'] as Timestamp).toDate(),
-                      ),
+                      DateFormat(
+                        'dd MMM yyyy, hh:mm a',
+                      ).format((data['updatedAt'] as Timestamp).toDate()),
                     ),
                   if (data['assignedAt'] != null)
                     _buildInfoRow(
                       'Assigned At',
-                      DateFormat('dd MMM yyyy, hh:mm a').format(
-                        (data['assignedAt'] as Timestamp).toDate(),
-                      ),
+                      DateFormat(
+                        'dd MMM yyyy, hh:mm a',
+                      ).format((data['assignedAt'] as Timestamp).toDate()),
                     ),
                   if (data['completedAt'] != null)
                     _buildInfoRow(
                       'Completed At',
-                      DateFormat('dd MMM yyyy, hh:mm a').format(
-                        (data['completedAt'] as Timestamp).toDate(),
-                      ),
+                      DateFormat(
+                        'dd MMM yyyy, hh:mm a',
+                      ).format((data['completedAt'] as Timestamp).toDate()),
                     ),
                 ],
               ),
@@ -285,7 +294,7 @@ class _AdminTaskDetailScreenState extends State<AdminTaskDetailScreen>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -335,10 +344,7 @@ class _AdminTaskDetailScreenState extends State<AdminTaskDetailScreen>
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Colors.black87,
-              ),
+              style: const TextStyle(fontSize: 13, color: Colors.black87),
             ),
           ),
         ],
@@ -355,7 +361,7 @@ class _AdminTaskDetailScreenState extends State<AdminTaskDetailScreen>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -366,10 +372,7 @@ class _AdminTaskDetailScreenState extends State<AdminTaskDetailScreen>
         children: [
           const Text(
             '⚡ Actions',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -445,9 +448,7 @@ class _AdminTaskDetailScreenState extends State<AdminTaskDetailScreen>
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         minimumSize: const Size(0, 40),
       ),
@@ -461,11 +462,13 @@ class _AdminTaskDetailScreenState extends State<AdminTaskDetailScreen>
           .collection('service_requests')
           .doc(widget.taskId)
           .update({
-        'status': newStatus,
-        'updatedAt': FieldValue.serverTimestamp(),
-        if (newStatus == 'completed') 'completedAt': FieldValue.serverTimestamp(),
-        if (newStatus == 'accepted') 'assignedAt': FieldValue.serverTimestamp(),
-      });
+            'status': newStatus,
+            'updatedAt': FieldValue.serverTimestamp(),
+            if (newStatus == 'completed')
+              'completedAt': FieldValue.serverTimestamp(),
+            if (newStatus == 'accepted')
+              'assignedAt': FieldValue.serverTimestamp(),
+          });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -479,10 +482,7 @@ class _AdminTaskDetailScreenState extends State<AdminTaskDetailScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -527,10 +527,7 @@ class _AdminTaskDetailScreenState extends State<AdminTaskDetailScreen>
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: $e'),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
           );
         }
       }

@@ -139,7 +139,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard> {
   @override
   Widget build(BuildContext context) {
     // Screens list with Chat tab
-    final List<Widget> _screens = [
+    final List<Widget> screens = [
       const TechnicianHomeScreen(),
       const TechnicianMyServicesScreen(),
       const ChatListScreen(), // ✅ Chat tab - 3rd position
@@ -147,7 +147,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard> {
     ];
 
     // Bottom Nav Items with Chat Badge
-    final List<BottomNavigationBarItem> _navItems = [
+    final List<BottomNavigationBarItem> navItems = [
       const BottomNavigationBarItem(
         icon: Icon(Icons.home_outlined),
         activeIcon: Icon(Icons.home),
@@ -233,10 +233,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard> {
       appBar: AppBar(
         title: const Text(
           'Technician Dashboard',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -244,7 +241,7 @@ class _TechnicianDashboardState extends State<TechnicianDashboard> {
         centerTitle: true,
         actions: const [],
       ),
-      body: _screens[_selectedIndex],
+      body: screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {
@@ -260,11 +257,9 @@ class _TechnicianDashboardState extends State<TechnicianDashboard> {
           fontWeight: FontWeight.w600,
           fontSize: 12,
         ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 12,
-        ),
+        unselectedLabelStyle: const TextStyle(fontSize: 12),
         elevation: 8,
-        items: _navItems,
+        items: navItems,
       ),
     );
   }

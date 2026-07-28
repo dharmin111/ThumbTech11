@@ -41,7 +41,10 @@ class FirebaseFirestoreService {
       };
 
       // Save to Firestore
-      await _firestore.collection('users').doc(userId).set(technicianData, SetOptions(merge: true));
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .set(technicianData, SetOptions(merge: true));
 
       print('✅ Technician data saved successfully');
       print('📊 Service Areas: ${pincodes.join(", ")}');
@@ -54,10 +57,7 @@ class FirebaseFirestoreService {
       };
     } catch (e) {
       print('❌ Error saving technician data: $e');
-      return {
-        'success': false,
-        'message': 'Failed to save data: $e',
-      };
+      return {'success': false, 'message': 'Failed to save data: $e'};
     }
   }
 
@@ -129,7 +129,7 @@ class FirebaseFirestoreService {
 
       // Update single pincode field if needed
       final doc = await _firestore.collection('users').doc(userId).get();
-      final data = doc.data() as Map<String, dynamic>?;
+      final data = doc.data();
       final currentPincodes = List<String>.from(data?['pincodes'] ?? []);
 
       if (currentPincodes.isNotEmpty) {
@@ -189,7 +189,10 @@ class FirebaseFirestoreService {
   /// Get complete technician data
   Future<Map<String, dynamic>?> getTechnicianData(String userId) async {
     try {
-      DocumentSnapshot doc = await _firestore.collection('users').doc(userId).get();
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .get();
       if (doc.exists) {
         return doc.data() as Map<String, dynamic>;
       }
@@ -203,15 +206,20 @@ class FirebaseFirestoreService {
   /// Get technician pincodes only
   Future<List<String>> getTechnicianPincodes(String userId) async {
     try {
-      DocumentSnapshot doc = await _firestore.collection('users').doc(userId).get();
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .get();
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>?;
         // First try to get pincodes array
-        if (data?['pincodes'] != null && (data?['pincodes'] as List).isNotEmpty) {
+        if (data?['pincodes'] != null &&
+            (data?['pincodes'] as List).isNotEmpty) {
           return List<String>.from(data!['pincodes']);
         }
         // Fallback to single pincode
-        else if (data?['pincode'] != null && data!['pincode'].toString().isNotEmpty) {
+        else if (data?['pincode'] != null &&
+            data!['pincode'].toString().isNotEmpty) {
           return [data['pincode'].toString()];
         }
       }
@@ -225,7 +233,10 @@ class FirebaseFirestoreService {
   /// Get technician categories only
   Future<List<String>> getTechnicianCategories(String userId) async {
     try {
-      DocumentSnapshot doc = await _firestore.collection('users').doc(userId).get();
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .get();
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>?;
         return List<String>.from(data?['categories'] ?? []);
@@ -285,7 +296,10 @@ class FirebaseFirestoreService {
   /// Check if technician exists
   Future<bool> technicianExists(String userId) async {
     try {
-      DocumentSnapshot doc = await _firestore.collection('users').doc(userId).get();
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .get();
       return doc.exists;
     } catch (e) {
       print('❌ Error checking technician existence: $e');

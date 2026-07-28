@@ -9,11 +9,13 @@ class AdminSignupScreen extends StatefulWidget {
   @override
   State<AdminSignupScreen> createState() => _AdminSignupScreenState();
 }
+
 class _AdminSignupScreenState extends State<AdminSignupScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _adminCodeController = TextEditingController();
 
@@ -25,7 +27,8 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // ✅ Admin Registration Code (Security)
-  final String _adminSecretCode = 'ADMIN2024'; // Change this to your secret code
+  final String _adminSecretCode =
+      'ADMIN2024'; // Change this to your secret code
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +45,10 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                 Align(
                   alignment: Alignment.topLeft,
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Color(0xFF2563EB)),
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: Color(0xFF2563EB),
+                    ),
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
@@ -60,7 +66,7 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withOpacity(0.1),
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -81,10 +87,7 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Create your admin account',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 24),
 
@@ -98,7 +101,10 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                   child: TextField(
                     controller: _nameController,
                     decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.person, color: Color(0xFF2563EB)),
+                      prefixIcon: const Icon(
+                        Icons.person,
+                        color: Color(0xFF2563EB),
+                      ),
                       hintText: 'Full Name',
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: 16),
@@ -118,7 +124,10 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.email, color: Color(0xFF2563EB)),
+                      prefixIcon: const Icon(
+                        Icons.email,
+                        color: Color(0xFF2563EB),
+                      ),
                       hintText: 'Email Address',
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: 16),
@@ -138,7 +147,10 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
                     decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.phone, color: Color(0xFF2563EB)),
+                      prefixIcon: const Icon(
+                        Icons.phone,
+                        color: Color(0xFF2563EB),
+                      ),
                       hintText: 'Phone Number',
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: 16),
@@ -158,7 +170,10 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                     controller: _adminCodeController,
                     obscureText: true,
                     decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.vpn_key, color: Color(0xFF2563EB)),
+                      prefixIcon: const Icon(
+                        Icons.vpn_key,
+                        color: Color(0xFF2563EB),
+                      ),
                       hintText: 'Admin Secret Code',
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: 16),
@@ -183,13 +198,18 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.lock, color: Color(0xFF2563EB)),
+                      prefixIcon: const Icon(
+                        Icons.lock,
+                        color: Color(0xFF2563EB),
+                      ),
                       hintText: 'Password (min 6 characters)',
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: 16),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
                           color: Colors.grey.shade600,
                         ),
                         onPressed: () {
@@ -214,13 +234,18 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                     controller: _confirmPasswordController,
                     obscureText: _obscureConfirmPassword,
                     decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF2563EB)),
+                      prefixIcon: const Icon(
+                        Icons.lock_outline,
+                        color: Color(0xFF2563EB),
+                      ),
                       hintText: 'Confirm Password',
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: 16),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                          _obscureConfirmPassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
                           color: Colors.grey.shade600,
                         ),
                         onPressed: () {
@@ -249,20 +274,20 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                     ),
                     child: _isLoading
                         ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
                         : const Text(
-                      'Register',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                            'Register',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -372,13 +397,13 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
       // 4. Navigate to Pending Screen
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => const AdminPendingScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const AdminPendingScreen()),
       );
 
-      _showSnackbar('Registration successful! Waiting for approval.', Colors.green);
-
+      _showSnackbar(
+        'Registration successful! Waiting for approval.',
+        Colors.green,
+      );
     } on FirebaseAuthException catch (e) {
       String message = 'Registration failed';
       if (e.code == 'email-already-in-use') {

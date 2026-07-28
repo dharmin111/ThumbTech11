@@ -38,7 +38,7 @@ class _AdminPendingScreenState extends State<AdminPendingScreen> {
                         width: 120,
                         height: 120,
                         decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.1),
+                          color: Colors.orange.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -64,19 +64,21 @@ class _AdminPendingScreenState extends State<AdminPendingScreen> {
 
                 const Text(
                   'Your admin account is waiting for approval.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
                 const SizedBox(height: 8),
 
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    border: Border.all(
+                      color: Colors.orange.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
@@ -114,7 +116,8 @@ class _AdminPendingScreenState extends State<AdminPendingScreen> {
                     }
 
                     if (snapshot.hasData && snapshot.data!.exists) {
-                      final data = snapshot.data!.data() as Map<String, dynamic>;
+                      final data =
+                          snapshot.data!.data() as Map<String, dynamic>;
                       final isApproved = data['isApproved'] ?? false;
 
                       if (isApproved) {
@@ -143,10 +146,7 @@ class _AdminPendingScreenState extends State<AdminPendingScreen> {
                         const SizedBox(height: 16),
                         const Text(
                           'Checking approval status...',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: Colors.grey, fontSize: 14),
                         ),
                       ],
                     );
@@ -187,9 +187,7 @@ class _AdminPendingScreenState extends State<AdminPendingScreen> {
     await _auth.signOut();
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AdminLoginScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
     );
   }
 }

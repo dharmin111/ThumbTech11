@@ -38,10 +38,10 @@ class _ServiceRequestDetailScreenState
 
   bool _isSubmitting = false;
   String _selectedServiceType = 'Washing Machine Cleaning';
-  bool _showForm = false;
+  final bool _showForm = false;
 
   final FirebaseFirestoreStorageCustomerOrder _firestoreService =
-  FirebaseFirestoreStorageCustomerOrder();
+      FirebaseFirestoreStorageCustomerOrder();
 
   final String _videoId = '4W5nWPEoy7Y';
 
@@ -215,6 +215,7 @@ class _ServiceRequestDetailScreenState
       _showSnackbar('Error: $e', Colors.red);
     }
   }
+
   // Future<void> _submitRequest() async {
   //   final user = FirebaseAuth.instance.currentUser;
   //   if (user == null) {
@@ -328,9 +329,7 @@ class _ServiceRequestDetailScreenState
           elevation: 0,
           foregroundColor: Colors.black87,
         ),
-        body: const Center(
-          child: Text('Request not found'),
-        ),
+        body: const Center(child: Text('Request not found')),
       );
     }
 
@@ -343,17 +342,15 @@ class _ServiceRequestDetailScreenState
           data['serviceName'] ?? 'Service Request',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.black87,fontSize:18
+            color: Colors.black87,
+            fontSize: 18,
           ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black87,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {},
-          ),
+          IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
         ],
       ),
       body: SingleChildScrollView(
@@ -407,7 +404,7 @@ class _ServiceRequestDetailScreenState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -425,7 +422,7 @@ class _ServiceRequestDetailScreenState
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF42D7D7).withOpacity(0.1),
+                  color: const Color(0xFF42D7D7).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(
@@ -555,7 +552,7 @@ class _ServiceRequestDetailScreenState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -612,7 +609,7 @@ class _ServiceRequestDetailScreenState
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.15),
+              color: Colors.grey.withValues(alpha: 0.15),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -654,7 +651,7 @@ class _ServiceRequestDetailScreenState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -697,7 +694,7 @@ class _ServiceRequestDetailScreenState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -725,7 +722,8 @@ class _ServiceRequestDetailScreenState
           _buildDetailRow('Preferred Date', data['preferredDate'] ?? 'N/A'),
           _buildDetailRow('Preferred Time', data['preferredTime'] ?? 'N/A'),
           _buildDetailRow('Issue Description', data['issue'] ?? 'N/A'),
-          if (data['additionalNote'] != null && data['additionalNote'].isNotEmpty)
+          if (data['additionalNote'] != null &&
+              data['additionalNote'].isNotEmpty)
             _buildDetailRow('Additional Note', data['additionalNote']),
         ],
       ),
@@ -950,7 +948,7 @@ class _ServiceRequestDetailScreenState
   //     ),
   //   );
   // }
-// 🔥 ==================== BOOKING FORM ====================
+  // 🔥 ==================== BOOKING FORM ====================
   Widget _buildBookingForm() {
     // 🔥 Fixed Budget
     final double fixedBudget = 999.0;
@@ -963,7 +961,7 @@ class _ServiceRequestDetailScreenState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -999,7 +997,11 @@ class _ServiceRequestDetailScreenState
             ),
             child: Row(
               children: [
-                const Icon(Icons.cleaning_services, color: Color(0xFF42D7D7), size: 20),
+                const Icon(
+                  Icons.cleaning_services,
+                  color: Color(0xFF42D7D7),
+                  size: 20,
+                ),
                 const SizedBox(width: 10),
                 Text(
                   _selectedServiceType,
@@ -1026,7 +1028,11 @@ class _ServiceRequestDetailScreenState
             ),
             child: Row(
               children: [
-                const Icon(Icons.currency_rupee, color: Color(0xFF42D7D7), size: 20),
+                const Icon(
+                  Icons.currency_rupee,
+                  color: Color(0xFF42D7D7),
+                  size: 20,
+                ),
                 const SizedBox(width: 10),
                 Text(
                   '₹${fixedBudget.toStringAsFixed(0)}',
@@ -1039,10 +1045,7 @@ class _ServiceRequestDetailScreenState
                 const SizedBox(width: 8),
                 Text(
                   '(Fixed Price)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -1063,7 +1066,11 @@ class _ServiceRequestDetailScreenState
                 // 🔥 Line 1: Price Applies to Top Load Machine only
                 Row(
                   children: [
-                    Icon(Icons.info_outline, size: 16, color: Colors.amber.shade700),
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Colors.amber.shade700,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -1191,9 +1198,11 @@ class _ServiceRequestDetailScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF42D7D7).withOpacity(0.05),
+              color: const Color(0xFF42D7D7).withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF42D7D7).withOpacity(0.2)),
+              border: Border.all(
+                color: const Color(0xFF42D7D7).withValues(alpha: 0.2),
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1236,25 +1245,26 @@ class _ServiceRequestDetailScreenState
               child: _isSubmitting
                   ? const CircularProgressIndicator(color: Colors.white)
                   : const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.book_online, size: 24),
-                  SizedBox(width: 8),
-                  Text(
-                    'Book Now',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.book_online, size: 24),
+                        SizedBox(width: 8),
+                        Text(
+                          'Book Now',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
             ),
           ),
         ],
       ),
     );
   }
+
   Widget _buildFormLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -1279,7 +1289,7 @@ class _ServiceRequestDetailScreenState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1340,10 +1350,7 @@ class _ServiceRequestDetailScreenState
                 Expanded(
                   child: Text(
                     'Accept the request to connect with the customer. You can call or chat to confirm and provide the service.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ),
               ],
@@ -1360,17 +1367,13 @@ class _ServiceRequestDetailScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.timer_outlined,
-            size: 14,
-            color: color,
-          ),
+          Icon(Icons.timer_outlined, size: 14, color: color),
           const SizedBox(width: 4),
           Text(
             time,
@@ -1405,10 +1408,7 @@ class _ServiceRequestDetailScreenState
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Color(0xFF0C1B4D),
-              ),
+              style: const TextStyle(fontSize: 13, color: Color(0xFF0C1B4D)),
             ),
           ),
         ],
@@ -1437,8 +1437,18 @@ class _ServiceRequestDetailScreenState
 
   String _getMonth(int month) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return months[month - 1];
   }

@@ -30,21 +30,36 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
 
   String getServiceDescription() {
     Map<String, String> descriptions = {
-      'Washing Machine Repair': 'Expert washing machine repair services including drum replacement, motor repair, water leakage fixes, and electronic board troubleshooting. We handle all major brands with warranty on parts.',
-      'Microwave Repair': 'Professional microwave repair for all issues including heating problems, sparking, turntable not rotating, and keypad malfunction. Same-day service available.',
-      'Refrigerator Repair': 'Complete refrigerator repair services including cooling issues, gas refilling, compressor replacement, and thermostat repair. 90-day service warranty.',
-      'AC Repair & Service': 'Comprehensive AC services including gas refilling, compressor repair, filter cleaning, and PCB repair. Annual maintenance contracts available.',
-      'Geyser Repair': 'Expert geyser repair and installation services for all types. We fix heating issues, leaks, thermostat problems, and safety valve replacements.',
-      'Air Cooler Repair': 'Professional air cooler services including pump repair, pad replacement, motor servicing, and complete cleaning. Summer-ready maintenance packages.',
-      'TV Repair': 'LCD, LED, and Smart TV repair specialists. We fix display issues, sound problems, motherboard repair, and power supply issues.',
-      'Plumbing Service': '24/7 plumbing services for all emergency repairs. Fixing leaks, unclogging drains, installing fixtures, and complete bathroom renovation.',
-      'Carpenter': 'Skilled carpenters for all woodwork needs. Furniture repair, custom cabinets, door and window fitting, and wooden flooring installation.',
-      'CCTV Installation & Services': 'Professional CCTV installation for homes and businesses. We provide camera installation, DVR setup, mobile viewing configuration, and maintenance.',
-      'Water Purifier / RO Service': 'Thorough water tank cleaning and disinfection services. We use professional equipment and eco-friendly cleaning solutions.',
-      'Electrical Work': 'Licensed electricians for all electrical work including wiring, switchboard installation, fan and light fitting, and circuit breaker repair.',
-      'Chimney Repair': 'Kitchen chimney repair and maintenance services. We clean filters, repair motors, fix control panels, and provide installation services.',
-      'Furniture Assembly': 'Professional furniture assembly for all types. We assemble beds, sofas, tables, chairs, wardrobes, and office furniture quickly.',
-      'Water Tank Cleaning': 'Professional cleaning and disinfection of water tanks to ensure safe, clean water supply for your home or business.',
+      'Washing Machine Repair':
+          'Expert washing machine repair services including drum replacement, motor repair, water leakage fixes, and electronic board troubleshooting. We handle all major brands with warranty on parts.',
+      'Microwave Repair':
+          'Professional microwave repair for all issues including heating problems, sparking, turntable not rotating, and keypad malfunction. Same-day service available.',
+      'Refrigerator Repair':
+          'Complete refrigerator repair services including cooling issues, gas refilling, compressor replacement, and thermostat repair. 90-day service warranty.',
+      'AC Repair & Service':
+          'Comprehensive AC services including gas refilling, compressor repair, filter cleaning, and PCB repair. Annual maintenance contracts available.',
+      'Geyser Repair':
+          'Expert geyser repair and installation services for all types. We fix heating issues, leaks, thermostat problems, and safety valve replacements.',
+      'Air Cooler Repair':
+          'Professional air cooler services including pump repair, pad replacement, motor servicing, and complete cleaning. Summer-ready maintenance packages.',
+      'TV Repair':
+          'LCD, LED, and Smart TV repair specialists. We fix display issues, sound problems, motherboard repair, and power supply issues.',
+      'Plumbing Service':
+          '24/7 plumbing services for all emergency repairs. Fixing leaks, unclogging drains, installing fixtures, and complete bathroom renovation.',
+      'Carpenter':
+          'Skilled carpenters for all woodwork needs. Furniture repair, custom cabinets, door and window fitting, and wooden flooring installation.',
+      'CCTV Installation & Services':
+          'Professional CCTV installation for homes and businesses. We provide camera installation, DVR setup, mobile viewing configuration, and maintenance.',
+      'Water Purifier / RO Service':
+          'Thorough water tank cleaning and disinfection services. We use professional equipment and eco-friendly cleaning solutions.',
+      'Electrical Work':
+          'Licensed electricians for all electrical work including wiring, switchboard installation, fan and light fitting, and circuit breaker repair.',
+      'Chimney Repair':
+          'Kitchen chimney repair and maintenance services. We clean filters, repair motors, fix control panels, and provide installation services.',
+      'Furniture Assembly':
+          'Professional furniture assembly for all types. We assemble beds, sofas, tables, chairs, wardrobes, and office furniture quickly.',
+      'Water Tank Cleaning':
+          'Professional cleaning and disinfection of water tanks to ensure safe, clean water supply for your home or business.',
     };
 
     return descriptions[widget.serviceName] ??
@@ -91,10 +106,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
               const SizedBox(height: 10),
               const Text(
                 'Choose Option',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const Divider(),
               ListTile(
@@ -153,9 +165,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
 
   Future<void> _pickImagesFromGallery() async {
     try {
-      final List<XFile> images = await _picker.pickMultiImage(
-        imageQuality: 80,
-      );
+      final List<XFile> images = await _picker.pickMultiImage(imageQuality: 80);
 
       if (images.isNotEmpty) {
         setState(() {
@@ -218,7 +228,10 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [primaryCyan.withOpacity(0.1), lightBlue.withOpacity(0.1)],
+                  colors: [
+                    primaryCyan.withValues(alpha: 0.1),
+                    lightBlue.withValues(alpha: 0.1),
+                  ],
                 ),
               ),
               child: Column(
@@ -237,7 +250,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                     getServiceDescription(),
                     style: TextStyle(
                       fontSize: 14,
-                      color: darkBlue.withOpacity(0.7),
+                      color: darkBlue.withValues(alpha: 0.7),
                       height: 1.4,
                     ),
                   ),
@@ -255,7 +268,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: darkBlue.withOpacity(0.8),
+                  color: darkBlue.withValues(alpha: 0.8),
                 ),
               ),
             ),
@@ -263,7 +276,10 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   border: Border.all(color: Colors.grey.shade300),
@@ -302,7 +318,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: darkBlue.withOpacity(0.8),
+                  color: darkBlue.withValues(alpha: 0.8),
                 ),
               ),
             ),
@@ -324,7 +340,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                   },
                   decoration: const InputDecoration(
                     hintText: 'Enter your area pincode',
-                    hintStyle: TextStyle(fontSize:14,color: Colors.grey),
+                    hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.all(12),
                     counterText: '',
@@ -343,7 +359,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: darkBlue.withOpacity(0.8),
+                  color: darkBlue.withValues(alpha: 0.8),
                 ),
               ),
             ),
@@ -364,7 +380,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                   },
                   decoration: const InputDecoration(
                     hintText: 'Enter your complete address',
-                    hintStyle: TextStyle(fontSize:14,color: Colors.grey),
+                    hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.all(12),
                   ),
@@ -382,7 +398,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: darkBlue.withOpacity(0.8),
+                  color: darkBlue.withValues(alpha: 0.8),
                 ),
               ),
             ),
@@ -403,7 +419,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                   },
                   decoration: const InputDecoration(
                     hintText: 'Please describe your issue in detail...',
-                    hintStyle: TextStyle(fontSize:14,color: Colors.grey),
+                    hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.all(12),
                   ),
@@ -429,7 +445,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: darkBlue.withOpacity(0.8),
+                            color: darkBlue.withValues(alpha: 0.8),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -438,7 +454,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w400,
-                            color: darkBlue.withOpacity(0.6),
+                            color: darkBlue.withValues(alpha: 0.6),
                           ),
                         ),
                       ],
@@ -464,7 +480,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                       'Selected Images (${uploadedImages.length})',
                       style: TextStyle(
                         fontSize: 12,
-                        color: darkBlue.withOpacity(0.6),
+                        color: darkBlue.withValues(alpha: 0.6),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -483,10 +499,15 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
                                   image: DecorationImage(
-                                    image: FileImage(File(uploadedImages[index].path)),
+                                    image: FileImage(
+                                      File(uploadedImages[index].path),
+                                    ),
                                     fit: BoxFit.cover,
                                   ),
-                                  border: Border.all(color: primaryCyan, width: 1),
+                                  border: Border.all(
+                                    color: primaryCyan,
+                                    width: 1,
+                                  ),
                                 ),
                               ),
                               Positioned(
@@ -497,7 +518,9 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(4),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.7),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.7,
+                                      ),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
@@ -528,7 +551,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                       'Selected Images (${uploadedImages.length})',
                       style: TextStyle(
                         fontSize: 12,
-                        color: darkBlue.withOpacity(0.6),
+                        color: darkBlue.withValues(alpha: 0.6),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -547,10 +570,15 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
                                   image: DecorationImage(
-                                    image: FileImage(File(uploadedImages[index].path)),
+                                    image: FileImage(
+                                      File(uploadedImages[index].path),
+                                    ),
                                     fit: BoxFit.cover,
                                   ),
-                                  border: Border.all(color: primaryCyan, width: 1),
+                                  border: Border.all(
+                                    color: primaryCyan,
+                                    width: 1,
+                                  ),
                                 ),
                               ),
                               Positioned(
@@ -561,7 +589,9 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(4),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.7),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.7,
+                                      ),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
@@ -596,7 +626,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: darkBlue.withOpacity(0.8),
+                          color: darkBlue.withValues(alpha: 0.8),
                         ),
                       ),
                       const SizedBox(width: 5),
@@ -618,7 +648,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                       },
                       decoration: const InputDecoration(
                         hintText: 'Share Your Approximate Budget, If Any',
-                        hintStyle: TextStyle(fontSize:12,color: Colors.grey),
+                        hintStyle: TextStyle(fontSize: 12, color: Colors.grey),
                         prefixText: '₹',
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.all(12),
@@ -628,10 +658,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                   const SizedBox(height: 4),
                   Text(
                     '   Leave Blank If You Are Unsure',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color:Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey),
                   ),
                 ],
               ),
@@ -659,28 +686,26 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
-                    children: [
-                      Text(
-                        'A technician visit may include a visit/inspection charge.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade800,
-                          height: 1.5,
-                        ),
+                        children: [
+                          Text(
+                            'A technician visit may include a visit/inspection charge.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade800,
+                              height: 1.5,
+                            ),
+                          ),
+                          Text(
+                            'Please confirm the charges with the technician before the visit.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade800,
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        'Please confirm the charges with the technician before the visit.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade800,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                    )
-
-
                     ),
                   ],
                 ),

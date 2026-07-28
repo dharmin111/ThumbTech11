@@ -40,7 +40,7 @@ class ReviewScreen extends StatefulWidget {
 
 class _ReviewScreenState extends State<ReviewScreen> {
   final FirebaseFirestoreStorageCustomerOrder _firebaseService =
-  FirebaseFirestoreStorageCustomerOrder();
+      FirebaseFirestoreStorageCustomerOrder();
 
   bool _isProcessing = false;
   String additionalNote = '';
@@ -82,7 +82,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
               'Pincode: ${widget.pincode}',
               style: TextStyle(
                 fontSize: 12,
-                color: darkBlue.withOpacity(0.6),
+                color: darkBlue.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -237,10 +237,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                             },
                             child: RichText(
                               text: TextSpan(
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: darkBlue,
-                                ),
+                                style: TextStyle(fontSize: 14, color: darkBlue),
                                 children: [
                                   const TextSpan(text: 'I agree to the '),
                                   TextSpan(
@@ -322,10 +319,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   },
                   child: const Text(
                     'Cancel',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: darkBlue,
-                    ),
+                    style: TextStyle(fontSize: 14, color: darkBlue),
                   ),
                 ),
                 ElevatedButton(
@@ -348,14 +342,14 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                   ),
                   child: const Text(
                     'Confirm Booking',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -397,10 +391,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
               const SizedBox(height: 16),
               Text(
                 'Uploading images and finding technicians...',
-                style: TextStyle(
-                  color: darkBlue,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(color: darkBlue, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -445,7 +436,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Service booked successfully! Technicians will be notified.'),
+          content: Text(
+            'Service booked successfully! Technicians will be notified.',
+          ),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 3),
         ),
@@ -512,7 +505,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -525,7 +518,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: primaryCyan.withOpacity(0.1),
+                      color: primaryCyan.withValues(alpha: 0.1),
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20),
@@ -544,7 +537,11 @@ class _ReviewScreenState extends State<ReviewScreen> {
                             height: 20,
                             width: 20,
                             errorBuilder: (context, error, stackTrace) {
-                              return const Icon(Icons.build, color: Colors.white, size: 20);
+                              return const Icon(
+                                Icons.build,
+                                color: Colors.white,
+                                size: 20,
+                              );
                             },
                           ),
                         ),
@@ -687,7 +684,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: darkBlue.withOpacity(0.8),
+                        color: darkBlue.withValues(alpha: 0.8),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -704,7 +701,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
                               image: DecorationImage(
-                                image: FileImage(File(widget.images[index].path)),
+                                image: FileImage(
+                                  File(widget.images[index].path),
+                                ),
                                 fit: BoxFit.cover,
                               ),
                             ),
@@ -724,7 +723,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
               child: Column(
                 children: [
                   ElevatedButton(
-                    onPressed: _isProcessing ? null : _checkAvailabilityAndConfirm,
+                    onPressed: _isProcessing
+                        ? null
+                        : _checkAvailabilityAndConfirm,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryCyan,
                       foregroundColor: Colors.white,
@@ -736,27 +737,29 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     ),
                     child: _isProcessing
                         ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
                         : const Text(
-                      'Confirm Booking',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                            'Confirm Booking',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     'You don\'t have to pay anything now.',
                     style: TextStyle(
                       fontSize: 12,
-                      color: darkBlue.withOpacity(0.5),
+                      color: darkBlue.withValues(alpha: 0.5),
                     ),
                   ),
                 ],
@@ -779,7 +782,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
+        SizedBox(
           width: 32,
           height: 32,
           child: Image.asset(
@@ -812,7 +815,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: darkBlue.withOpacity(0.6),
+                  color: darkBlue.withValues(alpha: 0.6),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -828,12 +831,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
             ],
           ),
         ),
-        if (showEditIcon)
-          const Icon(
-            Icons.edit,
-            size: 18,
-            color: primaryCyan,
-          ),
+        if (showEditIcon) const Icon(Icons.edit, size: 18, color: primaryCyan),
       ],
     );
   }
@@ -858,7 +856,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
   }
 
   void _showAdditionalNoteDialog() {
-    TextEditingController controller = TextEditingController(text: additionalNote);
+    TextEditingController controller = TextEditingController(
+      text: additionalNote,
+    );
 
     showDialog(
       context: context,
@@ -885,9 +885,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                 });
                 Navigator.pop(context);
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryCyan,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: primaryCyan),
               child: const Text('Save'),
             ),
           ],

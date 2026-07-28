@@ -9,10 +9,12 @@ class TechnicianMyServicesScreen extends StatefulWidget {
   const TechnicianMyServicesScreen({super.key});
 
   @override
-  State<TechnicianMyServicesScreen> createState() => _TechnicianMyServicesScreenState();
+  State<TechnicianMyServicesScreen> createState() =>
+      _TechnicianMyServicesScreenState();
 }
 
-class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen> {
+class _TechnicianMyServicesScreenState
+    extends State<TechnicianMyServicesScreen> {
   List<QueryDocumentSnapshot> acceptedRequests = [];
   List<QueryDocumentSnapshot> completedRequests = [];
   bool isLoading = true;
@@ -87,7 +89,9 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
   }
 
   // Fetch phone numbers for all accepted requests
-  Future<void> _fetchPhoneNumbersForRequests(List<QueryDocumentSnapshot> requests) async {
+  Future<void> _fetchPhoneNumbersForRequests(
+    List<QueryDocumentSnapshot> requests,
+  ) async {
     for (var request in requests) {
       final data = request.data() as Map<String, dynamic>;
       final customerId = data['userId'];
@@ -100,7 +104,10 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
   }
 
   // Get customer phone number from user document
-  Future<String> _getCustomerPhoneNumber(String customerId, String requestId) async {
+  Future<String> _getCustomerPhoneNumber(
+    String customerId,
+    String requestId,
+  ) async {
     // Check cache first
     if (_phoneNumberCache.containsKey(customerId)) {
       return _phoneNumberCache[customerId]!;
@@ -113,7 +120,8 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
           .get();
 
       if (userDoc.exists) {
-        final phone = userDoc.data()?['phoneNumber'] ?? userDoc.data()?['phone'] ?? '';
+        final phone =
+            userDoc.data()?['phoneNumber'] ?? userDoc.data()?['phone'] ?? '';
 
         if (phone.isNotEmpty) {
           // Save to cache
@@ -123,9 +131,7 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
           await FirebaseFirestore.instance
               .collection('service_requests')
               .doc(requestId)
-              .update({
-            'userPhone': phone,
-          });
+              .update({'userPhone': phone});
 
           print('✅ Updated phone for request $requestId: $phone');
 
@@ -150,15 +156,17 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
           .collection('service_requests')
           .doc(requestId)
           .update({
-        'status': 'completed',
-        'completedAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+            'status': 'completed',
+            'completedAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
 
       if (!_isActive || !mounted) return;
 
       // Move from accepted to completed list
-      var requestDoc = acceptedRequests.firstWhere((doc) => doc.id == requestId);
+      var requestDoc = acceptedRequests.firstWhere(
+        (doc) => doc.id == requestId,
+      );
       setState(() {
         acceptedRequests.removeWhere((doc) => doc.id == requestId);
         completedRequests.insert(0, requestDoc);
@@ -185,15 +193,11 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
           backgroundColor: Colors.green,
         ),
       );
-
     } catch (e) {
       print('Error completing request: $e');
       if (!_isActive || !mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -271,10 +275,7 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
           ),
           Expanded(
             child: TabBarView(
-              children: [
-                _buildActiveRequests(),
-                _buildCompletedRequests(),
-              ],
+              children: [_buildActiveRequests(), _buildCompletedRequests()],
             ),
           ),
         ],
@@ -348,7 +349,11 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
     );
   }
 
-  Widget _buildServiceCard(String requestId, Map<String, dynamic> data, {required bool isActive}) {
+  Widget _buildServiceCard(
+    String requestId,
+    Map<String, dynamic> data, {
+    required bool isActive,
+  }) {
     String customerName = data['userName'] ?? 'Customer';
     String customerId = data['userId'] ?? '';
     String customerPhone = data['userPhone'] ?? '';
@@ -373,7 +378,7 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -388,7 +393,7 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB).withOpacity(0.1),
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -422,11 +427,14 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: isActive
-                      ? Colors.blue.withOpacity(0.1)
-                      : Colors.green.withOpacity(0.1),
+                      ? Colors.blue.withValues(alpha: 0.1)
+                      : Colors.green.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -448,10 +456,7 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
               const Icon(Icons.person_outline, size: 16, color: Colors.grey),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  customerName,
-                  style: const TextStyle(fontSize: 14),
-                ),
+                child: Text(customerName, style: const TextStyle(fontSize: 14)),
               ),
             ],
           ),
@@ -465,10 +470,14 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
                   children: [
                     Expanded(
                       child: Text(
-                        customerPhone.isEmpty ? 'Fetching number...' : customerPhone,
+                        customerPhone.isEmpty
+                            ? 'Fetching number...'
+                            : customerPhone,
                         style: TextStyle(
                           fontSize: 14,
-                          color: customerPhone.isEmpty ? Colors.grey : Colors.black,
+                          color: customerPhone.isEmpty
+                              ? Colors.grey
+                              : Colors.black,
                         ),
                       ),
                     ),
@@ -489,7 +498,11 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+              const Icon(
+                Icons.location_on_outlined,
+                size: 16,
+                color: Colors.grey,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -515,10 +528,7 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    data['issue'],
-                    style: const TextStyle(fontSize: 12),
-                  ),
+                  Text(data['issue'], style: const TextStyle(fontSize: 12)),
                 ],
               ),
             ),
@@ -529,7 +539,8 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => _openChat(requestId, customerId, customerName),
+                    onPressed: () =>
+                        _openChat(requestId, customerId, customerName),
                     icon: const Icon(Icons.chat, size: 18),
                     label: const Text('Chat'),
                     style: OutlinedButton.styleFrom(
@@ -542,7 +553,9 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: customerPhone.isEmpty ? null : () => _makePhoneCall(customerPhone),
+                    onPressed: customerPhone.isEmpty
+                        ? null
+                        : () => _makePhoneCall(customerPhone),
                     icon: const Icon(Icons.call, size: 18),
                     label: const Text('Call'),
                     style: OutlinedButton.styleFrom(
@@ -580,6 +593,7 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
       ),
     );
   }
+
   void _showCompletedDetails(Map<String, dynamic> data) {
     showDialog(
       context: context,
@@ -602,7 +616,10 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
               const SizedBox(height: 8),
               _buildDetailRow('Issue', data['issue'] ?? 'N/A'),
               if (data['completedAt'] != null)
-                _buildDetailRow('Completed On', _formatDate(data['completedAt'])),
+                _buildDetailRow(
+                  'Completed On',
+                  _formatDate(data['completedAt']),
+                ),
             ],
           ),
         ),
@@ -627,12 +644,7 @@ class _TechnicianMyServicesScreenState extends State<TechnicianMyServicesScreen>
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           ),
         ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 13),
-          ),
-        ),
+        Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
       ],
     );
   }

@@ -17,7 +17,8 @@ class AdminTodayActivityScreen extends StatefulWidget {
   });
 
   @override
-  State<AdminTodayActivityScreen> createState() => _AdminTodayActivityScreenState();
+  State<AdminTodayActivityScreen> createState() =>
+      _AdminTodayActivityScreenState();
 }
 
 class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
@@ -61,25 +62,28 @@ class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
             .collection('service_requests')
             .get();
 
-        _items = snapshot.docs
-            .where((doc) {
-          final data = doc.data();
-          final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-          return createdAt != null &&
-              createdAt.isAfter(today) &&
-              createdAt.isBefore(tomorrow);
-        })
-            .map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id; // ✅ Add document ID
-          return data;
-        })
-            .toList()
-          ..sort((a, b) {
-            final aDate = (a['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
-            final bDate = (b['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
-            return bDate.compareTo(aDate);
-          });
+        _items =
+            snapshot.docs
+                .where((doc) {
+                  final data = doc.data();
+                  final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
+                  return createdAt != null &&
+                      createdAt.isAfter(today) &&
+                      createdAt.isBefore(tomorrow);
+                })
+                .map((doc) {
+                  final data = doc.data();
+                  data['id'] = doc.id; // ✅ Add document ID
+                  return data;
+                })
+                .toList()
+              ..sort((a, b) {
+                final aDate =
+                    (a['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+                final bDate =
+                    (b['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+                return bDate.compareTo(aDate);
+              });
       } else {
         // ✅ Load Today's Users (Customers, Technicians, All Users)
         final snapshot = await FirebaseFirestore.instance
@@ -88,17 +92,17 @@ class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
 
         var users = snapshot.docs
             .where((doc) {
-          final data = doc.data();
-          final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-          return createdAt != null &&
-              createdAt.isAfter(today) &&
-              createdAt.isBefore(tomorrow);
-        })
+              final data = doc.data();
+              final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
+              return createdAt != null &&
+                  createdAt.isAfter(today) &&
+                  createdAt.isBefore(tomorrow);
+            })
             .map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id; // ✅ Add document ID
-          return data;
-        })
+              final data = doc.data();
+              data['id'] = doc.id; // ✅ Add document ID
+              return data;
+            })
             .toList();
 
         // Filter by type
@@ -109,8 +113,10 @@ class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
         }
 
         users.sort((a, b) {
-          final aDate = (a['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
-          final bDate = (b['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+          final aDate =
+              (a['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+          final bDate =
+              (b['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
           return bDate.compareTo(aDate);
         });
 
@@ -138,10 +144,7 @@ class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
       appBar: AppBar(
         title: Text(
           _getTitle(),
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
@@ -156,10 +159,10 @@ class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
       ),
       body: _isLoading
           ? const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
-        ),
-      )
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+              ),
+            )
           : _buildBody(),
     );
   }
@@ -206,10 +209,7 @@ class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
             const SizedBox(height: 8),
             Text(
               'All caught up! 🎉',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade500,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -250,7 +250,7 @@ class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -279,16 +279,19 @@ class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
                         _getSubtitle(),
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -365,13 +368,15 @@ class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isHovering ? statusColor.withOpacity(0.3) : Colors.transparent,
+                color: isHovering
+                    ? statusColor.withValues(alpha: 0.3)
+                    : Colors.transparent,
               ),
               boxShadow: [
                 BoxShadow(
                   color: isHovering
-                      ? statusColor.withOpacity(0.15)
-                      : Colors.grey.withOpacity(0.05),
+                      ? statusColor.withValues(alpha: 0.15)
+                      : Colors.grey.withValues(alpha: 0.05),
                   blurRadius: isHovering ? 16 : 8,
                   offset: Offset(0, isHovering ? 6 : 2),
                 ),
@@ -382,7 +387,7 @@ class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(statusIcon, color: statusColor, size: 22),
@@ -411,9 +416,12 @@ class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: statusColor.withOpacity(0.1),
+                              color: statusColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -469,10 +477,16 @@ class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
       final name = item['name'] ?? 'Unknown User';
       final email = item['email'] ?? 'No Email';
 
-      Color roleColor = role == 'technician' ? Colors.blue :
-      role == 'admin' ? Colors.purple : Colors.green;
-      IconData roleIcon = role == 'technician' ? Icons.build :
-      role == 'admin' ? Icons.admin_panel_settings : Icons.person;
+      Color roleColor = role == 'technician'
+          ? Colors.blue
+          : role == 'admin'
+          ? Colors.purple
+          : Colors.green;
+      IconData roleIcon = role == 'technician'
+          ? Icons.build
+          : role == 'admin'
+          ? Icons.admin_panel_settings
+          : Icons.person;
 
       return HoverScale(
         onTap: () {
@@ -496,13 +510,15 @@ class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isHovering ? roleColor.withOpacity(0.3) : Colors.transparent,
+                color: isHovering
+                    ? roleColor.withValues(alpha: 0.3)
+                    : Colors.transparent,
               ),
               boxShadow: [
                 BoxShadow(
                   color: isHovering
-                      ? roleColor.withOpacity(0.15)
-                      : Colors.grey.withOpacity(0.05),
+                      ? roleColor.withValues(alpha: 0.15)
+                      : Colors.grey.withValues(alpha: 0.05),
                   blurRadius: isHovering ? 16 : 8,
                   offset: Offset(0, isHovering ? 6 : 2),
                 ),
@@ -511,7 +527,7 @@ class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
             child: Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: roleColor.withOpacity(0.1),
+                  backgroundColor: roleColor.withValues(alpha: 0.1),
                   child: Icon(roleIcon, color: roleColor, size: 22),
                 ),
                 const SizedBox(width: 12),
@@ -537,9 +553,12 @@ class _AdminTodayActivityScreenState extends State<AdminTodayActivityScreen>
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: roleColor.withOpacity(0.1),
+                              color: roleColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -636,7 +655,9 @@ class _HoverIconButton extends StatelessWidget {
             duration: const Duration(milliseconds: 180),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: isHovering ? color.withOpacity(0.1) : Colors.transparent,
+              color: isHovering
+                  ? color.withValues(alpha: 0.1)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color),

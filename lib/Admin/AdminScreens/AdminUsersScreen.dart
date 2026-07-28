@@ -58,7 +58,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       ),
                       filled: true,
                       fillColor: Colors.grey.shade100,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
                     ),
                     onChanged: (value) => setState(() {}),
                   ),
@@ -68,18 +70,27 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   value: _selectedFilter,
                   items: const [
                     DropdownMenuItem(value: 'All', child: Text('All')),
-                    DropdownMenuItem(value: 'customer', child: Text('Customers')),
-                    DropdownMenuItem(value: 'technician', child: Text('Technicians')),
+                    DropdownMenuItem(
+                      value: 'customer',
+                      child: Text('Customers'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'technician',
+                      child: Text('Technicians'),
+                    ),
                     DropdownMenuItem(value: 'admin', child: Text('Admins')),
                   ],
-                  onChanged: (value) => setState(() => _selectedFilter = value!),
+                  onChanged: (value) =>
+                      setState(() => _selectedFilter = value!),
                 ),
               ],
             ),
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('users').snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -103,7 +114,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     final data = doc.data() as Map<String, dynamic>;
                     final name = data['name']?.toLowerCase() ?? '';
                     final email = data['email']?.toLowerCase() ?? '';
-                    return name.contains(searchQuery) || email.contains(searchQuery);
+                    return name.contains(searchQuery) ||
+                        email.contains(searchQuery);
                   }).toList();
                 }
 
@@ -159,10 +171,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AdminUserDetailScreen(
-                userId: userId,
-                userData: data,
-              ),
+              builder: (context) =>
+                  AdminUserDetailScreen(userId: userId, userData: data),
             ),
           );
         },
@@ -175,13 +185,15 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isHovering ? roleColor.withOpacity(0.35) : Colors.transparent,
+                color: isHovering
+                    ? roleColor.withValues(alpha: 0.35)
+                    : Colors.transparent,
               ),
               boxShadow: [
                 BoxShadow(
                   color: isHovering
-                      ? roleColor.withOpacity(0.18)
-                      : Colors.grey.withOpacity(0.05),
+                      ? roleColor.withValues(alpha: 0.18)
+                      : Colors.grey.withValues(alpha: 0.05),
                   blurRadius: isHovering ? 18 : 8,
                   offset: Offset(0, isHovering ? 8 : 2),
                 ),
@@ -194,7 +206,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: roleColor.withOpacity(isHovering ? 0.18 : 0.1),
+                    color: roleColor.withValues(alpha: isHovering ? 0.18 : 0.1),
                   ),
                   child: CircleAvatar(
                     backgroundColor: Colors.transparent,
@@ -228,9 +240,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: roleColor.withOpacity(0.1),
+                              color: roleColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -244,11 +259,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: isActive
-                                  ? Colors.green.withOpacity(0.1)
-                                  : Colors.red.withOpacity(0.1),
+                                  ? Colors.green.withValues(alpha: 0.1)
+                                  : Colors.red.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -265,15 +283,20 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                             Padding(
                               padding: const EdgeInsets.only(left: 8),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: (data['isApproved'] ?? false)
-                                      ? Colors.green.withOpacity(0.1)
-                                      : Colors.orange.withOpacity(0.1),
+                                      ? Colors.green.withValues(alpha: 0.1)
+                                      : Colors.orange.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  (data['isApproved'] ?? false) ? 'Approved' : 'Pending',
+                                  (data['isApproved'] ?? false)
+                                      ? 'Approved'
+                                      : 'Pending',
                                   style: TextStyle(
                                     fontSize: 10,
                                     color: (data['isApproved'] ?? false)
@@ -387,10 +410,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -420,7 +440,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
     if (confirm == true) {
       try {
-        await FirebaseFirestore.instance.collection('users').doc(userId).delete();
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .delete();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -433,10 +456,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: $e'),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
           );
         }
       }

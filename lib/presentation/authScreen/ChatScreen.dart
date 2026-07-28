@@ -13,7 +13,11 @@ import '../../model/MessageModel.dart';
 /// MARKER + replySenderName + MARKER + replySnippet + MARKER + actualMessage
 const String _kReplyMarker = '\u0001REPLY\u0001';
 
-String _encodeReplyMessage(String replySender, String replySnippet, String actual) {
+String _encodeReplyMessage(
+  String replySender,
+  String replySnippet,
+  String actual,
+) {
   return '$_kReplyMarker$replySender$_kReplyMarker$replySnippet$_kReplyMarker$actual';
 }
 
@@ -33,7 +37,11 @@ class _ReplyPreview {
   final String senderName;
   final String snippet;
   final bool isImage;
-  _ReplyPreview({required this.senderName, required this.snippet, this.isImage = false});
+  _ReplyPreview({
+    required this.senderName,
+    required this.snippet,
+    this.isImage = false,
+  });
 }
 
 class _PendingMessage {
@@ -48,8 +56,7 @@ class _PendingMessage {
     required this.text,
     this.imageLocalPath,
     required this.sentAt,
-    this.status = 'sending',
-  });
+  }) : status = 'sending';
 }
 
 class ChatScreen extends StatefulWidget {
@@ -79,7 +86,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final ImagePicker _imagePicker = ImagePicker();
   final FocusNode _focusNode = FocusNode(); // ✅ For keyboard handling
 
-  bool _isSending = false;
+  final bool _isSending = false;
   bool _isLoading = true;
   bool _isOtherUserOnline = false;
   DateTime? _otherUserLastSeen;
@@ -187,14 +194,14 @@ class _ChatScreenState extends State<ChatScreen> {
         .doc(widget.otherUserId)
         .snapshots()
         .listen((snapshot) {
-      if (snapshot.exists && mounted) {
-        final data = snapshot.data() as Map<String, dynamic>;
-        setState(() {
-          _isOtherUserOnline = data['isOnline'] ?? false;
-          _otherUserLastSeen = (data['lastSeen'] as Timestamp?)?.toDate();
+          if (snapshot.exists && mounted) {
+            final data = snapshot.data() as Map<String, dynamic>;
+            setState(() {
+              _isOtherUserOnline = data['isOnline'] ?? false;
+              _otherUserLastSeen = (data['lastSeen'] as Timestamp?)?.toDate();
+            });
+          }
         });
-      }
-    });
   }
 
   void _listenToTypingStatus() {
@@ -203,14 +210,15 @@ class _ChatScreenState extends State<ChatScreen> {
         .doc(widget.conversationId)
         .snapshots()
         .listen((snapshot) {
-      if (snapshot.exists && mounted) {
-        final data = snapshot.data() as Map<String, dynamic>;
-        final typingUserId = data['typingUserId'];
-        setState(() {
-          _isOtherUserTyping = typingUserId != null && typingUserId == widget.otherUserId;
+          if (snapshot.exists && mounted) {
+            final data = snapshot.data() as Map<String, dynamic>;
+            final typingUserId = data['typingUserId'];
+            setState(() {
+              _isOtherUserTyping =
+                  typingUserId != null && typingUserId == widget.otherUserId;
+            });
+          }
         });
-      }
-    });
   }
 
   void _onTyping() {
@@ -221,16 +229,18 @@ class _ChatScreenState extends State<ChatScreen> {
         .collection('conversations')
         .doc(widget.conversationId)
         .update({
-      'typingUserId': currentUser.uid,
-      'typingAt': FieldValue.serverTimestamp(),
-    }).catchError((_) {});
+          'typingUserId': currentUser.uid,
+          'typingAt': FieldValue.serverTimestamp(),
+        })
+        .catchError((_) {});
 
     _typingTimer?.cancel();
     _typingTimer = Timer(const Duration(seconds: 2), () {
       FirebaseFirestore.instance
           .collection('conversations')
           .doc(widget.conversationId)
-          .update({'typingUserId': null, 'typingAt': null}).catchError((_) {});
+          .update({'typingUserId': null, 'typingAt': null})
+          .catchError((_) {});
     });
   }
 
@@ -249,7 +259,8 @@ class _ChatScreenState extends State<ChatScreen> {
             .collection('users')
             .doc(currentUser.uid)
             .get();
-        final userName = userDoc.data()?['name'] ?? currentUser.displayName ?? 'User';
+        final userName =
+            userDoc.data()?['name'] ?? currentUser.displayName ?? 'User';
 
         final String customerId;
         final String customerName;
@@ -299,7 +310,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
     String finalMessage = rawText;
     if (_replyingTo != null) {
-      finalMessage = _encodeReplyMessage(_replyingTo!.senderName, _replyingTo!.snippet, rawText);
+      finalMessage = _encodeReplyMessage(
+        _replyingTo!.senderName,
+        _replyingTo!.snippet,
+        rawText,
+      );
     }
 
     final pending = _PendingMessage(
@@ -321,7 +336,8 @@ class _ChatScreenState extends State<ChatScreen> {
     FirebaseFirestore.instance
         .collection('conversations')
         .doc(widget.conversationId)
-        .update({'typingUserId': null}).catchError((_) {});
+        .update({'typingUserId': null})
+        .catchError((_) {});
 
     await _dispatchPendingText(pending);
   }
@@ -339,7 +355,9 @@ class _ChatScreenState extends State<ChatScreen> {
       // Fallback cleanup
       Future.delayed(const Duration(seconds: 4), () {
         if (mounted) {
-          setState(() => _pendingMessages.removeWhere((p) => p.id == pending.id));
+          setState(
+            () => _pendingMessages.removeWhere((p) => p.id == pending.id),
+          );
         }
       });
     } catch (e) {
@@ -382,7 +400,10 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             const SizedBox(height: 20),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFF2563EB)),
+              leading: const Icon(
+                Icons.photo_library,
+                color: Color(0xFF2563EB),
+              ),
               title: const Text('Choose from Gallery'),
               onTap: () {
                 Navigator.pop(context);
@@ -414,7 +435,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
       String messageText = '📷 Sent an image';
       if (_replyingTo != null) {
-        messageText = _encodeReplyMessage(_replyingTo!.senderName, _replyingTo!.snippet, messageText);
+        messageText = _encodeReplyMessage(
+          _replyingTo!.senderName,
+          _replyingTo!.snippet,
+          messageText,
+        );
       }
 
       final pending = _PendingMessage(
@@ -435,7 +460,10 @@ class _ChatScreenState extends State<ChatScreen> {
       await _dispatchPendingImage(pending);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking image: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Error picking image: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -461,7 +489,9 @@ class _ChatScreenState extends State<ChatScreen> {
         );
         Future.delayed(const Duration(seconds: 4), () {
           if (mounted) {
-            setState(() => _pendingMessages.removeWhere((p) => p.id == pending.id));
+            setState(
+              () => _pendingMessages.removeWhere((p) => p.id == pending.id),
+            );
           }
         });
       } else {
@@ -514,7 +544,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void _onNewMessage() {
     if (!_scrollController.hasClients) return;
     final isNearBottom =
-        _scrollController.position.maxScrollExtent - _scrollController.offset < 200;
+        _scrollController.position.maxScrollExtent - _scrollController.offset <
+        200;
     // Only yank the view if the user was already essentially at the bottom.
     if (isNearBottom) {
       _scrollToBottom(animated: true, force: true);
@@ -527,16 +558,20 @@ class _ChatScreenState extends State<ChatScreen> {
     final toRemove = <String>[];
     for (final p in _pendingMessages) {
       if (p.status == 'failed') continue;
-      final matched = liveMessages.any((m) =>
-      m.senderId == myUid &&
-          m.message == p.text &&
-          m.sentAt.difference(p.sentAt).inSeconds.abs() < 20);
+      final matched = liveMessages.any(
+        (m) =>
+            m.senderId == myUid &&
+            m.message == p.text &&
+            m.sentAt.difference(p.sentAt).inSeconds.abs() < 20,
+      );
       if (matched) toRemove.add(p.id);
     }
     if (toRemove.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          setState(() => _pendingMessages.removeWhere((p) => toRemove.contains(p.id)));
+          setState(
+            () => _pendingMessages.removeWhere((p) => toRemove.contains(p.id)),
+          );
         }
       });
     }
@@ -548,8 +583,10 @@ class _ChatScreenState extends State<ChatScreen> {
       final now = DateTime.now();
       final difference = now.difference(_otherUserLastSeen!);
       if (difference.inMinutes < 1) return 'Active now';
-      if (difference.inMinutes < 60) return 'Active ${difference.inMinutes} min ago';
-      if (difference.inHours < 24) return 'Active ${difference.inHours} hours ago';
+      if (difference.inMinutes < 60)
+        return 'Active ${difference.inMinutes} min ago';
+      if (difference.inHours < 24)
+        return 'Active ${difference.inHours} hours ago';
       return 'Last seen ${_otherUserLastSeen!.day}/${_otherUserLastSeen!.month}';
     }
     return 'Offline';
@@ -608,8 +645,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 Text(_getLastSeenText(), style: const TextStyle(fontSize: 10)),
                 if (_isOtherUserTyping) ...[
                   const SizedBox(width: 8),
-                  const Text('typing...',
-                      style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic)),
+                  const Text(
+                    'typing...',
+                    style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic),
+                  ),
                 ],
               ],
             ),
@@ -628,141 +667,179 @@ class _ChatScreenState extends State<ChatScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
-        children: [
-          Expanded(
-            child: Stack(
               children: [
-                StreamBuilder<List<MessageModel>>(
-                  stream: _messageService.getMessages(widget.conversationId),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-                            const SizedBox(height: 16),
-                            Text('Error: ${snapshot.error}'),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: () => _initializeChat(),
-                              child: const Text('Retry'),
-                            ),
-                          ],
+                Expanded(
+                  child: Stack(
+                    children: [
+                      StreamBuilder<List<MessageModel>>(
+                        stream: _messageService.getMessages(
+                          widget.conversationId,
                         ),
-                      );
-                    }
+                        builder: (context, snapshot) {
+                          if (snapshot.hasError) {
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.error_outline,
+                                    size: 64,
+                                    color: Colors.grey[400],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text('Error: ${snapshot.error}'),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton(
+                                    onPressed: () => _initializeChat(),
+                                    child: const Text('Retry'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
 
-                    if (!snapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+                          if (!snapshot.hasData) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
 
-                    final messages = snapshot.data!;
+                          final messages = snapshot.data!;
 
-                    // ✅ Check if new message arrived from other user
-                    if (messages.isNotEmpty) {
-                      final lastMsg = messages.last;
-                      if (lastMsg.senderId != currentUser.uid) {
-                        // ✅ Auto-scroll on new message from other user
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _onNewMessage();
-                        });
-                      }
-                    }
+                          // ✅ Check if new message arrived from other user
+                          if (messages.isNotEmpty) {
+                            final lastMsg = messages.last;
+                            if (lastMsg.senderId != currentUser.uid) {
+                              // ✅ Auto-scroll on new message from other user
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                _onNewMessage();
+                              });
+                            }
+                          }
 
-                    _reconcilePending(messages, currentUser.uid);
+                          _reconcilePending(messages, currentUser.uid);
 
-                    if (messages.isEmpty && _pendingMessages.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey[400]),
-                            const SizedBox(height: 16),
-                            Text('No messages yet',
-                                style: TextStyle(fontSize: 16, color: Colors.grey[600])),
-                            const SizedBox(height: 8),
-                            Text('Send a message to start the conversation',
-                                style: TextStyle(fontSize: 14, color: Colors.grey[500])),
-                          ],
+                          if (messages.isEmpty && _pendingMessages.isEmpty) {
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.chat_bubble_outline,
+                                    size: 64,
+                                    color: Colors.grey[400],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No messages yet',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Send a message to start the conversation',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          // Build flat list
+                          final items = <dynamic>[];
+                          DateTime? lastDate;
+                          for (final m in messages) {
+                            final d = DateTime(
+                              m.sentAt.year,
+                              m.sentAt.month,
+                              m.sentAt.day,
+                            );
+                            if (lastDate == null || d != lastDate) {
+                              items.add(d);
+                              lastDate = d;
+                            }
+                            items.add(m);
+                          }
+                          for (final p in _pendingMessages) {
+                            final d = DateTime(
+                              p.sentAt.year,
+                              p.sentAt.month,
+                              p.sentAt.day,
+                            );
+                            if (lastDate == null || d != lastDate) {
+                              items.add(d);
+                              lastDate = d;
+                            }
+                            items.add(p);
+                          }
+
+                          return ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.all(16),
+                            itemCount: items.length,
+                            itemBuilder: (context, index) {
+                              final item = items[index];
+                              if (item is DateTime) {
+                                return _buildDateSeparator(item);
+                              }
+                              if (item is _PendingMessage) {
+                                return _buildPendingBubble(item);
+                              }
+                              final message = item as MessageModel;
+                              final isMe = message.senderId == currentUser.uid;
+                              return _buildMessageBubble(message, isMe);
+                            },
+                          );
+                        },
+                      ),
+                      if (_showScrollToBottom)
+                        Positioned(
+                          right: 12,
+                          bottom: 12,
+                          child: FloatingActionButton.small(
+                            heroTag: 'scrollToBottom',
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF2563EB),
+                            elevation: 2,
+                            onPressed: () {
+                              _isUserScrolling = false;
+                              _scrollToBottom(animated: true);
+                            },
+                            child: const Icon(Icons.keyboard_arrow_down),
+                          ),
                         ),
-                      );
-                    }
-
-                    // Build flat list
-                    final items = <dynamic>[];
-                    DateTime? lastDate;
-                    for (final m in messages) {
-                      final d = DateTime(m.sentAt.year, m.sentAt.month, m.sentAt.day);
-                      if (lastDate == null || d != lastDate) {
-                        items.add(d);
-                        lastDate = d;
-                      }
-                      items.add(m);
-                    }
-                    for (final p in _pendingMessages) {
-                      final d = DateTime(p.sentAt.year, p.sentAt.month, p.sentAt.day);
-                      if (lastDate == null || d != lastDate) {
-                        items.add(d);
-                        lastDate = d;
-                      }
-                      items.add(p);
-                    }
-
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        if (item is DateTime) {
-                          return _buildDateSeparator(item);
-                        }
-                        if (item is _PendingMessage) {
-                          return _buildPendingBubble(item);
-                        }
-                        final message = item as MessageModel;
-                        final isMe = message.senderId == currentUser.uid;
-                        return _buildMessageBubble(message, isMe);
-                      },
-                    );
-                  },
+                    ],
+                  ),
                 ),
-                if (_showScrollToBottom)
-                  Positioned(
-                    right: 12,
-                    bottom: 12,
-                    child: FloatingActionButton.small(
-                      heroTag: 'scrollToBottom',
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF2563EB),
-                      elevation: 2,
-                      onPressed: () {
-                        _isUserScrolling = false;
-                        _scrollToBottom(animated: true);
-                      },
-                      child: const Icon(Icons.keyboard_arrow_down),
+                if (_isOtherUserTyping)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.edit, size: 12, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${widget.otherUserName} is typing...',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                if (_replyingTo != null) _buildReplyPreviewBar(),
+                _buildMessageInput(),
               ],
             ),
-          ),
-          if (_isOtherUserTyping)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Row(
-                children: [
-                  const Icon(Icons.edit, size: 12, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Text('${widget.otherUserName} is typing...',
-                      style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                ],
-              ),
-            ),
-          if (_replyingTo != null) _buildReplyPreviewBar(),
-          _buildMessageInput(),
-        ],
-      ),
     );
   }
 
@@ -778,12 +855,20 @@ class _ChatScreenState extends State<ChatScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
-              BoxShadow(color: Colors.grey.withOpacity(0.15), blurRadius: 4, offset: const Offset(0, 1)),
+              BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.15),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
             ],
           ),
           child: Text(
             _dateLabel(date),
-            style: TextStyle(fontSize: 11, color: Colors.grey[700], fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ),
@@ -804,7 +889,11 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 Text(
                   'Replying to ${_replyingTo!.senderName}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2563EB),
+                  ),
                 ),
                 Text(
                   _replyingTo!.snippet,
@@ -824,12 +913,22 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  void _startReply(String senderName, String rawMessage, {bool isImage = false}) {
+  void _startReply(
+    String senderName,
+    String rawMessage, {
+    bool isImage = false,
+  }) {
     final decoded = _decodeReplyMessage(rawMessage);
     final actual = decoded != null ? decoded['actual']! : rawMessage;
-    final snippet = isImage ? '📷 Photo' : (actual.length > 60 ? '${actual.substring(0, 60)}…' : actual);
+    final snippet = isImage
+        ? '📷 Photo'
+        : (actual.length > 60 ? '${actual.substring(0, 60)}…' : actual);
     setState(() {
-      _replyingTo = _ReplyPreview(senderName: senderName, snippet: snippet, isImage: isImage);
+      _replyingTo = _ReplyPreview(
+        senderName: senderName,
+        snippet: snippet,
+        isImage: isImage,
+      );
     });
     // ✅ Focus on text field when replying
     _focusNode.requestFocus();
@@ -853,7 +952,11 @@ class _ChatScreenState extends State<ChatScreen> {
               title: const Text('Reply'),
               onTap: () {
                 Navigator.pop(context);
-                _startReply(message.senderName, message.message, isImage: isImage);
+                _startReply(
+                  message.senderName,
+                  message.message,
+                  isImage: isImage,
+                );
               },
             ),
             if (!isImage)
@@ -862,10 +965,15 @@ class _ChatScreenState extends State<ChatScreen> {
                 title: const Text('Copy'),
                 onTap: () {
                   Navigator.pop(context);
-                  final textToCopy = decoded != null ? decoded['actual']! : message.message;
+                  final textToCopy = decoded != null
+                      ? decoded['actual']!
+                      : message.message;
                   Clipboard.setData(ClipboardData(text: textToCopy));
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Message copied'), duration: Duration(seconds: 1)),
+                    const SnackBar(
+                      content: Text('Message copied'),
+                      duration: Duration(seconds: 1),
+                    ),
                   );
                 },
               ),
@@ -881,10 +989,15 @@ class _ChatScreenState extends State<ChatScreen> {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: isMe ? Colors.white.withOpacity(0.15) : Colors.grey.shade100,
+        color: isMe
+            ? Colors.white.withValues(alpha: 0.15)
+            : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(8),
         border: Border(
-          left: BorderSide(color: isMe ? Colors.white : const Color(0xFF2563EB), width: 3),
+          left: BorderSide(
+            color: isMe ? Colors.white : const Color(0xFF2563EB),
+            width: 3,
+          ),
         ),
       ),
       child: Column(
@@ -903,7 +1016,10 @@ class _ChatScreenState extends State<ChatScreen> {
             decoded['snippet'] ?? '',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: isMe ? Colors.white70 : Colors.grey[700]),
+            style: TextStyle(
+              fontSize: 12,
+              color: isMe ? Colors.white70 : Colors.grey[700],
+            ),
           ),
         ],
       ),
@@ -918,7 +1034,9 @@ class _ChatScreenState extends State<ChatScreen> {
     return GestureDetector(
       onLongPress: () => _showMessageActions(message, isMe),
       child: Dismissible(
-        key: ValueKey('msg_${message.sentAt.microsecondsSinceEpoch}_${message.senderId}'),
+        key: ValueKey(
+          'msg_${message.sentAt.microsecondsSinceEpoch}_${message.senderId}',
+        ),
         direction: DismissDirection.startToEnd,
         confirmDismiss: (_) async {
           _startReply(message.senderName, message.message, isImage: isImage);
@@ -933,20 +1051,29 @@ class _ChatScreenState extends State<ChatScreen> {
           alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.75,
+            ),
             child: Column(
-              crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isMe
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 if (!isMe)
                   Padding(
                     padding: const EdgeInsets.only(left: 8, bottom: 4),
-                    child: Text(message.senderName,
-                        style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                    child: Text(
+                      message.senderName,
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    ),
                   ),
                 Container(
                   padding: isImage
                       ? const EdgeInsets.all(8)
-                      : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      : const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                   decoration: BoxDecoration(
                     color: isMe ? const Color(0xFF2563EB) : Colors.white,
                     borderRadius: BorderRadius.only(
@@ -956,13 +1083,18 @@ class _ChatScreenState extends State<ChatScreen> {
                       bottomRight: Radius.circular(isMe ? 4 : 18),
                     ),
                     boxShadow: [
-                      BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 5, offset: const Offset(0, 1)),
+                      BoxShadow(
+                        color: Colors.grey.withValues(alpha: 0.1),
+                        blurRadius: 5,
+                        offset: const Offset(0, 1),
+                      ),
                     ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (decoded != null) _buildQuotedReplyBlock(decoded, isMe),
+                      if (decoded != null)
+                        _buildQuotedReplyBlock(decoded, isMe),
                       if (isImage)
                         GestureDetector(
                           onTap: () => _showFullImage(message.imageUrl!),
@@ -973,28 +1105,38 @@ class _ChatScreenState extends State<ChatScreen> {
                               width: 200,
                               height: 200,
                               fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  width: 200,
-                                  height: 200,
-                                  color: Colors.grey[200],
-                                  child: const Center(child: CircularProgressIndicator()),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                width: 200,
-                                height: 200,
-                                color: Colors.grey[200],
-                                child: const Icon(Icons.broken_image, size: 50),
-                              ),
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      width: 200,
+                                      height: 200,
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    );
+                                  },
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    width: 200,
+                                    height: 200,
+                                    color: Colors.grey[200],
+                                    child: const Icon(
+                                      Icons.broken_image,
+                                      size: 50,
+                                    ),
+                                  ),
                             ),
                           ),
                         )
                       else
                         Text(
                           displayText,
-                          style: TextStyle(color: isMe ? Colors.white : Colors.black87, fontSize: 14),
+                          style: TextStyle(
+                            color: isMe ? Colors.white : Colors.black87,
+                            fontSize: 14,
+                          ),
                         ),
                       const SizedBox(height: 4),
                       Row(
@@ -1002,14 +1144,25 @@ class _ChatScreenState extends State<ChatScreen> {
                         children: [
                           Text(
                             _formatTime(message.sentAt),
-                            style: TextStyle(fontSize: 10, color: isMe ? Colors.white70 : Colors.grey[500]),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: isMe ? Colors.white70 : Colors.grey[500],
+                            ),
                           ),
                           const SizedBox(width: 4),
                           if (isMe) ...[
                             if (message.isRead)
-                              const Icon(Icons.done_all, size: 12, color: Colors.white70)
+                              const Icon(
+                                Icons.done_all,
+                                size: 12,
+                                color: Colors.white70,
+                              )
                             else
-                              const Icon(Icons.done, size: 12, color: Colors.white70),
+                              const Icon(
+                                Icons.done,
+                                size: 12,
+                                color: Colors.white70,
+                              ),
                           ],
                         ],
                       ),
@@ -1038,7 +1191,9 @@ class _ChatScreenState extends State<ChatScreen> {
           opacity: isFailed ? 1 : 0.85,
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.75,
+            ),
             child: Container(
               padding: isImage
                   ? const EdgeInsets.all(8)
@@ -1067,14 +1222,20 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                     )
                   else
-                    Text(displayText, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                    Text(
+                      displayText,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                    ),
                   const SizedBox(height: 4),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         isFailed ? 'Failed · tap to retry' : 'Sending...',
-                        style: const TextStyle(fontSize: 10, color: Colors.white70),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.white70,
+                        ),
                       ),
                       const SizedBox(width: 4),
                       Icon(
@@ -1099,7 +1260,11 @@ class _ChatScreenState extends State<ChatScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -2)),
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
         ],
       ),
       child: Row(
@@ -1186,15 +1351,22 @@ class _ChatScreenState extends State<ChatScreen> {
                   _buildDetailRow('Budget', '₹${data['budget'] ?? 0}'),
                   const SizedBox(height: 8),
                   _buildDetailRow('Issue', data['issue'] ?? 'N/A'),
-                  if (data['additionalNote'] != null && data['additionalNote'].isNotEmpty)
+                  if (data['additionalNote'] != null &&
+                      data['additionalNote'].isNotEmpty)
                     _buildDetailRow('Note', data['additionalNote']),
                   if (data['status'] != null)
-                    _buildDetailRow('Status', data['status'].toString().toUpperCase()),
+                    _buildDetailRow(
+                      'Status',
+                      data['status'].toString().toUpperCase(),
+                    ),
                 ],
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
             ],
           ),
         );
@@ -1210,7 +1382,10 @@ class _ChatScreenState extends State<ChatScreen> {
       children: [
         SizedBox(
           width: 70,
-          child: Text('$label:', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          child: Text(
+            '$label:',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
         ),
         Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
       ],

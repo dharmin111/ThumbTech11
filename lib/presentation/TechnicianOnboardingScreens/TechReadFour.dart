@@ -7,11 +7,7 @@ class TechReadFour extends StatelessWidget {
   final Map<String, dynamic>? userData;
   final File? profileImage;
 
-  const TechReadFour({
-    super.key,
-    this.userData,
-    this.profileImage,
-  });
+  const TechReadFour({super.key, this.userData, this.profileImage});
 
   @override
   Widget build(BuildContext context) {
@@ -37,9 +33,16 @@ class TechReadFour extends StatelessWidget {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.image_not_supported, size: 80, color: Colors.grey),
+                              Icon(
+                                Icons.image_not_supported,
+                                size: 80,
+                                color: Colors.grey,
+                              ),
                               SizedBox(height: 16),
-                              Text('Image not found', style: TextStyle(color: Colors.grey)),
+                              Text(
+                                'Image not found',
+                                style: TextStyle(color: Colors.grey),
+                              ),
                             ],
                           ),
                         ),
@@ -57,7 +60,7 @@ class TechReadFour extends StatelessWidget {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, -5),
                   ),
@@ -71,7 +74,10 @@ class TechReadFour extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (context) => TechnicianServiceDetailsScreen(
                           name: userData?['name'] ?? '',
-                          phone: userData?['phoneNumber'] ?? userData?['phone'] ?? '',
+                          phone:
+                              userData?['phoneNumber'] ??
+                              userData?['phone'] ??
+                              '',
                           address: userData?['address'] ?? '',
                           pincode: userData?['pincode'] ?? '',
                           profileImage: profileImage,
@@ -84,13 +90,14 @@ class TechReadFour extends StatelessWidget {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const TechnicianServiceDetailsScreen(
-                          name: '',
-                          phone: '',
-                          address: '',
-                          pincode: '',
-                          userId: '',
-                        ),
+                        builder: (context) =>
+                            const TechnicianServiceDetailsScreen(
+                              name: '',
+                              phone: '',
+                              address: '',
+                              pincode: '',
+                              userId: '',
+                            ),
                       ),
                     );
                   }

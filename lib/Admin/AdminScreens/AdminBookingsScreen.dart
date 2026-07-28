@@ -82,13 +82,15 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isHovering ? statusColor.withOpacity(0.35) : Colors.transparent,
+                color: isHovering
+                    ? statusColor.withValues(alpha: 0.35)
+                    : Colors.transparent,
               ),
               boxShadow: [
                 BoxShadow(
                   color: isHovering
-                      ? statusColor.withOpacity(0.18)
-                      : Colors.grey.withOpacity(0.05),
+                      ? statusColor.withValues(alpha: 0.18)
+                      : Colors.grey.withValues(alpha: 0.05),
                   blurRadius: isHovering ? 18 : 8,
                   offset: Offset(0, isHovering ? 8 : 2),
                 ),
@@ -102,19 +104,31 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
                     Expanded(
                       child: Text(
                         data['serviceName'] ?? 'Booking',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(isHovering ? 0.18 : 0.1),
+                        color: statusColor.withValues(
+                          alpha: isHovering ? 0.18 : 0.1,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         status.toUpperCase(),
-                        style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],

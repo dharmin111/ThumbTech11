@@ -29,10 +29,12 @@ class TechnicianServiceDetailsScreen extends StatefulWidget {
   });
 
   @override
-  State<TechnicianServiceDetailsScreen> createState() => _TechnicianServiceDetailsScreenState();
+  State<TechnicianServiceDetailsScreen> createState() =>
+      _TechnicianServiceDetailsScreenState();
 }
 
-class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetailsScreen> {
+class _TechnicianServiceDetailsScreenState
+    extends State<TechnicianServiceDetailsScreen> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final _pincodeController = TextEditingController();
@@ -44,7 +46,7 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
   bool _isSubmitting = false;
 
   // Multiple pincodes list
-  List<String> _servicePincodes = [];
+  final List<String> _servicePincodes = [];
 
   // Categories with their subcategories
   final Map<String, List<String>> _categories = {
@@ -73,10 +75,10 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
   };
 
   // Track selected skills
-  Map<String, bool> _selectedSkills = {};
+  final Map<String, bool> _selectedSkills = {};
 
   // Images - Store as File for upload
-  List<File> _previousWorkImages = [];
+  final List<File> _previousWorkImages = [];
   File? _idCardImage;
 
   final ImagePicker _picker = ImagePicker();
@@ -138,7 +140,6 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
       }, SetOptions(merge: true));
 
       print('✅ Technician OneSignal ID saved: $oneSignalId');
-
     } catch (e) {
       print('❌ Error saving technician OneSignal ID: $e');
     }
@@ -146,26 +147,28 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
 
   // Show leave confirmation dialog
   Future<void> _showLeaveConfirmation() async {
-    final shouldLeave = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Leave Registration?'),
-        content: const Text('Are you sure you want to leave? Your progress will be lost.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('No'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+    final shouldLeave =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Leave Registration?'),
+            content: const Text(
+              'Are you sure you want to leave? Your progress will be lost.',
             ),
-            child: const Text('Yes'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('No'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Yes'),
+              ),
+            ],
           ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
 
     if (shouldLeave) {
       Navigator.pop(context);
@@ -221,7 +224,9 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${isPreviousWork ? 'Work image' : 'ID card'} added successfully'),
+            content: Text(
+              '${isPreviousWork ? 'Work image' : 'ID card'} added successfully',
+            ),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 1),
           ),
@@ -253,7 +258,10 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
             ),
             const SizedBox(height: 20),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFF2563EB)),
+              leading: const Icon(
+                Icons.photo_library,
+                color: Color(0xFF2563EB),
+              ),
               title: const Text('Choose from Gallery'),
               onTap: () {
                 Navigator.pop(context);
@@ -287,10 +295,7 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -361,11 +366,12 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
       );
 
       // 3. Upload Previous Work Images
-      List<String> previousWorkUrls = await _storageService.uploadMultipleImages(
-        imageFiles: _previousWorkImages,
-        userId: widget.userId,
-        folderName: 'work_images',
-      );
+      List<String> previousWorkUrls = await _storageService
+          .uploadMultipleImages(
+            imageFiles: _previousWorkImages,
+            userId: widget.userId,
+            folderName: 'work_images',
+          );
 
       // 4. Save all data to Firestore with multiple pincodes
       Map<String, dynamic> result = await _firestoreService.saveTechnicianData(
@@ -393,7 +399,9 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
           context: context,
           barrierDismissible: false,
           builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: const Column(
               children: [
                 Icon(Icons.check_circle, color: Color(0xFF2563EB), size: 60),
@@ -403,22 +411,27 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
             ),
             content: Text(
               'Thank you ${widget.name} for applying to become a technician!\n\n'
-                  'Your application for:\n'
-                  '${selectedSkillsList.take(3).join(", ")}${selectedSkillsList.length > 3 ? " + ${selectedSkillsList.length - 3} more" : ""}\n\n'
-                  'Service Areas: ${_servicePincodes.join(", ")}\n\n'
-                  'has been received. Our team will review your application and contact you soon at ${widget.phone}.\n\n'
-                  'Status: Pending Review',
+              'Your application for:\n'
+              '${selectedSkillsList.take(3).join(", ")}${selectedSkillsList.length > 3 ? " + ${selectedSkillsList.length - 3} more" : ""}\n\n'
+              'Service Areas: ${_servicePincodes.join(", ")}\n\n'
+              'has been received. Our team will review your application and contact you soon at ${widget.phone}.\n\n'
+              'Status: Pending Review',
             ),
             actions: [
               TextButton(
                 onPressed: () {
                   // Clear all navigation history and go to dashboard
                   Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => const TechnicianDashboard()),
-                        (route) => false,
+                    MaterialPageRoute(
+                      builder: (context) => const TechnicianDashboard(),
+                    ),
+                    (route) => false,
                   );
                 },
-                child: const Text('OK', style: TextStyle(color: Color(0xFF2563EB))),
+                child: const Text(
+                  'OK',
+                  style: TextStyle(color: Color(0xFF2563EB)),
+                ),
               ),
             ],
           ),
@@ -426,7 +439,6 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
       } else {
         _showError(result['message']);
       }
-
     } catch (e) {
       if (Navigator.canPop(context)) {
         Navigator.pop(context); // Close loading dialog
@@ -449,7 +461,7 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -461,7 +473,7 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withOpacity(0.05),
+              color: const Color(0xFF2563EB).withValues(alpha: 0.05),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -472,7 +484,7 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withOpacity(0.1),
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -511,7 +523,10 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                           hintText: 'Enter pincode (e.g., 110001)',
                           border: OutlineInputBorder(),
                           counterText: '',
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
                         ),
                       ),
                     ),
@@ -523,7 +538,10 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 14,
+                        ),
                       ),
                       child: const Text('Add'),
                     ),
@@ -562,8 +580,12 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                             label: Text(pincode),
                             deleteIcon: const Icon(Icons.close, size: 16),
                             onDeleted: () => _removePincode(pincode),
-                            backgroundColor: const Color(0xFF2563EB).withOpacity(0.1),
-                            labelStyle: const TextStyle(color: Color(0xFF2563EB)),
+                            backgroundColor: const Color(
+                              0xFF2563EB,
+                            ).withValues(alpha: 0.1),
+                            labelStyle: const TextStyle(
+                              color: Color(0xFF2563EB),
+                            ),
                             side: const BorderSide(color: Color(0xFF2563EB)),
                           );
                         }).toList(),
@@ -571,10 +593,7 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                       const SizedBox(height: 8),
                       Text(
                         '${_servicePincodes.length} service area(s) selected',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -620,8 +639,8 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      const Color(0xFF2563EB).withOpacity(0.1),
-                      const Color(0xFF2563EB).withOpacity(0.05),
+                      const Color(0xFF2563EB).withValues(alpha: 0.1),
+                      const Color(0xFF2563EB).withValues(alpha: 0.05),
                     ],
                   ),
                 ),
@@ -649,7 +668,11 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                           const Divider(),
                           _buildInfoRow(Icons.phone, 'Phone', widget.phone),
                           const Divider(),
-                          _buildInfoRow(Icons.location_on, 'Address', widget.address),
+                          _buildInfoRow(
+                            Icons.location_on,
+                            'Address',
+                            widget.address,
+                          ),
                         ],
                       ),
                     ),
@@ -670,7 +693,10 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                       const SizedBox(height: 24),
 
                       // Service Categories Section
-                      _buildSectionTitle('Select Service Categories', Icons.category_outlined),
+                      _buildSectionTitle(
+                        'Select Service Categories',
+                        Icons.category_outlined,
+                      ),
                       const SizedBox(height: 16),
                       const Text(
                         'Choose the services you can provide',
@@ -686,7 +712,8 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                           selectedSkills: _selectedSkills,
                           onSkillTapped: (skill) {
                             setState(() {
-                              _selectedSkills[skill] = !(_selectedSkills[skill] ?? false);
+                              _selectedSkills[skill] =
+                                  !(_selectedSkills[skill] ?? false);
                             });
                           },
                         );
@@ -695,10 +722,14 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                       const SizedBox(height: 24),
 
                       // Previous Work Images Section
-                      _buildSectionTitle('Previous Work Examples', Icons.image_outlined),
+                      _buildSectionTitle(
+                        'Previous Work Examples',
+                        Icons.image_outlined,
+                      ),
                       const SizedBox(height: 12),
                       _buildImageUploadSection(
-                        title: 'Upload photos of your previous work (Max 10 images)',
+                        title:
+                            'Upload photos of your previous work (Max 10 images)',
                         images: _previousWorkImages,
                         onAddPressed: () => _showImageSourceDialog(true),
                         onRemovePressed: (index) => _removeImage(index, true),
@@ -706,10 +737,14 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                       const SizedBox(height: 24),
 
                       // ID Card Image Section
-                      _buildSectionTitle('Identity Proof', Icons.badge_outlined),
+                      _buildSectionTitle(
+                        'Identity Proof',
+                        Icons.badge_outlined,
+                      ),
                       const SizedBox(height: 12),
                       _buildImageUploadSection(
-                        title: 'Upload your ID card (Aadhar, PAN, Driving License, etc.)',
+                        title:
+                            'Upload your ID card (Aadhar, PAN, Driving License, etc.)',
                         images: _idCardImage != null ? [_idCardImage!] : [],
                         isSingleImage: true,
                         onAddPressed: () => _showImageSourceDialog(false),
@@ -718,12 +753,16 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                       const SizedBox(height: 24),
 
                       // Work Description Section
-                      _buildSectionTitle('About Your Work', Icons.description_outlined),
+                      _buildSectionTitle(
+                        'About Your Work',
+                        Icons.description_outlined,
+                      ),
                       const SizedBox(height: 12),
                       _buildTextField(
                         controller: _descriptionController,
                         label: 'Work Description',
-                        hint: 'Describe your experience, expertise, tools you have, and approach to work...',
+                        hint:
+                            'Describe your experience, expertise, tools you have, and approach to work...',
                         icon: Icons.edit_note,
                         maxLines: 5,
                         validator: (value) {
@@ -752,7 +791,9 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF2563EB).withOpacity(0.3),
+                              color: const Color(
+                                0xFF2563EB,
+                              ).withValues(alpha: 0.3),
                               blurRadius: 10,
                               offset: const Offset(0, 5),
                             ),
@@ -769,21 +810,23 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                           ),
                           child: _isSubmitting
                               ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
                               : const Text(
-                            'Submit Technician Application',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+                                  'Submit Technician Application',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
                       ),
 
@@ -818,10 +861,7 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[700],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[700]),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -862,7 +902,7 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -910,7 +950,7 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -922,7 +962,7 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withOpacity(0.05),
+              color: const Color(0xFF2563EB).withValues(alpha: 0.05),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -933,7 +973,7 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withOpacity(0.1),
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -957,10 +997,7 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                 ),
                 Text(
                   '${skills.where((s) => selectedSkills[s] == true).length} selected',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                 ),
               ],
             ),
@@ -975,10 +1012,13 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                 return GestureDetector(
                   onTap: () => onSkillTapped(skill),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF2563EB).withOpacity(0.1)
+                          ? const Color(0xFF2563EB).withValues(alpha: 0.1)
                           : Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(25),
                       border: Border.all(
@@ -992,7 +1032,9 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          isSelected ? Icons.check_circle : Icons.circle_outlined,
+                          isSelected
+                              ? Icons.check_circle
+                              : Icons.circle_outlined,
                           size: 18,
                           color: isSelected
                               ? const Color(0xFF2563EB)
@@ -1003,7 +1045,9 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                           skill,
                           style: TextStyle(
                             fontSize: 14,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                             color: isSelected
                                 ? const Color(0xFF2563EB)
                                 : Colors.grey.shade700,
@@ -1041,10 +1085,7 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
             padding: const EdgeInsets.all(16),
             child: Text(
               title,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
           ),
           if (images.isEmpty)
@@ -1108,7 +1149,7 @@ class _TechnicianServiceDetailsScreenState extends State<TechnicianServiceDetail
                             child: Container(
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.6),
+                                color: Colors.black.withValues(alpha: 0.6),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(

@@ -29,9 +29,16 @@ class CustReadTwo extends StatelessWidget {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.image_not_supported, size: 80, color: Colors.grey),
+                              Icon(
+                                Icons.image_not_supported,
+                                size: 80,
+                                color: Colors.grey,
+                              ),
                               SizedBox(height: 16),
-                              Text('Image not found', style: TextStyle(color: Colors.grey)),
+                              Text(
+                                'Image not found',
+                                style: TextStyle(color: Colors.grey),
+                              ),
                             ],
                           ),
                         ),
@@ -49,7 +56,7 @@ class CustReadTwo extends StatelessWidget {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, -5),
                   ),
@@ -72,7 +79,10 @@ class CustReadTwo extends StatelessWidget {
                       ),
                       child: const Text(
                         'Back',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -97,7 +107,10 @@ class CustReadTwo extends StatelessWidget {
                       ),
                       child: const Text(
                         'Next',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:thumstechs/Services/oneSignalNotificationService.dart';
 // import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 // ✅ Admin Screens (Web Only)
@@ -31,37 +33,35 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // ================= FIREBASE =================
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   print("✅ Firebase Initialized");
 
   // ================= ONESIGNAL INIT (Mobile Only) =================
   if (!kIsWeb) {
-  //   try {
-  //     OneSignal.initialize("36709973-f516-4746-a694-c58ad52a532d");
-  //     await OneSignalNotificationService.initialize();
-  //    // await OneSignal.Notifications.requestPermission(true);
-  //     print("✅ OneSignal Initialized");
-  //
-  //     final user = FirebaseAuth.instance.currentUser;
-  //     if (user != null) {
-  //       OneSignal.login(user.uid);
-  //       await OneSignalNotificationService.saveCurrentUserOneSignalId();
-  //     }
-  //
-  //     OneSignal.Notifications.addClickListener((event) {
-  //       final data = event.notification.additionalData ?? {};
-  //       print('📱 Notification clicked: $data');
-  //       _handleNotificationTap(Map<String, dynamic>.from(data));
-  //     });
-  //   } catch (e) {
-  //     print('❌ OneSignal Error (skipping for web): $e');
-  //   }
-  // } else {
-  //   print('⚠️ OneSignal: Web platform detected, skipping initialization');
-   }
+    try {
+      OneSignal.initialize("36709973-f516-4746-a694-c58ad52a532d");
+      await OneSignalNotificationService.initialize();
+      // await OneSignal.Notifications.requestPermission(true);
+      print("✅ OneSignal Initialized");
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        OneSignal.login(user.uid);
+        await OneSignalNotificationService.saveCurrentUserOneSignalId();
+      }
+
+      OneSignal.Notifications.addClickListener((event) {
+        final data = event.notification.additionalData ?? {};
+        print('📱 Notification clicked: $data');
+        _handleNotificationTap(Map<String, dynamic>.from(data));
+      });
+    } catch (e) {
+      print('❌ OneSignal Error (skipping for web): $e');
+    }
+  } else {
+    print('⚠️ OneSignal: Web platform detected, skipping initialization');
+  }
 
   runApp(const MyApp());
 }
@@ -73,9 +73,7 @@ void _handleNotificationTap(Map<String, dynamic> data) {
   if (type == 'new_request') {
     navigatorKey.currentState?.pushNamed(
       '/service-details',
-      arguments: {
-        'serviceName': data['serviceName'] ?? 'Service Request',
-      },
+      arguments: {'serviceName': data['serviceName'] ?? 'Service Request'},
     );
   } else if (type == 'new_message') {
     final conversationId = data['conversationId'] ?? '';
@@ -118,21 +116,26 @@ void _handleNotificationTap(Map<String, dynamic> data) {
   } else {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      FirebaseFirestore.instance.collection('users').doc(user.uid).get().then((doc) {
-        if (doc.exists) {
-          final role = doc.data()?['role'] ?? 'customer';
-          if (role == 'technician') {
-            navigatorKey.currentState?.pushNamed('/technician-dashboard');
-          } else if (role == 'admin') {
-            navigatorKey.currentState?.pushNamed('/admin-dashboard');
-          } else {
-            navigatorKey.currentState?.pushNamed('/customer-dashboard');
-          }
-        }
-      }).catchError((e) {
-        print('❌ Error fetching user role: $e');
-        navigatorKey.currentState?.pushNamed('/login');
-      });
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get()
+          .then((doc) {
+            if (doc.exists) {
+              final role = doc.data()?['role'] ?? 'customer';
+              if (role == 'technician') {
+                navigatorKey.currentState?.pushNamed('/technician-dashboard');
+              } else if (role == 'admin') {
+                navigatorKey.currentState?.pushNamed('/admin-dashboard');
+              } else {
+                navigatorKey.currentState?.pushNamed('/customer-dashboard');
+              }
+            }
+          })
+          .catchError((e) {
+            print('❌ Error fetching user role: $e');
+            navigatorKey.currentState?.pushNamed('/login');
+          });
     } else {
       navigatorKey.currentState?.pushNamed('/login');
     }
@@ -155,10 +158,7 @@ class MyApp extends StatelessWidget {
           primary: const Color(0xFF42D7D7),
         ),
         useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          elevation: 0,
-          centerTitle: true,
-        ),
+        appBarTheme: const AppBarTheme(elevation: 0, centerTitle: true),
       ),
       // ✅ Web: Admin Login, Mobile: Splash Screen
       initialRoute: kIsWeb ? '/admin-login' : '/',
@@ -178,13 +178,15 @@ class MyApp extends StatelessWidget {
 
         // ✅ Common Routes (Both Web & Mobile)
         '/service-details': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-          return ServiceDetailScreen(
-            serviceName: args['serviceName'] ?? '',
-          );
+          final args =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>;
+          return ServiceDetailScreen(serviceName: args['serviceName'] ?? '');
         },
         '/chat': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          final args =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>;
           return ChatScreen(
             conversationId: args['conversationId'] ?? '',
             requestId: args['requestId'] ?? '',
@@ -203,9 +205,7 @@ class MyApp extends StatelessWidget {
             builder: (context) => const AdminLoginScreen(),
           );
         }
-        return MaterialPageRoute(
-          builder: (context) => const SplashScreen(),
-        );
+        return MaterialPageRoute(builder: (context) => const SplashScreen());
       },
     );
   }

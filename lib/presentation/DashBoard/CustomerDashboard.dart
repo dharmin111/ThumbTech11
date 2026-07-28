@@ -114,7 +114,10 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
     final existingId = doc.data()?['oneSignalId'];
 
     if (existingId == null || existingId.isEmpty) {
@@ -219,7 +222,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                         "Hi, ${getUserName()}",
                         style: TextStyle(
                           fontSize: 14,
-                          color: darkBlue.withOpacity(0.7),
+                          color: darkBlue.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -252,7 +255,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: Colors.grey.withValues(alpha: 0.1),
                       spreadRadius: 2,
                       blurRadius: 5,
                       offset: const Offset(0, 2),
@@ -305,7 +308,10 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     ];
 
     List<Map<String, String>> homeServices = [
-      {'name': 'CCTV Installation & Services', 'image': 'assets/Appliance/hm1.png'},
+      {
+        'name': 'CCTV Installation & Services',
+        'image': 'assets/Appliance/hm1.png',
+      },
       {'name': 'TV Repair', 'image': 'assets/Appliance/ap8.png'},
       {'name': 'Plumbing Service', 'image': 'assets/Appliance/ap4.png'},
       {'name': 'Air Cooler Repair', 'image': 'assets/Appliance/ap6.png'},
@@ -317,12 +323,18 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
 
     if (searchQuery.isNotEmpty) {
       applianceServices = applianceServices
-          .where((service) =>
-          service['name']!.toLowerCase().contains(searchQuery.toLowerCase()))
+          .where(
+            (service) => service['name']!.toLowerCase().contains(
+              searchQuery.toLowerCase(),
+            ),
+          )
           .toList();
       homeServices = homeServices
-          .where((service) =>
-          service['name']!.toLowerCase().contains(searchQuery.toLowerCase()))
+          .where(
+            (service) => service['name']!.toLowerCase().contains(
+              searchQuery.toLowerCase(),
+            ),
+          )
           .toList();
     }
 
@@ -450,7 +462,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.15),
+              color: Colors.grey.withValues(alpha: 0.15),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -497,7 +509,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
+              color: Colors.grey.withValues(alpha: 0.2),
               blurRadius: 6,
               offset: const Offset(0, 3),
             ),
@@ -524,11 +536,17 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                     const SizedBox(height: 8),
                     Text(
                       'Image not found',
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 10),
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 10,
+                      ),
                     ),
                     Text(
                       serviceName,
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 10),
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 10,
+                      ),
                     ),
                   ],
                 ),
@@ -553,7 +571,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
+              color: Colors.grey.withValues(alpha: 0.2),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -575,7 +593,11 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+                      Icon(
+                        Icons.image_not_supported,
+                        size: 40,
+                        color: Colors.grey,
+                      ),
                       SizedBox(height: 8),
                       Text(
                         'Image not found',
@@ -650,7 +672,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
       );
     }
 
-    final List<Widget> _screens = [
+    final List<Widget> screens = [
       _buildHomeScreen(),
       const ServiceBookingScreen(),
       const MyBookingsScreen(),
@@ -659,14 +681,14 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     ];
 
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         backgroundColor: Colors.white,
         selectedItemColor: primaryCyan,
-        unselectedItemColor: darkBlue.withOpacity(0.5),
+        unselectedItemColor: darkBlue.withValues(alpha: 0.5),
         selectedFontSize: 12,
         unselectedFontSize: 12,
         elevation: 0,

@@ -12,16 +12,12 @@ const background = Color(0xFFFFFFFF);
 class BookingSuccessScreen extends StatelessWidget {
   final String requestId;
 
-  const BookingSuccessScreen({
-    super.key,
-    required this.requestId,
-  });
+  const BookingSuccessScreen({super.key, required this.requestId});
 
   void _navigateToDashboard(BuildContext context) {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const ServiceBookingScreen()),
-
     );
   }
 
@@ -45,10 +41,7 @@ class BookingSuccessScreen extends StatelessWidget {
           ),
           title: const Text(
             'Booking Success',
-            style: TextStyle(
-              color: darkBlue,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(color: darkBlue, fontWeight: FontWeight.w600),
           ),
           centerTitle: true,
         ),
@@ -92,7 +85,7 @@ class BookingSuccessScreen extends StatelessWidget {
                   'Your request has been posted successfully.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: darkBlue.withOpacity(0.7),
+                    color: darkBlue.withValues(alpha: 0.7),
                   ),
                 ),
 
@@ -103,9 +96,11 @@ class BookingSuccessScreen extends StatelessWidget {
                   margin: const EdgeInsets.symmetric(horizontal: 24),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: primaryCyan.withOpacity(0.1),
+                    color: primaryCyan.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: primaryCyan.withOpacity(0.3)),
+                    border: Border.all(
+                      color: primaryCyan.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Column(
                     children: [
@@ -113,7 +108,7 @@ class BookingSuccessScreen extends StatelessWidget {
                         'Request ID',
                         style: TextStyle(
                           fontSize: 12,
-                          color: darkBlue.withOpacity(0.6),
+                          color: darkBlue.withValues(alpha: 0.6),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -175,7 +170,7 @@ class BookingSuccessScreen extends StatelessWidget {
                               'You will get a notification soon.',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: darkBlue.withOpacity(0.7),
+                                color: darkBlue.withValues(alpha: 0.7),
                               ),
                             ),
                           ],
@@ -205,7 +200,8 @@ class BookingSuccessScreen extends StatelessWidget {
 
                       _buildNextStep(
                         number: '1',
-                        title: 'Technicians in your area will receive your request',
+                        title:
+                            'Technicians in your area will receive your request',
                         color: Colors.orange,
                       ),
                       const SizedBox(height: 16),
@@ -217,7 +213,8 @@ class BookingSuccessScreen extends StatelessWidget {
                       const SizedBox(height: 16),
                       _buildNextStep(
                         number: '3',
-                        title: 'You can choose the best technician suitable for you',
+                        title:
+                            'You can choose the best technician suitable for you',
                         color: Colors.purple,
                       ),
                       const SizedBox(height: 16),
@@ -234,7 +231,10 @@ class BookingSuccessScreen extends StatelessWidget {
 
                 // Go to My Bookings Button
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
                   child: ElevatedButton(
                     onPressed: () => _navigateToDashboard(context),
                     style: ElevatedButton.styleFrom(
@@ -277,7 +277,7 @@ class BookingSuccessScreen extends StatelessWidget {
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
+            color: color.withValues(alpha: 0.2),
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -297,7 +297,7 @@ class BookingSuccessScreen extends StatelessWidget {
             title,
             style: TextStyle(
               fontSize: 14,
-              color: darkBlue.withOpacity(0.8),
+              color: darkBlue.withValues(alpha: 0.8),
               height: 1.4,
             ),
           ),

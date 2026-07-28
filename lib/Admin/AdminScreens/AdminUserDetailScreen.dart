@@ -67,8 +67,11 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         title: Text(
-          role == 'technician' ? 'Technician Details' :
-          role == 'admin' ? 'Admin Details' : 'Customer Details',
+          role == 'technician'
+              ? 'Technician Details'
+              : role == 'admin'
+              ? 'Admin Details'
+              : 'Customer Details',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -131,7 +134,13 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
   }
 
   // ==================== PROFILE HEADER ====================
-  Widget _buildProfileHeader(String role, bool isActive, bool isApproved, String name, String email) {
+  Widget _buildProfileHeader(
+    String role,
+    bool isActive,
+    bool isApproved,
+    String name,
+    String email,
+  ) {
     Color roleColor;
     IconData roleIcon;
     String roleLabel;
@@ -157,14 +166,14 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [roleColor, roleColor.withOpacity(0.7)],
+          colors: [roleColor, roleColor.withValues(alpha: 0.7)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: roleColor.withOpacity(0.3),
+            color: roleColor.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -181,16 +190,12 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                 ),
               ],
             ),
-            child: Icon(
-              roleIcon,
-              size: 40,
-              color: roleColor,
-            ),
+            child: Icon(roleIcon, size: 40, color: roleColor),
           ),
           const SizedBox(height: 12),
           Text(
@@ -206,7 +211,7 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
             email,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 8),
@@ -217,9 +222,12 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
             children: [
               // Role Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -233,16 +241,23 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
               ),
               // Status Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: isActive ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3),
+                  color: isActive
+                      ? Colors.green.withValues(alpha: 0.3)
+                      : Colors.red.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   isActive ? 'ACTIVE' : 'INACTIVE',
                   style: TextStyle(
                     fontSize: 11,
-                    color: isActive ? Colors.green.shade100 : Colors.red.shade100,
+                    color: isActive
+                        ? Colors.green.shade100
+                        : Colors.red.shade100,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -250,16 +265,23 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
               // Approval Badge (for admin)
               if (role == 'admin')
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: isApproved ? Colors.green.withOpacity(0.3) : Colors.orange.withOpacity(0.3),
+                    color: isApproved
+                        ? Colors.green.withValues(alpha: 0.3)
+                        : Colors.orange.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     isApproved ? 'APPROVED' : 'PENDING',
                     style: TextStyle(
                       fontSize: 11,
-                      color: isApproved ? Colors.green.shade100 : Colors.orange.shade100,
+                      color: isApproved
+                          ? Colors.green.shade100
+                          : Colors.orange.shade100,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -300,12 +322,11 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
       icon: Icons.build,
       children: [
         _buildInfoRow('Status', status.toUpperCase()),
-        if (userData['description'] != null && userData['description'].isNotEmpty)
+        if (userData['description'] != null &&
+            userData['description'].isNotEmpty)
           _buildInfoRow('Description', userData['description']),
-        if (categories.isNotEmpty)
-          _buildChipsRow('Categories', categories),
-        if (pincodes.isNotEmpty)
-          _buildChipsRow('Service Areas', pincodes),
+        if (categories.isNotEmpty) _buildChipsRow('Categories', categories),
+        if (pincodes.isNotEmpty) _buildChipsRow('Service Areas', pincodes),
       ],
     );
   }
@@ -325,9 +346,9 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
         if (userData['lastLogin'] != null)
           _buildInfoRow(
             'Last Login',
-            DateFormat('dd MMM yyyy, hh:mm a').format(
-              (userData['lastLogin'] as Timestamp).toDate(),
-            ),
+            DateFormat(
+              'dd MMM yyyy, hh:mm a',
+            ).format((userData['lastLogin'] as Timestamp).toDate()),
           ),
       ],
     );
@@ -344,7 +365,7 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -355,10 +376,7 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
         children: [
           const Text(
             '⚡ Actions',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Row(
@@ -366,7 +384,10 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () => _toggleUserStatus(userId, isActive),
-                  icon: Icon(isActive ? Icons.block : Icons.check_circle, size: 18),
+                  icon: Icon(
+                    isActive ? Icons.block : Icons.check_circle,
+                    size: 18,
+                  ),
                   label: Text(isActive ? 'Deactivate' : 'Activate'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isActive ? Colors.red : Colors.green,
@@ -429,7 +450,7 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -478,10 +499,7 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
           Expanded(
             child: Text(
               value.isNotEmpty ? value : 'N/A',
-              style: const TextStyle(
-                fontSize: 13,
-                color: Colors.black87,
-              ),
+              style: const TextStyle(fontSize: 13, color: Colors.black87),
             ),
           ),
         ],
@@ -512,9 +530,12 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
               runSpacing: 6,
               children: items.map((item) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withOpacity(0.1),
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -543,7 +564,9 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('User ${currentStatus ? 'deactivated' : 'activated'} successfully'),
+            content: Text(
+              'User ${currentStatus ? 'deactivated' : 'activated'} successfully',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -565,7 +588,9 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete User'),
-        content: const Text('Are you sure you want to delete this user? This action cannot be undone.'),
+        content: const Text(
+          'Are you sure you want to delete this user? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -582,7 +607,10 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
 
     if (confirm == true) {
       try {
-        await FirebaseFirestore.instance.collection('users').doc(userId).delete();
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .delete();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

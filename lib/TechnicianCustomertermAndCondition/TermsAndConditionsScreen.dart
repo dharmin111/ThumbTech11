@@ -39,8 +39,8 @@ class TermsAndConditionsScreen extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    const Color(0xFF2563EB).withOpacity(0.1),
-                    const Color(0xFF2563EB).withOpacity(0.05),
+                    const Color(0xFF2563EB).withValues(alpha: 0.1),
+                    const Color(0xFF2563EB).withValues(alpha: 0.05),
                   ],
                 ),
               ),
@@ -53,7 +53,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
+                          color: Colors.grey.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -64,7 +64,9 @@ class TermsAndConditionsScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF2563EB).withOpacity(0.1),
+                            color: const Color(
+                              0xFF2563EB,
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(15),
                           ),
                           child: const Icon(
@@ -102,7 +104,10 @@ class TermsAndConditionsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(12),
@@ -110,7 +115,11 @@ class TermsAndConditionsScreen extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline, size: 20, color: Colors.blue[700]),
+                        Icon(
+                          Icons.info_outline,
+                          size: 20,
+                          color: Colors.blue[700],
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -137,28 +146,32 @@ class TermsAndConditionsScreen extends StatelessWidget {
                   _buildSection(
                     icon: Icons.info_outline,
                     title: 'About ThumbTech',
-                    content: 'ThumbTech is a platform that helps customers connect with nearby independent technicians and service providers for different home and appliance services.',
+                    content:
+                        'ThumbTech is a platform that helps customers connect with nearby independent technicians and service providers for different home and appliance services.',
                   ),
                   const SizedBox(height: 20),
 
                   _buildSection(
                     icon: Icons.build_outlined,
                     title: 'Independent Service Providers',
-                    content: 'All technicians available on ThumbTech work independently. They are not employees or staff members of ThumbTech.\n\nCustomers are encouraged to review technician profiles, ratings, pricing, and service details before confirming any booking.',
+                    content:
+                        'All technicians available on ThumbTech work independently. They are not employees or staff members of ThumbTech.\n\nCustomers are encouraged to review technician profiles, ratings, pricing, and service details before confirming any booking.',
                   ),
                   const SizedBox(height: 20),
 
                   _buildSection(
                     icon: Icons.currency_rupee,
                     title: 'Service & Pricing',
-                    content: 'Service charges, timelines, and work-related discussions are handled directly between the customer and the technician.\n\nThumbTech aims to provide a smooth and trusted platform experience but does not directly perform technical services.',
+                    content:
+                        'Service charges, timelines, and work-related discussions are handled directly between the customer and the technician.\n\nThumbTech aims to provide a smooth and trusted platform experience but does not directly perform technical services.',
                   ),
                   const SizedBox(height: 20),
 
                   _buildSection(
                     icon: Icons.security,
                     title: 'Safety & Trust',
-                    content: 'We encourage all users to behave respectfully and honestly while using the platform.\n\nIn case of any suspicious activity, misuse, fraud, or inappropriate behavior, ThumbTech reserves the right to suspend or remove accounts from the platform.',
+                    content:
+                        'We encourage all users to behave respectfully and honestly while using the platform.\n\nIn case of any suspicious activity, misuse, fraud, or inappropriate behavior, ThumbTech reserves the right to suspend or remove accounts from the platform.',
                     warning: true,
                   ),
                   const SizedBox(height: 20),
@@ -166,28 +179,32 @@ class TermsAndConditionsScreen extends StatelessWidget {
                   _buildSection(
                     icon: Icons.verified_user,
                     title: 'User Responsibility',
-                    content: 'Customers and technicians are responsible for their own decisions, communication, and transactions made through the platform.\n\nUsers are advised to verify service details and pricing before proceeding with any work.',
+                    content:
+                        'Customers and technicians are responsible for their own decisions, communication, and transactions made through the platform.\n\nUsers are advised to verify service details and pricing before proceeding with any work.',
                   ),
                   const SizedBox(height: 20),
 
                   _buildSection(
                     icon: Icons.privacy_tip,
                     title: 'Privacy & Information',
-                    content: 'ThumbTech values user privacy. However, in case of legal requirements or safety concerns, user information may be shared with the appropriate authorities when necessary.',
+                    content:
+                        'ThumbTech values user privacy. However, in case of legal requirements or safety concerns, user information may be shared with the appropriate authorities when necessary.',
                   ),
                   const SizedBox(height: 20),
 
                   _buildSection(
                     icon: Icons.settings,
                     title: 'Platform Rights',
-                    content: 'ThumbTech may update, improve, suspend, or modify platform features and policies at any time to improve user experience and platform safety.',
+                    content:
+                        'ThumbTech may update, improve, suspend, or modify platform features and policies at any time to improve user experience and platform safety.',
                   ),
                   const SizedBox(height: 20),
 
                   _buildSection(
                     icon: Icons.how_to_reg,
                     title: 'Acceptance',
-                    content: 'By continuing to use ThumbTech, you confirm that you understand and agree to these terms and conditions.',
+                    content:
+                        'By continuing to use ThumbTech, you confirm that you understand and agree to these terms and conditions.',
                   ),
 
                   const SizedBox(height: 30),
@@ -205,7 +222,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF2563EB).withOpacity(0.3),
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 5),
                         ),
@@ -239,7 +256,10 @@ class TermsAndConditionsScreen extends StatelessWidget {
                   GestureDetector(
                     onTap: () => _showContactDialog(context),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(12),
@@ -247,7 +267,11 @@ class TermsAndConditionsScreen extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.support_agent, size: 18, color: Colors.grey[600]),
+                          Icon(
+                            Icons.support_agent,
+                            size: 18,
+                            color: Colors.grey[600],
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'Have questions? Contact Support',
@@ -284,7 +308,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -296,7 +320,9 @@ class TermsAndConditionsScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: warning ? Colors.red.shade50 : const Color(0xFF2563EB).withOpacity(0.05),
+              color: warning
+                  ? Colors.red.shade50
+                  : const Color(0xFF2563EB).withValues(alpha: 0.05),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -307,13 +333,17 @@ class TermsAndConditionsScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: warning ? Colors.red.shade100 : const Color(0xFF2563EB).withOpacity(0.1),
+                    color: warning
+                        ? Colors.red.shade100
+                        : const Color(0xFF2563EB).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     icon,
                     size: 20,
-                    color: warning ? Colors.red.shade700 : const Color(0xFF2563EB),
+                    color: warning
+                        ? Colors.red.shade700
+                        : const Color(0xFF2563EB),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -323,7 +353,9 @@ class TermsAndConditionsScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: warning ? Colors.red.shade700 : const Color(0xFF1A1A1A),
+                      color: warning
+                          ? Colors.red.shade700
+                          : const Color(0xFF1A1A1A),
                     ),
                   ),
                 ),
@@ -353,8 +385,18 @@ class TermsAndConditionsScreen extends StatelessWidget {
 
   String _getMonthName(int month) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return months[month - 1];
   }
@@ -369,7 +411,9 @@ class TermsAndConditionsScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('For any questions or concerns regarding our terms and conditions, please contact us at:'),
+            const Text(
+              'For any questions or concerns regarding our terms and conditions, please contact us at:',
+            ),
             const SizedBox(height: 16),
             InkWell(
               onTap: () => _launchEmail(),
@@ -422,9 +466,7 @@ class TermsAndConditionsScreen extends StatelessWidget {
     final Uri emailUri = Uri(
       scheme: 'mailto',
       path: 'support@thumstech.com',
-      queryParameters: {
-        'subject': 'Question about Terms & Conditions',
-      },
+      queryParameters: {'subject': 'Question about Terms & Conditions'},
     );
     if (await canLaunchUrl(emailUri)) {
       await launchUrl(emailUri);

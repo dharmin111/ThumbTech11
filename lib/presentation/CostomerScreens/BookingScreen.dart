@@ -19,7 +19,7 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestoreStorageCustomerOrder _firebaseService =
-  FirebaseFirestoreStorageCustomerOrder();
+      FirebaseFirestoreStorageCustomerOrder();
   String? _userId;
 
   @override
@@ -53,14 +53,14 @@ class _BookingScreenState extends State<BookingScreen> {
               Icon(
                 Icons.login_outlined,
                 size: 80,
-                color: darkBlue.withOpacity(0.3),
+                color: darkBlue.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
               Text(
                 'Please login to view your bookings',
                 style: TextStyle(
                   fontSize: 16,
-                  color: darkBlue.withOpacity(0.6),
+                  color: darkBlue.withValues(alpha: 0.6),
                 ),
               ),
               const SizedBox(height: 20),
@@ -109,14 +109,14 @@ class _BookingScreenState extends State<BookingScreen> {
                   Icon(
                     Icons.error_outline,
                     size: 60,
-                    color: Colors.red.withOpacity(0.5),
+                    color: Colors.red.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'Error loading bookings',
                     style: TextStyle(
                       fontSize: 16,
-                      color: darkBlue.withOpacity(0.6),
+                      color: darkBlue.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -169,7 +169,7 @@ class _BookingScreenState extends State<BookingScreen> {
           Icon(
             Icons.check_circle_outline,
             size: 80,
-            color: darkBlue.withOpacity(0.2),
+            color: darkBlue.withValues(alpha: 0.2),
           ),
           const SizedBox(height: 16),
           Text(
@@ -185,7 +185,7 @@ class _BookingScreenState extends State<BookingScreen> {
             'Your accepted service requests will appear here',
             style: TextStyle(
               fontSize: 14,
-              color: darkBlue.withOpacity(0.5),
+              color: darkBlue.withValues(alpha: 0.5),
             ),
           ),
         ],
@@ -204,7 +204,9 @@ class _BookingScreenState extends State<BookingScreen> {
         print('Tapped on booking: ${booking.id}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Booking details for ${booking.serviceName} - Coming Soon!'),
+            content: Text(
+              'Booking details for ${booking.serviceName} - Coming Soon!',
+            ),
             backgroundColor: primaryCyan,
             duration: const Duration(seconds: 2),
           ),
@@ -217,7 +219,7 @@ class _BookingScreenState extends State<BookingScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -234,8 +236,8 @@ class _BookingScreenState extends State<BookingScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    statusColor.withOpacity(0.15),
-                    statusColor.withOpacity(0.05),
+                    statusColor.withValues(alpha: 0.15),
+                    statusColor.withValues(alpha: 0.05),
                   ],
                 ),
                 borderRadius: const BorderRadius.only(
@@ -249,7 +251,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.2),
+                      color: statusColor.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(15),
                     ),
                     child: Icon(
@@ -278,7 +280,7 @@ class _BookingScreenState extends State<BookingScreen> {
                           'ID: ${booking.id?.substring(0, 8) ?? 'N/A'}...',
                           style: TextStyle(
                             fontSize: 11,
-                            color: darkBlue.withOpacity(0.5),
+                            color: darkBlue.withValues(alpha: 0.5),
                           ),
                         ),
                       ],
@@ -286,13 +288,16 @@ class _BookingScreenState extends State<BookingScreen> {
                   ),
                   // Status Badge with icon
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: statusColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: statusColor.withOpacity(0.3),
+                          color: statusColor.withValues(alpha: 0.3),
                           blurRadius: 4,
                         ),
                       ],
@@ -328,14 +333,17 @@ class _BookingScreenState extends State<BookingScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Technician Info Card (highlighted for accepted bookings)
-                  if (booking.technicianName != null && booking.technicianName!.isNotEmpty)
+                  if (booking.technicianName != null &&
+                      booking.technicianName!.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
-                        color: primaryCyan.withOpacity(0.1),
+                        color: primaryCyan.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: primaryCyan.withOpacity(0.3)),
+                        border: Border.all(
+                          color: primaryCyan.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -360,7 +368,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                   'Technician Assigned',
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: darkBlue.withOpacity(0.6),
+                                    color: darkBlue.withValues(alpha: 0.6),
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -372,7 +380,8 @@ class _BookingScreenState extends State<BookingScreen> {
                                     color: darkBlue,
                                   ),
                                 ),
-                                if (booking.technicianPhone != null && booking.technicianPhone!.isNotEmpty)
+                                if (booking.technicianPhone != null &&
+                                    booking.technicianPhone!.isNotEmpty)
                                   Text(
                                     booking.technicianPhone!,
                                     style: TextStyle(
@@ -384,11 +393,12 @@ class _BookingScreenState extends State<BookingScreen> {
                             ),
                           ),
                           // Call icon (optional)
-                          if (booking.technicianPhone != null && booking.technicianPhone!.isNotEmpty)
+                          if (booking.technicianPhone != null &&
+                              booking.technicianPhone!.isNotEmpty)
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: primaryCyan.withOpacity(0.2),
+                                color: primaryCyan.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
@@ -488,14 +498,14 @@ class _BookingScreenState extends State<BookingScreen> {
                   Icon(
                     Icons.touch_app,
                     size: 14,
-                    color: primaryCyan.withOpacity(0.6),
+                    color: primaryCyan.withValues(alpha: 0.6),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     'Tap to view details',
                     style: TextStyle(
                       fontSize: 11,
-                      color: primaryCyan.withOpacity(0.6),
+                      color: primaryCyan.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -507,14 +517,16 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value, {int maxLines = 1}) {
+  Widget _buildDetailRow(
+    IconData icon,
+    String label,
+    String value, {
+    int maxLines = 1,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 28,
-          child: Icon(icon, size: 16, color: primaryCyan),
-        ),
+        SizedBox(width: 28, child: Icon(icon, size: 16, color: primaryCyan)),
         const SizedBox(width: 12),
         SizedBox(
           width: 110,
@@ -523,7 +535,7 @@ class _BookingScreenState extends State<BookingScreen> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: darkBlue.withOpacity(0.7),
+              color: darkBlue.withValues(alpha: 0.7),
             ),
           ),
         ),
@@ -556,7 +568,8 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   IconData _getServiceIcon(String serviceType) {
-    if (serviceType.contains('AC') || serviceType.contains('Air')) return Icons.ac_unit;
+    if (serviceType.contains('AC') || serviceType.contains('Air'))
+      return Icons.ac_unit;
     if (serviceType.contains('Washing')) return Icons.local_laundry_service;
     if (serviceType.contains('Plumbing')) return Icons.plumbing;
     if (serviceType.contains('Electrical')) return Icons.electrical_services;

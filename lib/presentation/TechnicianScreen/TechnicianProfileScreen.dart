@@ -14,7 +14,8 @@ class TechnicianProfileScreen extends StatefulWidget {
   const TechnicianProfileScreen({super.key});
 
   @override
-  State<TechnicianProfileScreen> createState() => _TechnicianProfileScreenState();
+  State<TechnicianProfileScreen> createState() =>
+      _TechnicianProfileScreenState();
 }
 
 class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
@@ -121,9 +122,11 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
           final data = doc.data() as Map<String, dynamic>;
 
           List<String> pincodesList = [];
-          if (data['pincodes'] != null && (data['pincodes'] as List).isNotEmpty) {
+          if (data['pincodes'] != null &&
+              (data['pincodes'] as List).isNotEmpty) {
             pincodesList = List<String>.from(data['pincodes']);
-          } else if (data['pincode'] != null && data['pincode'].toString().isNotEmpty) {
+          } else if (data['pincode'] != null &&
+              data['pincode'].toString().isNotEmpty) {
             pincodesList = [data['pincode'].toString()];
           }
 
@@ -155,11 +158,11 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             .collection('users')
             .doc(user.uid)
             .update({
-          'name': _nameController.text,
-          'phoneNumber': _phoneController.text,
-          'address': _addressController.text,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+              'name': _nameController.text,
+              'phoneNumber': _phoneController.text,
+              'address': _addressController.text,
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
 
         setState(() {
           technicianName = _nameController.text;
@@ -188,17 +191,17 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
 
   Future<void> _addPincode() async {
     if (_pincodeController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a pincode')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter a pincode')));
       return;
     }
 
     final newPincode = _pincodeController.text.trim();
     if (technicianPincodes.contains(newPincode)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pincode already added')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Pincode already added')));
       return;
     }
 
@@ -211,10 +214,12 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
 
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-        'pincodes': FieldValue.arrayUnion([newPincode]),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
+        {
+          'pincodes': FieldValue.arrayUnion([newPincode]),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+      );
 
       setState(() {
         technicianPincodes.add(newPincode);
@@ -230,18 +235,20 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
   Future<void> _removePincode(String pincode) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-        'pincodes': FieldValue.arrayRemove([pincode]),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
+        {
+          'pincodes': FieldValue.arrayRemove([pincode]),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+      );
 
       setState(() {
         technicianPincodes.remove(pincode);
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Pincode $pincode removed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Pincode $pincode removed')));
     }
   }
 
@@ -257,9 +264,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             .collection('users')
             .doc(user.uid)
             .update({
-          'categories': newCategories,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+              'categories': newCategories,
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
 
         setState(() {
           technicianCategories = newCategories;
@@ -308,7 +315,10 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             ),
             const SizedBox(height: 20),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFF2563EB)),
+              leading: const Icon(
+                Icons.photo_library,
+                color: Color(0xFF2563EB),
+              ),
               title: const Text('Choose from Gallery'),
               onTap: () {
                 Navigator.pop(context);
@@ -359,9 +369,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
 
         final User? user = FirebaseAuth.instance.currentUser;
         if (user != null) {
-          final storageRef = FirebaseStorage.instance
-              .ref()
-              .child('technicians/${user.uid}/profile/${DateTime.now().millisecondsSinceEpoch}.jpg');
+          final storageRef = FirebaseStorage.instance.ref().child(
+            'technicians/${user.uid}/profile/${DateTime.now().millisecondsSinceEpoch}.jpg',
+          );
 
           await storageRef.putFile(File(image.path));
           final downloadUrl = await storageRef.getDownloadURL();
@@ -370,9 +380,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
               .collection('users')
               .doc(user.uid)
               .update({
-            'profileImageUrl': downloadUrl,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+                'profileImageUrl': downloadUrl,
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
 
           setState(() {
             profileImageUrl = downloadUrl;
@@ -431,7 +441,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
                       itemCount: availableCategories.length,
                       itemBuilder: (context, index) {
                         String category = availableCategories[index];
-                        bool isSelected = tempSelectedCategories.contains(category);
+                        bool isSelected = tempSelectedCategories.contains(
+                          category,
+                        );
                         return CheckboxListTile(
                           title: Text(category),
                           value: isSelected,
@@ -512,9 +524,8 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (BuildContext loadingContext) => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  builder: (BuildContext loadingContext) =>
+                      const Center(child: CircularProgressIndicator()),
                 );
               }
 
@@ -542,7 +553,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
                     MaterialPageRoute(
                       builder: (context) => const LoginScreen(),
                     ),
-                        (route) => false,
+                    (route) => false,
                   );
                 }
               } catch (e) {
@@ -561,13 +572,8 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
                 }
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            child: const Text(
-              'Logout',
-              style: TextStyle(color: Colors.white),
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Logout', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -643,9 +649,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
   void _showTermsAndConditions() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const TechnicianTermsScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const TechnicianTermsScreen()),
     );
   }
 
@@ -672,10 +676,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             padding: EdgeInsets.all(16),
             child: Text(
               'Service Areas (Pincodes)',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
           const Divider(height: 1),
@@ -695,7 +696,10 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
                           hintText: 'Enter pincode',
                           border: OutlineInputBorder(),
                           counterText: '',
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
                         ),
                       ),
                     ),
@@ -727,7 +731,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
                         label: Text(pincode),
                         deleteIcon: const Icon(Icons.close, size: 16),
                         onDeleted: () => _removePincode(pincode),
-                        backgroundColor: const Color(0xFF2563EB).withOpacity(0.1),
+                        backgroundColor: const Color(
+                          0xFF2563EB,
+                        ).withValues(alpha: 0.1),
                         labelStyle: const TextStyle(color: Color(0xFF2563EB)),
                         side: const BorderSide(color: Color(0xFF2563EB)),
                       );
@@ -738,10 +744,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
                       '${technicianPincodes.length} service area(s)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ),
               ],
@@ -761,8 +764,8 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF2563EB).withOpacity(0.1),
-            const Color(0xFF2563EB).withOpacity(0.05),
+            const Color(0xFF2563EB).withValues(alpha: 0.1),
+            const Color(0xFF2563EB).withValues(alpha: 0.05),
           ],
         ),
       ),
@@ -774,7 +777,8 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
               CircleAvatar(
                 radius: 55,
                 backgroundColor: Colors.grey.shade200,
-                backgroundImage: profileImageUrl != null && profileImageUrl!.isNotEmpty
+                backgroundImage:
+                    profileImageUrl != null && profileImageUrl!.isNotEmpty
                     ? NetworkImage(profileImageUrl!)
                     : null,
                 child: profileImageUrl == null || profileImageUrl!.isEmpty
@@ -785,9 +789,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
                 const Positioned(
                   right: 0,
                   bottom: 0,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                  ),
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 )
               else
                 GestureDetector(
@@ -816,7 +818,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+              color: isActive
+                  ? Colors.green.withValues(alpha: 0.1)
+                  : Colors.red.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -886,10 +890,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             padding: EdgeInsets.all(16),
             child: Text(
               'Service Categories',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
           const Divider(height: 1),
@@ -909,11 +910,18 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
                     runSpacing: 8,
                     children: technicianCategories.map((category) {
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB).withOpacity(0.1),
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.3)),
+                          border: Border.all(
+                            color: const Color(
+                              0xFF2563EB,
+                            ).withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Text(
                           category,
@@ -968,9 +976,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             title: 'Privacy & Security',
             onTap: () {
               // Future implementation
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Coming soon')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Coming soon')));
             },
           ),
           const Divider(height: 1),
@@ -979,9 +987,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             title: 'Help & Support',
             onTap: () {
               // Future implementation
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Coming soon')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Coming soon')));
             },
           ),
           const Divider(height: 1),
@@ -1006,7 +1014,8 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
       leading: Icon(icon, color: const Color(0xFF2563EB)),
       title: Text(title),
       subtitle: subtitle != null ? Text(subtitle) : null,
-      trailing: trailing ?? (onTap != null ? const Icon(Icons.chevron_right) : null),
+      trailing:
+          trailing ?? (onTap != null ? const Icon(Icons.chevron_right) : null),
       onTap: onTap,
     );
   }
@@ -1083,7 +1092,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
           children: [
             Text('Address: ${technicianAddress ?? "Not set"}'),
             const SizedBox(height: 8),
-            Text('Pincodes: ${technicianPincodes.isEmpty ? "Not set" : technicianPincodes.join(", ")}'),
+            Text(
+              'Pincodes: ${technicianPincodes.isEmpty ? "Not set" : technicianPincodes.join(", ")}',
+            ),
           ],
         ),
         actions: [

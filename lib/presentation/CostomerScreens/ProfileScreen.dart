@@ -59,7 +59,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
+      (route) => false,
     );
   }
 
@@ -118,11 +118,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   String _getFieldName(String field) {
     switch (field) {
-      case 'name': return 'Name';
-      case 'phone': return 'Phone Number';
-      case 'address': return 'Address';
-      case 'pincode': return 'Pincode';
-      default: return field;
+      case 'name':
+        return 'Name';
+      case 'phone':
+        return 'Phone Number';
+      case 'address':
+        return 'Address';
+      case 'pincode':
+        return 'Pincode';
+      default:
+        return field;
     }
   }
 
@@ -153,14 +158,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Icon(
                 Icons.person_outline,
                 size: 80,
-                color: darkBlue.withOpacity(0.3),
+                color: darkBlue.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
               Text(
                 'Please login to view your profile',
                 style: TextStyle(
                   fontSize: 16,
-                  color: darkBlue.withOpacity(0.6),
+                  color: darkBlue.withValues(alpha: 0.6),
                 ),
               ),
               const SizedBox(height: 20),
@@ -206,138 +211,153 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       body: _isLoading
           ? const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(primaryCyan),
-        ),
-      )
-          : SingleChildScrollView(
-        child: Column(
-          children: [
-            // Profile Header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [primaryCyan.withOpacity(0.1), primaryCyan.withOpacity(0.05)],
-                ),
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(primaryCyan),
               ),
+            )
+          : SingleChildScrollView(
               child: Column(
                 children: [
-                  // Profile Avatar
+                  // Profile Header
                   Container(
-                    width: 100,
-                    height: 100,
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: primaryCyan.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: primaryCyan, width: 3),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          primaryCyan.withValues(alpha: 0.1),
+                          primaryCyan.withValues(alpha: 0.05),
+                        ],
+                      ),
                     ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.person,
-                        size: 50,
-                        color: primaryCyan,
+                    child: Column(
+                      children: [
+                        // Profile Avatar
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: primaryCyan.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: primaryCyan, width: 3),
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.person,
+                              size: 50,
+                              color: primaryCyan,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _userData?['name'] ?? user.displayName ?? 'Customer',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: darkBlue,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          user.email ?? 'No email',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: darkBlue.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Profile Info Cards
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        _buildInfoCard(
+                          icon: Icons.person,
+                          title: 'Name',
+                          value: _userData?['name'] ?? 'Not provided',
+                          onEdit: () => _editField('name'),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildInfoCard(
+                          icon: Icons.phone,
+                          title: 'Phone Number',
+                          value: _userData?['phone'] ?? 'Not provided',
+                          onEdit: () => _editField('phone'),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildInfoCard(
+                          icon: Icons.location_on,
+                          title: 'Address',
+                          value: _userData?['address'] ?? 'Not provided',
+                          onEdit: () => _editField('address'),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildInfoCard(
+                          icon: Icons.local_post_office,
+                          title: 'Pincode',
+                          value:
+                              _userData?['pincode']?.toString() ??
+                              'Not provided',
+                          onEdit: () => _editField('pincode'),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildInfoCard(
+                          icon: Icons.email,
+                          title: 'Email',
+                          value: user.email ?? 'Not provided',
+                          isEditable: false,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TermsAndConditionsScreen(),
+                      ),
+                    ),
+                    child: Text(
+                      "                 Terms & Conditions ",
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+
+                  SizedBox(height: 25),
+                  // Logout Button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: OutlinedButton.icon(
+                      onPressed: _logout,
+                      icon: const Icon(Icons.logout),
+                      label: const Text('Logout'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red),
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _userData?['name'] ?? user.displayName ?? 'Customer',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: darkBlue,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user.email ?? 'No email',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: darkBlue.withOpacity(0.6),
-                    ),
-                  ),
+
+                  const SizedBox(height: 30),
                 ],
               ),
             ),
-
-
-            // Profile Info Cards
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  _buildInfoCard(
-                    icon: Icons.person,
-                    title: 'Name',
-                    value: _userData?['name'] ?? 'Not provided',
-                    onEdit: () => _editField('name'),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(
-                    icon: Icons.phone,
-                    title: 'Phone Number',
-                    value: _userData?['phone'] ?? 'Not provided',
-                    onEdit: () => _editField('phone'),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(
-                    icon: Icons.location_on,
-                    title: 'Address',
-                    value: _userData?['address'] ?? 'Not provided',
-                    onEdit: () => _editField('address'),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(
-                    icon: Icons.local_post_office,
-                    title: 'Pincode',
-                    value: _userData?['pincode']?.toString() ?? 'Not provided',
-                    onEdit: () => _editField('pincode'),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoCard(
-                    icon: Icons.email,
-                    title: 'Email',
-                    value: user.email ?? 'Not provided',
-                    isEditable: false,
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            GestureDetector(
-                onTap: ()=>Navigator.push(context, MaterialPageRoute(builder: (context) => TermsAndConditionsScreen(),)),
-                child: Text("                 Terms & Conditions ",style: TextStyle(color: Colors.red),)),
-
-
-            SizedBox(height: 25,),
-            // Logout Button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: OutlinedButton.icon(
-                onPressed: _logout,
-                icon: const Icon(Icons.logout),
-                label: const Text('Logout'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: const BorderSide(color: Colors.red),
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 30),
-          ],
-        ),
-      ),
     );
   }
 
@@ -350,7 +370,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.05),
+              color: Colors.grey.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -373,7 +393,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title,
               style: TextStyle(
                 fontSize: 11,
-                color: darkBlue.withOpacity(0.5),
+                color: darkBlue.withValues(alpha: 0.5),
               ),
               textAlign: TextAlign.center,
             ),
@@ -397,7 +417,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -409,7 +429,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: primaryCyan.withOpacity(0.1),
+              color: primaryCyan.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: primaryCyan, size: 22),
@@ -423,7 +443,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title,
                   style: TextStyle(
                     fontSize: 12,
-                    color: darkBlue.withOpacity(0.5),
+                    color: darkBlue.withValues(alpha: 0.5),
                   ),
                 ),
                 const SizedBox(height: 4),

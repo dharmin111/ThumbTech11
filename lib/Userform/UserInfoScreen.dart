@@ -87,7 +87,10 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
             ),
             const SizedBox(height: 20),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFF2563EB)),
+              leading: const Icon(
+                Icons.photo_library,
+                color: Color(0xFF2563EB),
+              ),
               title: const Text('Choose from Gallery'),
               onTap: () {
                 Navigator.pop(context);
@@ -120,9 +123,9 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
     try {
       String fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      Reference ref = FirebaseStorage.instance
-          .ref()
-          .child('users/$userId/profile/$fileName');
+      Reference ref = FirebaseStorage.instance.ref().child(
+        'users/$userId/profile/$fileName',
+      );
 
       UploadTask uploadTask = ref.putFile(_profileImage!);
       TaskSnapshot snapshot = await uploadTask;
@@ -196,9 +199,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
         // Customer onboarding flow - pass data if needed
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => const CustReadOne(),
-          ),
+          MaterialPageRoute(builder: (context) => const CustReadOne()),
         );
       } else if (_selectedRole == 'technician') {
         // Create user data map to pass through onboarding
@@ -223,7 +224,6 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
           ),
         );
       }
-
     } catch (e) {
       _showError('Error saving data: $e');
       print('❌ Error: $e');
@@ -238,10 +238,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -272,8 +269,8 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        const Color(0xFF2563EB).withOpacity(0.1),
-                        const Color(0xFF2563EB).withOpacity(0.05),
+                        const Color(0xFF2563EB).withValues(alpha: 0.1),
+                        const Color(0xFF2563EB).withValues(alpha: 0.05),
                       ],
                     ),
                   ),
@@ -291,10 +288,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                       const SizedBox(height: 8),
                       Text(
                         'Please complete your profile to continue',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -314,7 +308,10 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                         const SizedBox(height: 24),
 
                         // Personal Information Section
-                        _buildSectionTitle('Personal Information', Icons.person_outline),
+                        _buildSectionTitle(
+                          'Personal Information',
+                          Icons.person_outline,
+                        ),
                         const SizedBox(height: 16),
 
                         // Role Selection Field
@@ -404,14 +401,18 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF2563EB).withOpacity(0.3),
+                                color: const Color(
+                                  0xFF2563EB,
+                                ).withValues(alpha: 0.3),
                                 blurRadius: 10,
                                 offset: const Offset(0, 5),
                               ),
                             ],
                           ),
                           child: ElevatedButton(
-                            onPressed: _isUploading ? null : _saveUserDataAndNavigate,
+                            onPressed: _isUploading
+                                ? null
+                                : _saveUserDataAndNavigate,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               shadowColor: Colors.transparent,
@@ -421,21 +422,23 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                             ),
                             child: _isUploading
                                 ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
                                 : const Text(
-                              'Continue',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
+                                    'Continue',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                           ),
                         ),
 
@@ -449,7 +452,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
           ),
           if (_isUploading)
             Container(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               child: const Center(
                 child: Card(
                   child: Padding(
@@ -478,7 +481,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -491,18 +494,17 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
             padding: const EdgeInsets.all(12),
             child: Text(
               'Select Role',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
           ),
           Row(
             children: [
               Expanded(
                 child: RadioListTile<String>(
-                  title: const Text('Customer',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),),
+                  title: const Text(
+                    'Customer',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
                   subtitle: const Text('I want to book services'),
                   value: 'customer',
                   groupValue: _selectedRole,
@@ -516,7 +518,8 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
               ),
               Expanded(
                 child: RadioListTile<String>(
-                  title: const Text('Technician',
+                  title: const Text(
+                    'Technician',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                   subtitle: const Text('I want to provide services'),
@@ -546,113 +549,110 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
       ),
       child: _profileImage == null
           ? Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            GestureDetector(
-              onTap: _showImageSourceDialog,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFF2563EB),
-                    width: 2,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: _showImageSourceDialog,
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF2563EB),
+                          width: 2,
+                        ),
+                      ),
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.camera_alt,
+                              size: 40,
+                              color: Color(0xFF2563EB),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Add Photo',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF2563EB),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                child: const Center(
-                  child: Column(
+                  const SizedBox(height: 12),
+                  Text(
+                    'Tap to add profile picture',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                ],
+              ),
+            )
+          : Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: _showImageSourceDialog,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 65,
+                          backgroundColor: Colors.grey.shade200,
+                          backgroundImage: FileImage(_profileImage!),
+                        ),
+                        Container(
+                          width: 130,
+                          height: 130,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black.withValues(alpha: 0.4),
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.camera_alt,
+                              size: 40,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.camera_alt,
-                        size: 40,
-                        color: Color(0xFF2563EB),
+                      TextButton.icon(
+                        onPressed: _showImageSourceDialog,
+                        icon: const Icon(Icons.edit, size: 18),
+                        label: const Text('Change'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF2563EB),
+                        ),
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Add Photo',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF2563EB),
+                      const SizedBox(width: 16),
+                      TextButton.icon(
+                        onPressed: _removeProfileImage,
+                        icon: const Icon(Icons.delete, size: 18),
+                        label: const Text('Remove'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
                         ),
                       ),
                     ],
                   ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Tap to add profile picture',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      )
-          : Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            GestureDetector(
-              onTap: _showImageSourceDialog,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CircleAvatar(
-                    radius: 65,
-                    backgroundColor: Colors.grey.shade200,
-                    backgroundImage: FileImage(_profileImage!),
-                  ),
-                  Container(
-                    width: 130,
-                    height: 130,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.black.withOpacity(0.4),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.camera_alt,
-                        size: 40,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextButton.icon(
-                  onPressed: _showImageSourceDialog,
-                  icon: const Icon(Icons.edit, size: 18),
-                  label: const Text('Change'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF2563EB),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                TextButton.icon(
-                  onPressed: _removeProfileImage,
-                  icon: const Icon(Icons.delete, size: 18),
-                  label: const Text('Remove'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.red,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -688,7 +688,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

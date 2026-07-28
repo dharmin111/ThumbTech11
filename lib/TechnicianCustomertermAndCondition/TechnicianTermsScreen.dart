@@ -43,7 +43,8 @@ class TechnicianTermsScreen extends StatelessWidget {
                   _buildSection(
                     icon: Icons.info_outline,
                     title: 'About ThumbTech',
-                    content: 'ThumbTech is a platform that helps independent technicians connect with nearby customers looking for home and appliance services.\n\nJoining ThumbTech gives technicians an opportunity to receive customer leads and grow their local business reach.',
+                    content:
+                        'ThumbTech is a platform that helps independent technicians connect with nearby customers looking for home and appliance services.\n\nJoining ThumbTech gives technicians an opportunity to receive customer leads and grow their local business reach.',
                     color: Colors.blue,
                   ),
                   const SizedBox(height: 20),
@@ -51,7 +52,8 @@ class TechnicianTermsScreen extends StatelessWidget {
                   _buildSection(
                     icon: Icons.engineering,
                     title: 'Independent Service Provider',
-                    content: 'All technicians on ThumbTech work independently and are not employees, partners, or permanent staff members of ThumbTech.\n\nTechnicians are fully responsible for:\n• Service quality\n• Pricing\n• Communication\n• Tools & equipment\n• Professional behavior\n• Safety measures\n• Work completed for customers',
+                    content:
+                        'All technicians on ThumbTech work independently and are not employees, partners, or permanent staff members of ThumbTech.\n\nTechnicians are fully responsible for:\n• Service quality\n• Pricing\n• Communication\n• Tools & equipment\n• Professional behavior\n• Safety measures\n• Work completed for customers',
                     color: Colors.orange,
                   ),
                   const SizedBox(height: 20),
@@ -59,7 +61,8 @@ class TechnicianTermsScreen extends StatelessWidget {
                   _buildSection(
                     icon: Icons.verified,
                     title: 'Professional Conduct',
-                    content: 'Technicians are expected to:\n• Behave professionally\n• Communicate respectfully\n• Provide genuine services\n• Avoid misleading or fraudulent activities\n\nAny misuse, fake commitments, abusive behavior, spam, or suspicious activity may lead to temporary suspension or permanent removal from the platform.',
+                    content:
+                        'Technicians are expected to:\n• Behave professionally\n• Communicate respectfully\n• Provide genuine services\n• Avoid misleading or fraudulent activities\n\nAny misuse, fake commitments, abusive behavior, spam, or suspicious activity may lead to temporary suspension or permanent removal from the platform.',
                     color: Colors.green,
                     warning: true,
                   ),
@@ -71,7 +74,8 @@ class TechnicianTermsScreen extends StatelessWidget {
                   _buildSection(
                     icon: Icons.payment,
                     title: 'Pricing & Payments',
-                    content: 'Service pricing may be discussed directly between technician and customer unless specifically mentioned inside the platform.\n\nTechnicians are responsible for managing their own earnings, taxes, and service-related commitments.',
+                    content:
+                        'Service pricing may be discussed directly between technician and customer unless specifically mentioned inside the platform.\n\nTechnicians are responsible for managing their own earnings, taxes, and service-related commitments.',
                     color: Colors.purple,
                   ),
                   const SizedBox(height: 20),
@@ -79,7 +83,8 @@ class TechnicianTermsScreen extends StatelessWidget {
                   _buildSection(
                     icon: Icons.star_rate,
                     title: 'Customer Ratings & Reviews',
-                    content: 'Customer ratings and reviews help maintain service quality on the platform.\n\nRepeated complaints, poor behavior, fake reviews, or dishonest practices may affect technician visibility or account access.',
+                    content:
+                        'Customer ratings and reviews help maintain service quality on the platform.\n\nRepeated complaints, poor behavior, fake reviews, or dishonest practices may affect technician visibility or account access.',
                     color: Colors.amber,
                   ),
                   const SizedBox(height: 20),
@@ -90,7 +95,8 @@ class TechnicianTermsScreen extends StatelessWidget {
                   _buildSection(
                     icon: Icons.gavel,
                     title: 'Platform Rights',
-                    content: 'ThumbTech reserves the right to:\n• Approve or reject technician registrations\n• Suspend accounts\n• Remove profiles\n• Update platform policies at any time to maintain platform quality and safety',
+                    content:
+                        'ThumbTech reserves the right to:\n• Approve or reject technician registrations\n• Suspend accounts\n• Remove profiles\n• Update platform policies at any time to maintain platform quality and safety',
                     color: Colors.red,
                   ),
                   const SizedBox(height: 20),
@@ -98,7 +104,8 @@ class TechnicianTermsScreen extends StatelessWidget {
                   _buildSection(
                     icon: Icons.verified_user,
                     title: 'Verification & Safety',
-                    content: 'Technicians may be asked to provide identity or business-related details for verification and safety purposes.',
+                    content:
+                        'Technicians may be asked to provide identity or business-related details for verification and safety purposes.',
                     color: Colors.teal,
                   ),
                   const SizedBox(height: 20),
@@ -106,7 +113,8 @@ class TechnicianTermsScreen extends StatelessWidget {
                   _buildSection(
                     icon: Icons.how_to_reg,
                     title: 'Acceptance',
-                    content: 'By using ThumbTech as a technician/service provider, you confirm that you understand and agree to these terms and conditions.',
+                    content:
+                        'By using ThumbTech as a technician/service provider, you confirm that you understand and agree to these terms and conditions.',
                     color: Colors.indigo,
                   ),
 
@@ -139,8 +147,8 @@ class TechnicianTermsScreen extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF2563EB).withOpacity(0.1),
-            const Color(0xFF2563EB).withOpacity(0.05),
+            const Color(0xFF2563EB).withValues(alpha: 0.1),
+            const Color(0xFF2563EB).withValues(alpha: 0.05),
           ],
         ),
       ),
@@ -153,7 +161,7 @@ class TechnicianTermsScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -164,7 +172,7 @@ class TechnicianTermsScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withOpacity(0.1),
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: const Icon(
@@ -189,10 +197,7 @@ class TechnicianTermsScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         'Technician Agreement',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -244,7 +249,7 @@ class TechnicianTermsScreen extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -256,7 +261,9 @@ class TechnicianTermsScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: warning ? Colors.red.shade50 : color.withOpacity(0.05),
+              color: warning
+                  ? Colors.red.shade50
+                  : color.withValues(alpha: 0.05),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -267,7 +274,9 @@ class TechnicianTermsScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: warning ? Colors.red.shade100 : color.withOpacity(0.1),
+                    color: warning
+                        ? Colors.red.shade100
+                        : color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -283,7 +292,9 @@ class TechnicianTermsScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: warning ? Colors.red.shade700 : const Color(0xFF1A1A1A),
+                      color: warning
+                          ? Colors.red.shade700
+                          : const Color(0xFF1A1A1A),
                     ),
                   ),
                 ),
@@ -314,7 +325,7 @@ class TechnicianTermsScreen extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -326,7 +337,7 @@ class TechnicianTermsScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withOpacity(0.05),
+              color: const Color(0xFF2563EB).withValues(alpha: 0.05),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -337,7 +348,7 @@ class TechnicianTermsScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withOpacity(0.1),
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -374,9 +385,15 @@ class TechnicianTermsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                _buildBulletPoint('Technicians agree to the selected pricing and duration'),
-                _buildBulletPoint('Subscription fees are generally non-refundable'),
-                _buildBulletPoint('Platform access/features may vary based on the active plan'),
+                _buildBulletPoint(
+                  'Technicians agree to the selected pricing and duration',
+                ),
+                _buildBulletPoint(
+                  'Subscription fees are generally non-refundable',
+                ),
+                _buildBulletPoint(
+                  'Platform access/features may vary based on the active plan',
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'ThumbTech reserves the right to:\n• Update subscription pricing\n• Modify plans\n• Limit features\n• Discontinue offers at any time\n\nFailure to renew a subscription may result in limited access to leads or platform features.',
@@ -479,12 +496,7 @@ class TechnicianTermsScreen extends StatelessWidget {
             '• ',
             style: TextStyle(fontSize: 14, color: Color(0xFF2563EB)),
           ),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
         ],
       ),
     );
@@ -503,7 +515,7 @@ class TechnicianTermsScreen extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2563EB).withOpacity(0.3),
+            color: const Color(0xFF2563EB).withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -548,10 +560,7 @@ class TechnicianTermsScreen extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               'Have questions? Contact Support',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -569,7 +578,9 @@ class TechnicianTermsScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('For any questions or concerns regarding technician terms and conditions, please contact us at:'),
+            const Text(
+              'For any questions or concerns regarding technician terms and conditions, please contact us at:',
+            ),
             const SizedBox(height: 16),
             InkWell(
               onTap: () => _launchEmail(),

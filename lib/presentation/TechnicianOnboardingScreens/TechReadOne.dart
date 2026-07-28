@@ -7,11 +7,7 @@ class TechReadOne extends StatelessWidget {
   final Map<String, dynamic>? userData;
   final File? profileImage;
 
-  const TechReadOne({
-    super.key,
-    this.userData,
-    this.profileImage,
-  });
+  const TechReadOne({super.key, this.userData, this.profileImage});
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +20,12 @@ class TechReadOne extends StatelessWidget {
             Expanded(
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 10,right: 10,bottom: 2,top: 2),
+                  padding: const EdgeInsets.only(
+                    left: 10,
+                    right: 10,
+                    bottom: 2,
+                    top: 2,
+                  ),
                   child: Image.asset(
                     'assets/onboarding/cust1.png',
                     width: double.infinity,
@@ -37,9 +38,16 @@ class TechReadOne extends StatelessWidget {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.image_not_supported, size: 80, color: Colors.grey),
+                              Icon(
+                                Icons.image_not_supported,
+                                size: 80,
+                                color: Colors.grey,
+                              ),
                               SizedBox(height: 16),
-                              Text('Image not found', style: TextStyle(color: Colors.grey)),
+                              Text(
+                                'Image not found',
+                                style: TextStyle(color: Colors.grey),
+                              ),
                             ],
                           ),
                         ),
@@ -57,7 +65,7 @@ class TechReadOne extends StatelessWidget {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, -5),
                   ),

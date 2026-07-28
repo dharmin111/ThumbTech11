@@ -6,7 +6,6 @@ import 'package:thumstechs/Userform/UserInfoScreen.dart';
 import 'package:thumstechs/presentation/DashBoard/TechnicianDashboard.dart';
 import '../presentation/DashBoard/CustomerDashboard.dart';
 import '../presentation/authScreen/LoginScreen.dart';
-import '../presentation/authScreen/UserSelectScreen.dart';
 
 class AppRouter {
   static Future<Widget> getStartScreen() async {
@@ -42,7 +41,9 @@ class AppRouter {
       if (role == "customer") {
         // Check if customer has complete profile data
         final DocumentSnapshot customerDoc = await FirebaseFirestore.instance
-            .collection("users") // or "customers" collection based on your structure
+            .collection(
+              "users",
+            ) // or "customers" collection based on your structure
             .doc(user.uid)
             .get();
 
@@ -52,11 +53,12 @@ class AppRouter {
           return CustomerDashboard();
         } else {
           // Customer needs to complete profile
-          debugPrint('Customer needs to complete profile - redirecting to CustomerFormScreen');
+          debugPrint(
+            'Customer needs to complete profile - redirecting to CustomerFormScreen',
+          );
           return CustomerFillingScreen();
         }
       }
-
       // Case 4: User is a TECHNICIAN
       else if (role == "technician") {
         // Check if technician has complete profile data
@@ -67,15 +69,18 @@ class AppRouter {
 
         // If technician has all required data, go to TechnicianDashboard
         if (technicianDoc.exists && _hasCompleteTechnicianData(technicianDoc)) {
-          debugPrint('Technician has complete data - redirecting to TechnicianDashboard');
+          debugPrint(
+            'Technician has complete data - redirecting to TechnicianDashboard',
+          );
           return TechnicianDashboard();
         } else {
           // Technician needs to complete profile
-          debugPrint('Technician needs to complete profile - redirecting to UserInfoScreen');
+          debugPrint(
+            'Technician needs to complete profile - redirecting to UserInfoScreen',
+          );
           return const UserInfoScreen();
         }
       }
-
       // Case 5: Invalid role
       else {
         debugPrint('Invalid role - redirecting to UserSelectionScreen');

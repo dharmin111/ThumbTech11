@@ -48,10 +48,7 @@ class _AdminApproveScreenState extends State<AdminApproveScreen> {
                   SizedBox(height: 16),
                   Text(
                     'No pending admin approvals',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   SizedBox(height: 8),
                   Text(
@@ -86,7 +83,7 @@ class _AdminApproveScreenState extends State<AdminApproveScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -98,7 +95,7 @@ class _AdminApproveScreenState extends State<AdminApproveScreen> {
           Row(
             children: [
               CircleAvatar(
-                backgroundColor: Colors.orange.withOpacity(0.1),
+                backgroundColor: Colors.orange.withValues(alpha: 0.1),
                 child: const Icon(Icons.person, color: Colors.orange),
               ),
               const SizedBox(width: 16),
@@ -129,9 +126,12 @@ class _AdminApproveScreenState extends State<AdminApproveScreen> {
                     ),
                     const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
+                        color: Colors.orange.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
@@ -161,9 +161,7 @@ class _AdminApproveScreenState extends State<AdminApproveScreen> {
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed: () => _rejectAdmin(adminId),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
-                    ),
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
                     child: const Text('Reject'),
                   ),
                 ],
@@ -177,10 +175,7 @@ class _AdminApproveScreenState extends State<AdminApproveScreen> {
 
   Future<void> _approveAdmin(String adminId) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(adminId)
-          .update({
+      await FirebaseFirestore.instance.collection('users').doc(adminId).update({
         'isApproved': true,
         'approvedAt': FieldValue.serverTimestamp(),
       });
@@ -193,10 +188,7 @@ class _AdminApproveScreenState extends State<AdminApproveScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -237,10 +229,7 @@ class _AdminApproveScreenState extends State<AdminApproveScreen> {
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }

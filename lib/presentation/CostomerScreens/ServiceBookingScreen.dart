@@ -23,7 +23,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
     with SingleTickerProviderStateMixin {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestoreStorageCustomerOrder _firebaseService =
-  FirebaseFirestoreStorageCustomerOrder();
+      FirebaseFirestoreStorageCustomerOrder();
   late TabController _tabController;
   String? _userId;
 
@@ -79,7 +79,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
           bottom: TabBar(
             controller: _tabController,
             labelColor: primaryCyan,
-            unselectedLabelColor: darkBlue.withOpacity(0.5),
+            unselectedLabelColor: darkBlue.withValues(alpha: 0.5),
             indicatorColor: primaryCyan,
             tabs: const [
               Tab(text: 'Pending'),
@@ -112,8 +112,11 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                 .where((booking) => booking.status.toLowerCase() == 'accepted')
                 .toList();
             final rejectedBookings = allBookings
-                .where((booking) => booking.status.toLowerCase() == 'rejected' ||
-                booking.status.toLowerCase() == 'cancelled')
+                .where(
+                  (booking) =>
+                      booking.status.toLowerCase() == 'rejected' ||
+                      booking.status.toLowerCase() == 'cancelled',
+                )
                 .toList();
 
             return TabBarView(
@@ -162,14 +165,14 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
               Icon(
                 Icons.login_outlined,
                 size: 80,
-                color: darkBlue.withOpacity(0.3),
+                color: darkBlue.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
               Text(
                 'Please login to view your bookings',
                 style: TextStyle(
                   fontSize: 16,
-                  color: darkBlue.withOpacity(0.6),
+                  color: darkBlue.withValues(alpha: 0.6),
                 ),
               ),
               const SizedBox(height: 20),
@@ -201,14 +204,14 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
           Icon(
             Icons.error_outline,
             size: 60,
-            color: Colors.red.withOpacity(0.5),
+            color: Colors.red.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
             'Error loading bookings',
             style: TextStyle(
               fontSize: 16,
-              color: darkBlue.withOpacity(0.6),
+              color: darkBlue.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 8),
@@ -268,10 +271,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            iconData,
-            style: const TextStyle(fontSize: 64),
-          ),
+          Text(iconData, style: const TextStyle(fontSize: 64)),
           const SizedBox(height: 16),
           Text(
             title,
@@ -286,7 +286,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
             subtitle,
             style: TextStyle(
               fontSize: 14,
-              color: darkBlue.withOpacity(0.5),
+              color: darkBlue.withValues(alpha: 0.5),
             ),
           ),
         ],
@@ -333,9 +333,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
     );
 
     try {
-      await _firebaseService.rePostRequest(
-        requestId: requestId,
-      );
+      await _firebaseService.rePostRequest(requestId: requestId);
 
       if (mounted) {
         Navigator.pop(context);
@@ -363,9 +361,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
             Icon(Icons.refresh, color: primaryCyan, size: 28),
@@ -463,7 +459,11 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.blue.shade700, size: 18),
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.blue.shade700,
+                    size: 18,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -482,10 +482,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(fontSize: 15),
-            ),
+            child: const Text('Cancel', style: TextStyle(fontSize: 15)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -552,9 +549,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
             Icon(Icons.delete_outline, color: Colors.red, size: 28),
@@ -576,10 +571,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(fontSize: 15),
-            ),
+            child: const Text('Cancel', style: TextStyle(fontSize: 15)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -615,17 +607,17 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
     if (status == 'pending') {
       statusMessage = '⏳ Waiting for technician to accept your request';
     } else if (status == 'accepted') {
-      statusMessage = '✅ Technician has accepted your request. You can now chat with them.';
+      statusMessage =
+          '✅ Technician has accepted your request. You can now chat with them.';
     } else {
-      statusMessage = '❌ Your request has been rejected. You can repost it to find a new technician.';
+      statusMessage =
+          '❌ Your request has been rejected. You can repost it to find a new technician.';
     }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -633,7 +625,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
+              color: statusColor.withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -644,7 +636,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
+                    color: statusColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -672,14 +664,17 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                         'ID: ${booking.id?.substring(0, booking.id!.length > 8 ? 8 : booking.id!.length)}...',
                         style: TextStyle(
                           fontSize: 11,
-                          color: darkBlue.withOpacity(0.5),
+                          color: darkBlue.withValues(alpha: 0.5),
                         ),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor,
                     borderRadius: BorderRadius.circular(20),
@@ -712,10 +707,13 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
               children: [
                 // Status Message
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 12,
+                  ),
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
@@ -752,9 +750,11 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                     padding: const EdgeInsets.all(12),
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
-                      color: primaryCyan.withOpacity(0.1),
+                      color: primaryCyan.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: primaryCyan.withOpacity(0.3)),
+                      border: Border.all(
+                        color: primaryCyan.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -779,7 +779,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                                 'Technician Assigned',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: darkBlue.withOpacity(0.6),
+                                  color: darkBlue.withValues(alpha: 0.6),
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -806,11 +806,12 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                         if (booking.technicianPhone != null &&
                             booking.technicianPhone!.isNotEmpty)
                           GestureDetector(
-                            onTap: () => _makePhoneCall(booking.technicianPhone!),
+                            onTap: () =>
+                                _makePhoneCall(booking.technicianPhone!),
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: primaryCyan.withOpacity(0.2),
+                                color: primaryCyan.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
@@ -830,13 +831,19 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                     padding: const EdgeInsets.all(12),
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      border: Border.all(
+                        color: Colors.red.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.info_outline, color: Colors.red, size: 20),
+                        const Icon(
+                          Icons.info_outline,
+                          color: Colors.red,
+                          size: 20,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -968,7 +975,8 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () => _showRePostDialog(booking.id!, booking),
+                          onPressed: () =>
+                              _showRePostDialog(booking.id!, booking),
                           icon: const Icon(Icons.refresh, size: 18),
                           label: const Text('Repost'),
                           style: OutlinedButton.styleFrom(
@@ -1008,9 +1016,15 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value,
-      {int maxLines = 1}) {
-    if (value.isEmpty || value == 'Date not available' || value == 'Invalid date') {
+  Widget _buildDetailRow(
+    IconData icon,
+    String label,
+    String value, {
+    int maxLines = 1,
+  }) {
+    if (value.isEmpty ||
+        value == 'Date not available' ||
+        value == 'Invalid date') {
       return const SizedBox();
     }
 
@@ -1019,10 +1033,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 28,
-            child: Icon(icon, size: 16, color: primaryCyan),
-          ),
+          SizedBox(width: 28, child: Icon(icon, size: 16, color: primaryCyan)),
           const SizedBox(width: 12),
           SizedBox(
             width: 100,
@@ -1031,7 +1042,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: darkBlue.withOpacity(0.7),
+                color: darkBlue.withValues(alpha: 0.7),
               ),
             ),
           ),
@@ -1093,8 +1104,9 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
   }
 
   IconData _getServiceIcon(String serviceType) {
-    if (serviceType.contains('AC') || serviceType.contains('Air'))
+    if (serviceType.contains('AC') || serviceType.contains('Air')) {
       return Icons.ac_unit;
+    }
     if (serviceType.contains('Washing')) return Icons.local_laundry_service;
     if (serviceType.contains('Plumbing')) return Icons.plumbing;
     if (serviceType.contains('Electrical')) return Icons.electrical_services;
@@ -1112,7 +1124,9 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Cancel Request'),
-        content: const Text('Are you sure you want to cancel this service request?'),
+        content: const Text(
+          'Are you sure you want to cancel this service request?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -1142,9 +1156,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                 );
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Yes, Cancel'),
           ),
         ],
@@ -1156,7 +1168,8 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
-    final conversationId = '${booking.id}_${currentUser.uid}_${booking.technicianId}';
+    final conversationId =
+        '${booking.id}_${currentUser.uid}_${booking.technicianId}';
 
     Navigator.push(
       context,
