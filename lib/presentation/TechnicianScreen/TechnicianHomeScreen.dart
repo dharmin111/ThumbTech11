@@ -51,7 +51,9 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MembershipScreen()),
+          MaterialPageRoute(
+            builder: (context) => const MembershipScreen(),
+          ),
         );
       }
     });
@@ -92,6 +94,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
           }
         });
       }
+
     } catch (e) {
       print('❌ Error checking membership: $e');
       setState(() {
@@ -124,7 +127,10 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
     try {
       final url = Uri.parse(_membershipUrl);
       if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
+        await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication,
+        );
         _checkMembershipAndLoadData();
       } else {
         throw 'Could not launch URL';
@@ -172,8 +178,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
       List<String> pincodesList = [];
       if (data['pincodes'] != null && (data['pincodes'] as List).isNotEmpty) {
         pincodesList = List<String>.from(data['pincodes']);
-      } else if (data['pincode'] != null &&
-          data['pincode'].toString().isNotEmpty) {
+      } else if (data['pincode'] != null && data['pincode'].toString().isNotEmpty) {
         pincodesList = [data['pincode'].toString()];
       }
 
@@ -222,55 +227,50 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
           .orderBy('createdAt', descending: true)
           .snapshots()
           .map((QuerySnapshot<Map<String, dynamic>> snapshot) {
-            final filteredDocs = snapshot.docs.where((doc) {
-              final data = doc.data();
-              final serviceType = data['serviceType']?.toString() ?? '';
-              final customerPincode = data['pincode']?.toString() ?? '';
+        final filteredDocs = snapshot.docs.where((doc) {
+          final data = doc.data();
+          final serviceType = data['serviceType']?.toString() ?? '';
+          final customerPincode = data['pincode']?.toString() ?? '';
 
-              final categoryMatches = technicianCategories.contains(
-                serviceType,
-              );
-              final pincodeMatches = technicianPincodes.contains(
-                customerPincode,
-              );
+          final categoryMatches = technicianCategories.contains(serviceType);
+          final pincodeMatches = technicianPincodes.contains(customerPincode);
 
-              return categoryMatches && pincodeMatches;
-            }).toList();
+          return categoryMatches && pincodeMatches;
+        }).toList();
 
-            print('📊 Filtered Docs Count: ${filteredDocs.length}');
-            print('📊 Last Request Count: $_lastRequestCount');
+        print('📊 Filtered Docs Count: ${filteredDocs.length}');
+        print('📊 Last Request Count: $_lastRequestCount');
 
-            if (_isFirstSnapshot) {
-              _lastRequestCount = filteredDocs.length;
-              _isFirstSnapshot = false;
-              print('📊 First snapshot, count: $_lastRequestCount');
-            } else {
-              if (filteredDocs.length > _lastRequestCount &&
-                  filteredDocs.isNotEmpty) {
-                final newRequest = filteredDocs.first;
-                final data = newRequest.data();
+        if (_isFirstSnapshot) {
+          _lastRequestCount = filteredDocs.length;
+          _isFirstSnapshot = false;
+          print('📊 First snapshot, count: $_lastRequestCount');
+        } else {
+          if (filteredDocs.length > _lastRequestCount && filteredDocs.isNotEmpty) {
+            final newRequest = filteredDocs.first;
+            final data = newRequest.data();
 
-                print('🔔 NEW REQUEST DETECTED!');
-                print('📦 Request ID: ${data['requestId']}');
-                print('📦 Service Name: ${data['serviceName']}');
+            print('🔔 NEW REQUEST DETECTED!');
+            print('📦 Request ID: ${data['requestId']}');
+            print('📦 Service Name: ${data['serviceName']}');
 
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    _showNewTaskPopup(data);
-                  }
-                });
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _showNewTaskPopup(data);
               }
-              _lastRequestCount = filteredDocs.length;
-            }
+            });
+          }
+          _lastRequestCount = filteredDocs.length;
+        }
 
-            if (mounted) {
-              setState(() {
-                totalPending = filteredDocs.length;
-              });
-            }
-
-            return filteredDocs;
+        if (mounted) {
+          setState(() {
+            totalPending = filteredDocs.length;
           });
+        }
+
+        return filteredDocs;
+      });
 
       if (!_isActive || !mounted) return;
       setState(() {
@@ -322,7 +322,10 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
               const Expanded(
                 child: Text(
                   "New Service Request",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
               ),
             ],
@@ -377,7 +380,10 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                       Expanded(
                         child: Text(
                           'Subscribe to view contact details and accept requests',
-                          style: TextStyle(fontSize: 12, color: Colors.red),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.red,
+                          ),
                         ),
                       ),
                     ],
@@ -398,12 +404,12 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
               },
               style: TextButton.styleFrom(
                 foregroundColor: Colors.grey,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
-              child: const Text('Close', style: TextStyle(fontSize: 15)),
+              child: const Text(
+                'Close',
+                style: TextStyle(fontSize: 15),
+              ),
             ),
             if (_hasActivePlan)
               ElevatedButton(
@@ -440,10 +446,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2563EB),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -463,10 +466,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -497,11 +497,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
     });
   }
 
-  Widget _buildPopupDetailRow(
-    String label,
-    String value, {
-    bool isLocked = false,
-  }) {
+  Widget _buildPopupDetailRow(String label, String value, {bool isLocked = false}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -531,10 +527,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
   }
 
   // ================= ACCEPT REQUEST =================
-  Future<void> _acceptRequest(
-    String requestId,
-    Map<String, dynamic> requestData,
-  ) async {
+  Future<void> _acceptRequest(String requestId, Map<String, dynamic> requestData) async {
     if (!_hasActivePlan) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -559,13 +552,13 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
           .collection('service_requests')
           .doc(requestId)
           .update({
-            'technicianId': user.uid,
-            'technicianName': technicianName,
-            'technicianPhone': user.phoneNumber ?? '',
-            'status': 'accepted',
-            'acceptedAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+        'technicianId': user.uid,
+        'technicianName': technicianName,
+        'technicianPhone': user.phoneNumber ?? '',
+        'status': 'accepted',
+        'acceptedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
       final pendingDoc = await FirebaseFirestore.instance
           .collection('technician_pending_requests')
@@ -601,8 +594,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
         'userId': user.uid,
         'userRole': 'technician',
         'title': '✅ Request Accepted Successfully!',
-        'body':
-            'You have accepted the service request from ${requestData['userName']}.',
+        'body': 'You have accepted the service request from ${requestData['userName']}.',
         'type': 'task_accepted',
         'requestId': requestId,
         'customerName': requestData['userName'],
@@ -624,6 +616,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
           backgroundColor: Colors.green,
         ),
       );
+
     } catch (e) {
       Navigator.pop(context);
       print('❌ Error accepting request: $e');
@@ -650,9 +643,9 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
           .collection('service_requests')
           .doc(requestId)
           .update({
-            'status': 'rejected',
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+        'status': 'rejected',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
       await OneSignalNotificationService.sendRequestRejectedNotification(
         customerId: requestData['userId'],
@@ -664,8 +657,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
         'userId': requestData['userId'],
         'userRole': 'customer',
         'title': '❌ Request Rejected',
-        'body':
-            'Your service request has been rejected. You can post a new request.',
+        'body': 'Your service request has been rejected. You can post a new request.',
         'type': 'request_rejected',
         'requestId': requestId,
         'isRead': false,
@@ -680,6 +672,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
           backgroundColor: Colors.orange,
         ),
       );
+
     } catch (e) {
       print('❌ Error rejecting request: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -697,9 +690,13 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
       User? user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
-        {'isActive': value, 'updatedAt': FieldValue.serverTimestamp()},
-      );
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({
+        'isActive': value,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
       if (!_isActive || !mounted) return;
 
@@ -718,14 +715,11 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            value
-                ? '✅ You are now available for service'
-                : 'You are now offline',
-          ),
+          content: Text(value ? '✅ You are now available for service' : 'You are now offline'),
           backgroundColor: value ? Colors.green : Colors.orange,
         ),
       );
+
     } catch (e) {
       print('❌ Error toggling availability: $e');
     }
@@ -821,7 +815,9 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
               Navigator.pop(context);
               _acceptRequest(requestId, data);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+            ),
             child: const Text('Accept'),
           ),
         ],
@@ -845,7 +841,9 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
               Navigator.pop(context);
               _rejectRequest(requestId);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
             child: const Text('Reject'),
           ),
         ],
@@ -912,7 +910,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
+                                color: Colors.black.withOpacity(0.3),
                                 blurRadius: 8,
                               ),
                             ],
@@ -932,17 +930,13 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
               const SizedBox(height: 8),
               _buildDetailRow(
                 'Phone',
-                _hasActivePlan
-                    ? (data['userPhone'] ?? 'N/A')
-                    : '🔒 Subscribe to view',
+                _hasActivePlan ? (data['userPhone'] ?? 'N/A') : '🔒 Subscribe to view',
                 isLocked: !_hasActivePlan,
               ),
               const SizedBox(height: 8),
               _buildDetailRow(
                 'Email',
-                _hasActivePlan
-                    ? (data['userEmail'] ?? 'N/A')
-                    : '🔒 Subscribe to view',
+                _hasActivePlan ? (data['userEmail'] ?? 'N/A') : '🔒 Subscribe to view',
                 isLocked: !_hasActivePlan,
               ),
               const SizedBox(height: 8),
@@ -950,9 +944,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
               const SizedBox(height: 8),
               _buildDetailRow(
                 'Location',
-                _hasActivePlan
-                    ? (data['location'] ?? 'N/A')
-                    : '🔒 Subscribe to view',
+                _hasActivePlan ? (data['location'] ?? 'N/A') : '🔒 Subscribe to view',
                 isLocked: !_hasActivePlan,
               ),
               const SizedBox(height: 8),
@@ -961,8 +953,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
               _buildDetailRow('Budget', '₹${data['budget'] ?? 0}'),
               const SizedBox(height: 8),
               _buildDetailRow('Issue', data['issue'] ?? 'N/A'),
-              if (data['additionalNote'] != null &&
-                  data['additionalNote'].isNotEmpty) ...[
+              if (data['additionalNote'] != null && data['additionalNote'].isNotEmpty) ...[
                 const SizedBox(height: 8),
                 _buildDetailRow('Additional Note', data['additionalNote']),
               ],
@@ -1026,14 +1017,18 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                   return Container(
                     height: 120,
                     color: Colors.grey.shade200,
-                    child: const Center(child: CircularProgressIndicator()),
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
                   );
                 },
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     height: 120,
                     color: Colors.grey.shade200,
-                    child: const Center(child: Text('Video not available')),
+                    child: const Center(
+                      child: Text('Video not available'),
+                    ),
                   );
                 },
               ),
@@ -1045,7 +1040,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
+                      color: Colors.black.withOpacity(0.3),
                       blurRadius: 8,
                     ),
                   ],
@@ -1125,14 +1120,9 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
             child: GestureDetector(
               onTap: _openMembershipWebsite,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: _hasActivePlan
-                      ? Colors.green.shade50
-                      : Colors.red.shade50,
+                  color: _hasActivePlan ? Colors.green.shade50 : Colors.red.shade50,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: _hasActivePlan ? Colors.green : Colors.red,
@@ -1163,9 +1153,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
-                              color: _hasActivePlan
-                                  ? Colors.green.shade700
-                                  : Colors.red.shade700,
+                              color: _hasActivePlan ? Colors.green.shade700 : Colors.red.shade700,
                             ),
                           ),
                           if (_hasActivePlan)
@@ -1211,8 +1199,8 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF2563EB).withValues(alpha: 0.1),
-            const Color(0xFF2563EB).withValues(alpha: 0.05),
+            const Color(0xFF2563EB).withOpacity(0.1),
+            const Color(0xFF2563EB).withOpacity(0.05),
           ],
         ),
       ),
@@ -1239,20 +1227,14 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
               runSpacing: 4,
               children: technicianCategories.map((category) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                    color: const Color(0xFF2563EB).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     category,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF2563EB),
-                    ),
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF2563EB)),
                   ),
                 );
               }).toList(),
@@ -1276,7 +1258,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.05),
+            color: Colors.grey.withOpacity(0.05),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -1306,7 +1288,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
           Switch(
             value: isAvailable,
             onChanged: _toggleAvailability,
-            activeThumbColor: Colors.green,
+            activeColor: Colors.green,
           ),
         ],
       ),
@@ -1349,12 +1331,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
     );
   }
 
-  Widget _buildStatCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1362,7 +1339,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.05),
+            color: Colors.grey.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1425,11 +1402,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 return Center(
                   child: Column(
                     children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 40,
-                        color: Colors.red[400],
-                      ),
+                      Icon(Icons.error_outline, size: 40, color: Colors.red[400]),
                       const SizedBox(height: 8),
                       Text(
                         'Error: ${snapshot.error}',
@@ -1464,8 +1437,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: pendingRequests.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   var request = pendingRequests[index];
                   return _buildRequestCard(request);
@@ -1479,14 +1451,11 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
   }
 
   // ================= REQUEST CARD =================
-  Widget _buildRequestCard(
-    QueryDocumentSnapshot<Map<String, dynamic>> request,
-  ) {
+  Widget _buildRequestCard(QueryDocumentSnapshot<Map<String, dynamic>> request) {
     Map<String, dynamic> data = request.data();
     final createdAt = (data['createdAt'] as Timestamp).toDate();
 
-    final bool isHighlighted =
-        _highlightedRequestId != null &&
+    final bool isHighlighted = _highlightedRequestId != null &&
         _shouldHighlight &&
         _highlightedRequestId == request.id;
 
@@ -1505,8 +1474,8 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
         boxShadow: [
           BoxShadow(
             color: isHighlighted
-                ? Colors.green.withValues(alpha: 0.4)
-                : Colors.grey.withValues(alpha: 0.05),
+                ? Colors.green.withOpacity(0.4)
+                : Colors.grey.withOpacity(0.05),
             blurRadius: isHighlighted ? 15 : 5,
             offset: const Offset(0, 2),
           ),
@@ -1533,10 +1502,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                   children: [
                     if (isHighlighted) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.green,
                           borderRadius: BorderRadius.circular(12),
@@ -1604,11 +1570,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
 
                 Row(
                   children: [
-                    const Icon(
-                      Icons.person_outline,
-                      size: 16,
-                      color: Colors.grey,
-                    ),
+                    const Icon(Icons.person_outline, size: 16, color: Colors.grey),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -1621,17 +1583,11 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(
-                      Icons.phone_outlined,
-                      size: 16,
-                      color: Colors.grey,
-                    ),
+                    const Icon(Icons.phone_outlined, size: 16, color: Colors.grey),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _hasActivePlan
-                            ? (data['userPhone'] ?? 'No phone')
-                            : '🔒 Subscribe to view',
+                        _hasActivePlan ? (data['userPhone'] ?? 'No phone') : '🔒 Subscribe to view',
                         style: TextStyle(
                           fontSize: 14,
                           color: _hasActivePlan ? Colors.black : Colors.red,
@@ -1643,17 +1599,11 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(
-                      Icons.location_on_outlined,
-                      size: 16,
-                      color: Colors.grey,
-                    ),
+                    const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _hasActivePlan
-                            ? (data['location'] ?? 'Location not specified')
-                            : '🔒 Subscribe to view',
+                        _hasActivePlan ? (data['location'] ?? 'Location not specified') : '🔒 Subscribe to view',
                         style: TextStyle(
                           fontSize: 14,
                           color: _hasActivePlan ? Colors.black : Colors.red,
@@ -1665,11 +1615,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(
-                      Icons.location_city,
-                      size: 16,
-                      color: Colors.grey,
-                    ),
+                    const Icon(Icons.location_city, size: 16, color: Colors.grey),
                     const SizedBox(width: 8),
                     Text(
                       'Pincode: ${data['pincode'] ?? 'N/A'}',
@@ -1690,10 +1636,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                       children: [
                         const Text(
                           'Issue:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -1728,9 +1671,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                             ? () => _showAcceptDialog(request.id, data)
                             : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _hasActivePlan
-                              ? Colors.green
-                              : Colors.grey,
+                          backgroundColor: _hasActivePlan ? Colors.green : Colors.grey,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: Text(
@@ -1822,7 +1763,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
+                  color: Colors.red.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -1858,7 +1799,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: timerColor.withValues(alpha: 0.1),
+                color: timerColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -1894,11 +1835,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.warning_amber_rounded,
-            size: 64,
-            color: Colors.orange[400],
-          ),
+          Icon(Icons.warning_amber_rounded, size: 64, color: Colors.orange[400]),
           const SizedBox(height: 16),
           const Text(
             'Profile Incomplete',

@@ -2,7 +2,7 @@ name: thumstechs
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.0.0+7
+version: 1.0.0+9
 
 environment:
   sdk: ^3.11.1
@@ -10,7 +10,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
   cupertino_icons: ^1.0.8
   firebase_auth: ^6.5.1
   cloud_firestore: ^6.4.1
@@ -93,6 +92,8 @@ flutter:
     - assets/membership/ExpireM.PNG
     - assets/membership/growthpack.png
     - assets/membership/Trial Pack.png
+    - assets/membership/img.png
+    - assets/membership/img_1.png
 
 
     - assets/AppLogoo/firststart.PNG

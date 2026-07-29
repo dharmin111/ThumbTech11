@@ -61,7 +61,10 @@ class _MembershipScreenState extends State<MembershipScreen> {
       final uri = Uri.parse(url);
 
       if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
         // After returning, refresh plan status
         await _loadPlanStatus();
       } else {
@@ -99,81 +102,81 @@ class _MembershipScreenState extends State<MembershipScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              // 🔥 Plan Status Card
+              _buildPlanStatusCard(),
+              const SizedBox(height: 24),
+
+              // 🔥 Plans Grid with Images Only
+              _buildPlansGrid(),
+              const SizedBox(height: 16),
+
+              // 🔥 Error Message
+              if (_errorMessage != null)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.red.shade700,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                            color: Colors.red.shade700,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 16),
+
+              // 🔥 Note
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Row(
                   children: [
-                    // 🔥 Plan Status Card
-                    _buildPlanStatusCard(),
-                    const SizedBox(height: 24),
-
-                    // 🔥 Plans Grid with Images Only
-                    _buildPlansGrid(),
-                    const SizedBox(height: 16),
-
-                    // 🔥 Error Message
-                    if (_errorMessage != null)
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red.shade200),
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.blue.shade700,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'You will be redirected to our secure payment page to complete your subscription.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue.shade700,
                         ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              color: Colors.red.shade700,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _errorMessage!,
-                                style: TextStyle(
-                                  color: Colors.red.shade700,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-
-                    // 🔥 Note
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.blue.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.blue.shade700,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'You will be redirected to our secure payment page to complete your subscription.',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.blue.shade700,
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -217,7 +220,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: Colors.grey.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -228,10 +231,14 @@ class _MembershipScreenState extends State<MembershipScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
+              color: statusColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(statusIcon, color: statusColor, size: 32),
+            child: Icon(
+              statusIcon,
+              color: statusColor,
+              size: 32,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -243,15 +250,16 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: isActive
-                        ? Colors.green.shade700
-                        : Colors.red.shade700,
+                    color: isActive ? Colors.green.shade700 : Colors.red.shade700,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   statusText,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
                 ),
               ],
             ),
@@ -286,7 +294,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.1),
+                  color: Colors.grey.withOpacity(0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -303,7 +311,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                   return Container(
                     height: 200,
                     width: double.infinity,
-                    color: const Color(0xFF42D7D7).withValues(alpha: 0.1),
+                    color: const Color(0xFF42D7D7).withOpacity(0.1),
                     child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -315,9 +323,7 @@ class _MembershipScreenState extends State<MembershipScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            plan['planType'] == '2_days'
-                                ? 'Trial Pack'
-                                : 'Growth Pack',
+                            plan['planType'] == '2_days' ? 'Trial Pack' : 'Growth Pack',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
