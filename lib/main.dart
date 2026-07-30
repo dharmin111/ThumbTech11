@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// import 'package:onesignal_flutter/onesignal_flutter.dart';
-// import 'package:thumstechs/Services/oneSignalNotificationService.dart';
-// import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:thumstechs/Services/oneSignalNotificationService.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 // ✅ Admin Screens (Web Only)
 import 'Admin/AdminScreens/AdminDashboard.dart';
@@ -37,31 +37,31 @@ void main() async {
 
   print("✅ Firebase Initialized");
 
-  // // ================= ONESIGNAL INIT (Mobile Only) =================
-  // if (!kIsWeb) {
-  //   try {
-  //     OneSignal.initialize("36709973-f516-4746-a694-c58ad52a532d");
-  //     await OneSignalNotificationService.initialize();
-  //     // await OneSignal.Notifications.requestPermission(true);
-  //     print("✅ OneSignal Initialized");
-  //
-  //     final user = FirebaseAuth.instance.currentUser;
-  //     if (user != null) {
-  //       OneSignal.login(user.uid);
-  //       await OneSignalNotificationService.saveCurrentUserOneSignalId();
-  //     }
-  //
-  //     OneSignal.Notifications.addClickListener((event) {
-  //       final data = event.notification.additionalData ?? {};
-  //       print('📱 Notification clicked: $data');
-  //       _handleNotificationTap(Map<String, dynamic>.from(data));
-  //     });
-  //   } catch (e) {
-  //     print('❌ OneSignal Error (skipping for web): $e');
-  //   }
-  // } else {
-  //   print('⚠️ OneSignal: Web platform detected, skipping initialization');
-  // }
+  // ================= ONESIGNAL INIT (Mobile Only) =================
+  if (!kIsWeb) {
+    try {
+      OneSignal.initialize("36709973-f516-4746-a694-c58ad52a532d");
+      await OneSignalNotificationService.initialize();
+      // await OneSignal.Notifications.requestPermission(true);
+      print("✅ OneSignal Initialized");
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        OneSignal.login(user.uid);
+        await OneSignalNotificationService.saveCurrentUserOneSignalId();
+      }
+
+      OneSignal.Notifications.addClickListener((event) {
+        final data = event.notification.additionalData ?? {};
+        print('📱 Notification clicked: $data');
+        _handleNotificationTap(Map<String, dynamic>.from(data));
+      });
+    } catch (e) {
+      print('❌ OneSignal Error (skipping for web): $e');
+    }
+  } else {
+    print('⚠️ OneSignal: Web platform detected, skipping initialization');
+  }
 
   runApp(const MyApp());
 }

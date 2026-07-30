@@ -10,24 +10,24 @@ class OneSignalNotificationService {
   static bool _isInitialized = false;
   static const String _oneSignalAppId = '36709973-f516-4746-a694-c58ad52a532d';
   static const String _oneSignalApiKey =
- 'os_v2_app_gzyjs47vczdunjuuywfnkkstfuo6ggnya4muo2mrl5tpkfh5w2a7xuhxp37sizrpeguohrwspmvujanma3iposcwut6kt5dozwrp2ti';
+ 'os_v2_app_gzyjs47vczdunjuuywfnkkstfxezryqycbiue7u6iu467b5bluxxtvjaypafcyaldcqxkmqefinzzdxi5aqjjwe7gc3q4teixmac77y';
 
   // ================= INIT =================
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
     try {
-      // OneSignal.initialize(_oneSignalAppId);
-     // await OneSignal.Notifications.requestPermission(true);
+      OneSignal.initialize(_oneSignalAppId);
+     await OneSignal.Notifications.requestPermission(true);
       _isInitialized = true;
       print('✅ OneSignal initialized');
 
-      // // CLICK LISTENER WITH NAVIGATION
-      // OneSignal.Notifications.addClickListener((event) {
-      //   final data = event.notification.additionalData ?? {};
-      //   print('📱 Notification Clicked: $data');
-      //   _handleNotificationTap(Map<String, dynamic>.from(data));
-      // });
+      // CLICK LISTENER WITH NAVIGATION
+      OneSignal.Notifications.addClickListener((event) {
+        final data = event.notification.additionalData ?? {};
+        print('📱 Notification Clicked: $data');
+        _handleNotificationTap(Map<String, dynamic>.from(data));
+      });
 
       // FOREGROUND LISTENER
       OneSignal.Notifications.addForegroundWillDisplayListener((event) {
