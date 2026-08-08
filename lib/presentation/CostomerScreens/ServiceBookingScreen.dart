@@ -23,7 +23,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
     with SingleTickerProviderStateMixin {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestoreStorageCustomerOrder _firebaseService =
-      FirebaseFirestoreStorageCustomerOrder();
+  FirebaseFirestoreStorageCustomerOrder();
   late TabController _tabController;
   String? _userId;
 
@@ -31,7 +31,8 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
   void initState() {
     super.initState();
     _userId = _firebaseService.getCurrentUserId();
-    _tabController = TabController(length: 3, vsync: this);
+    // 🔥 Tab length changed from 3 to 4
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -81,10 +82,12 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
             labelColor: primaryCyan,
             unselectedLabelColor: darkBlue.withValues(alpha: 0.5),
             indicatorColor: primaryCyan,
+            isScrollable: true,
             tabs: const [
               Tab(text: 'Pending'),
               Tab(text: 'Accepted'),
               Tab(text: 'Rejected'),
+              Tab(text: 'Expired'), // 🔥 NEW TAB
             ],
           ),
         ),
@@ -114,9 +117,13 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
             final rejectedBookings = allBookings
                 .where(
                   (booking) =>
-                      booking.status.toLowerCase() == 'rejected' ||
-                      booking.status.toLowerCase() == 'cancelled',
-                )
+              booking.status.toLowerCase() == 'rejected' ||
+                  booking.status.toLowerCase() == 'cancelled',
+            )
+                .toList();
+            // 🔥 NEW: Expired bookings
+            final expiredBookings = allBookings
+                .where((booking) => booking.status.toLowerCase() == 'expired')
                 .toList();
 
             return TabBarView(
@@ -125,6 +132,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                 _buildBookingList(pendingBookings, 'pending'),
                 _buildBookingList(acceptedBookings, 'accepted'),
                 _buildBookingList(rejectedBookings, 'rejected'),
+                _buildBookingList(expiredBookings, 'expired'), // 🔥 NEW
               ],
             );
           },
@@ -260,6 +268,11 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
         iconData = '❌';
         title = 'No Rejected Bookings';
         subtitle = 'Your rejected service requests will appear here';
+        break;
+      case 'expired':
+        iconData = '⏰';
+        title = 'No Expired Bookings';
+        subtitle = 'Your expired service requests will appear here';
         break;
       default:
         iconData = '📦';
@@ -608,10 +621,13 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
       statusMessage = '⏳ Waiting for technician to accept your request';
     } else if (status == 'accepted') {
       statusMessage =
-          '✅ Technician has accepted your request. You can now chat with them.';
+      '✅ Technician has accepted your request. You can now chat with them.';
+    } else if (status == 'expired') {
+      statusMessage =
+      '⏰ This request has expired. No technician accepted it in time. You can repost it.';
     } else {
       statusMessage =
-          '❌ Your request has been rejected. You can repost it to find a new technician.';
+      '❌ Your request has been rejected. You can repost it to find a new technician.';
     }
 
     return Card(
@@ -723,6 +739,8 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                             ? Icons.hourglass_empty
                             : status == 'accepted'
                             ? Icons.check_circle
+                            : status == 'expired'
+                            ? Icons.timer_off
                             : Icons.cancel,
                         size: 18,
                         color: statusColor,
@@ -821,6 +839,42 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                               ),
                             ),
                           ),
+                      ],
+                    ),
+                  ),
+
+                // Expired Info (only for expired)
+                if (status == 'expired')
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.timer_off,
+                          color: Colors.orange,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Expired on: ${_formatDate(booking.updatedAt)}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.orange.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -968,20 +1022,61 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                   ),
                 ],
 
-                // 🔥 Rejected: Repost and Remove buttons
+                // 🔥 Expired: Repost and Remove buttons
+                if (status == 'expired') ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () =>
+                              _showRePostDialog(booking.id!, booking),
+                          icon: const Icon(Icons.refresh, size: 18),
+                          label: const Text('Repost'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryCyan,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _showRemoveDialog(booking.id!),
+                          icon: const Icon(Icons.delete_outline, size: 18),
+                          label: const Text('Remove'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                // Rejected: Repost and Remove buttons
                 if (status == 'rejected') ...[
                   const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
+                        child: ElevatedButton.icon(
                           onPressed: () =>
                               _showRePostDialog(booking.id!, booking),
                           icon: const Icon(Icons.refresh, size: 18),
                           label: const Text('Repost'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: primaryCyan,
-                            side: const BorderSide(color: primaryCyan),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryCyan,
+                            foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -1017,11 +1112,11 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
   }
 
   Widget _buildDetailRow(
-    IconData icon,
-    String label,
-    String value, {
-    int maxLines = 1,
-  }) {
+      IconData icon,
+      String label,
+      String value, {
+        int maxLines = 1,
+      }) {
     if (value.isEmpty ||
         value == 'Date not available' ||
         value == 'Invalid date') {
@@ -1072,6 +1167,8 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
         return Colors.green;
       case 'rejected':
         return Colors.red;
+      case 'expired':
+        return Colors.grey; // 🔥 Grey color for expired
       default:
         return Colors.grey;
     }
@@ -1085,6 +1182,8 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
         return Icons.check_circle;
       case 'rejected':
         return Icons.cancel;
+      case 'expired':
+        return Icons.timer_off; // 🔥 Timer icon for expired
       default:
         return Icons.info;
     }
@@ -1098,6 +1197,8 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
         return 'Accepted';
       case 'rejected':
         return 'Rejected';
+      case 'expired':
+        return 'Expired'; // 🔥 New status text
       default:
         return status.toUpperCase();
     }

@@ -7,6 +7,7 @@ import '../../Services/oneSignalNotificationService.dart';
 import '../../Services/MembershipService.dart';
 import '../Membership/MembershipScreen.dart';
 import '../membership/MembershipExpiredScreen.dart';
+import 'TechnicianMyServicesScreen.dart';
 import 'YouTubeVideoPlayerScreen.dart';
 
 class TechnicianHomeScreen extends StatefulWidget {
@@ -25,11 +26,6 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
   bool isLoading = true;
   bool _isActive = true;
 
-  // 🔥 MEMBERSHIP STATUS - COMMENTED (Currently Disabled)
-  // bool _hasActivePlan = false;
-  // bool _isCheckingPlan = true;
-  // bool _expiredScreenShown = false;
-
   // Requests
   int totalPending = 0;
   Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>>? _requestsStream;
@@ -40,14 +36,16 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
   bool _shouldHighlight = false;
   final ScrollController _scrollController = ScrollController();
 
+  // 🔥 Timer for auto-expire (15 minutes)
+  static const int _expireMinutes = 2;
+
   // 🔥 Website URL for Membership
   static const String _membershipUrl = 'https://thumbtech-521ae.web.app/plans';
 
   @override
   void initState() {
     super.initState();
-    // _checkMembershipAndLoadData(); // 🔥 COMMENTED - Plan logic disabled
-    _loadDataDirectly(); // 🔥 NEW - Direct load without plan check
+    _loadDataDirectly();
   }
 
   @override
@@ -57,86 +55,23 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
     super.dispose();
   }
 
-  // ================= 🔥 DIRECT LOAD WITHOUT PLAN CHECK =================
+  // ================= 🔥 DIRECT LOAD =================
   Future<void> _loadDataDirectly() async {
     setState(() {
       isLoading = true;
     });
-
     await _fetchTechnicianData();
-
     setState(() {
       isLoading = false;
     });
   }
-
-  // ================= 🔥 CHECK MEMBERSHIP FIRST (COMMENTED) =================
-  /*
-  Future<void> _checkMembershipAndLoadData() async {
-    setState(() {
-      _isCheckingPlan = true;
-      isLoading = true;
-    });
-
-    try {
-      final status = await MembershipService.getPlanStatus();
-      _hasActivePlan = status['isActive'] ?? false;
-
-      print('📊 Plan Status: $_hasActivePlan');
-
-      await _fetchTechnicianData();
-
-      setState(() {
-        _isCheckingPlan = false;
-        isLoading = false;
-      });
-
-      if (!_hasActivePlan && !_expiredScreenShown) {
-        Future.delayed(const Duration(seconds: 10), () {
-          if (mounted && !_expiredScreenShown) {
-            _showExpiredScreen();
-          }
-        });
-      }
-
-    } catch (e) {
-      print('❌ Error checking membership: $e');
-      setState(() {
-        _isCheckingPlan = false;
-        isLoading = false;
-      });
-    }
-  }
-
-  // ================= 🔥 SHOW EXPIRED SCREEN (COMMENTED) =================
-  void _showExpiredScreen() {
-    if (_expiredScreenShown || !mounted) return;
-
-    _expiredScreenShown = true;
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MembershipExpiredScreen(
-          onComplete: () {
-            Navigator.pop(context);
-          },
-        ),
-      ),
-    );
-  }
-  */
 
   // ================= 🔥 OPEN MEMBERSHIP WEBSITE =================
   Future<void> _openMembershipWebsite() async {
     try {
       final url = Uri.parse(_membershipUrl);
       if (await canLaunchUrl(url)) {
-        await launchUrl(
-          url,
-          mode: LaunchMode.externalApplication,
-        );
-        // _checkMembershipAndLoadData(); // 🔥 COMMENTED
+        await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
         throw 'Could not launch URL';
       }
@@ -214,7 +149,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
     }
   }
 
-  // ================= SETUP REAL-TIME STREAM =================
+  // ================= 🔥 SETUP REAL-TIME STREAM WITH AUTO-EXPIRE =================
   void _setupRealTimeStream() {
     if (technicianCategories.isEmpty || technicianPincodes.isEmpty) {
       if (!_isActive || !mounted) return;
@@ -232,10 +167,48 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
           .orderBy('createdAt', descending: true)
           .snapshots()
           .map((QuerySnapshot<Map<String, dynamic>> snapshot) {
+        final now = DateTime.now();
+        final expiredIds = <String>[];
+
+        // 🔥 Find expired requests
+        for (final doc in snapshot.docs) {
+          final data = doc.data();
+          final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
+          if (createdAt != null) {
+            final diff = now.difference(createdAt);
+            if (diff.inMinutes >= _expireMinutes) {
+              expiredIds.add(doc.id);
+              print('⏰ Request ${doc.id} expired (${diff.inMinutes} minutes old)');
+            }
+          }
+        }
+
+        // 🔥 Update expired requests
+        if (expiredIds.isNotEmpty) {
+          final batch = FirebaseFirestore.instance.batch();
+          for (final id in expiredIds) {
+            final ref = FirebaseFirestore.instance
+                .collection('service_requests')
+                .doc(id);
+            batch.update(ref, {
+              'status': 'expired',
+              'expiredAt': FieldValue.serverTimestamp(),
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+          }
+          batch.commit().catchError((e) {
+            print('❌ Error updating expired requests: $e');
+          });
+        }
+
+        // 🔥 Filter pending requests
         final filteredDocs = snapshot.docs.where((doc) {
           final data = doc.data();
           final serviceType = data['serviceType']?.toString() ?? '';
           final customerPincode = data['pincode']?.toString() ?? '';
+          final status = data['status'] ?? 'pending';
+
+          if (status != 'pending') return false;
 
           final categoryMatches = technicianCategories.contains(serviceType);
           final pincodeMatches = technicianPincodes.contains(customerPincode);
@@ -244,8 +217,8 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
         }).toList();
 
         print('📊 Filtered Docs Count: ${filteredDocs.length}');
-        print('📊 Last Request Count: $_lastRequestCount');
 
+        // 🔥 Check for new requests
         if (_isFirstSnapshot) {
           _lastRequestCount = filteredDocs.length;
           _isFirstSnapshot = false;
@@ -350,12 +323,10 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
               const SizedBox(height: 12),
               _buildPopupDetailRow('Customer', data['userName'] ?? 'N/A'),
               const SizedBox(height: 6),
-              // 🔥 Phone - Always show (Plan logic commented)
               _buildPopupDetailRow('Phone', data['userPhone'] ?? 'N/A'),
               const SizedBox(height: 6),
               _buildPopupDetailRow('Budget', '₹${data['budget'] ?? 0}'),
               const SizedBox(height: 6),
-              // 🔥 Location - Always show (Plan logic commented)
               _buildPopupDetailRow('Location', data['location'] ?? 'N/A'),
               const SizedBox(height: 6),
               _buildPopupDetailRow('Pincode', data['pincode'] ?? 'N/A'),
@@ -363,35 +334,6 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 const SizedBox(height: 6),
                 _buildPopupDetailRow('Issue', data['issue']),
               ],
-              // 🔥 Plan expired message - COMMENTED
-              /*
-              if (!_hasActivePlan) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade200),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.lock, color: Colors.red, size: 16),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Subscribe to view contact details and accept requests',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.red,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              */
             ],
           ),
           actions: [
@@ -413,7 +355,6 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 style: TextStyle(fontSize: 15),
               ),
             ),
-            // 🔥 View Now - Always enabled (Plan logic commented)
             ElevatedButton(
               onPressed: () {
                 _isPopupShowing = false;
@@ -458,70 +399,6 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
             ),
-            /*
-            // 🔥 Plan based actions - COMMENTED
-            if (_hasActivePlan)
-              ElevatedButton(
-                onPressed: () {
-                  _isPopupShowing = false;
-                  Navigator.pop(context);
-                  setState(() {
-                    _highlightedRequestId = requestId;
-                    _shouldHighlight = true;
-                  });
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _scrollToHighlightedCard();
-                  });
-                  Future.delayed(const Duration(seconds: 30), () {
-                    if (mounted) {
-                      setState(() {
-                        _highlightedRequestId = null;
-                        _shouldHighlight = false;
-                      });
-                    }
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('🔍 New task highlighted in green!'),
-                      backgroundColor: Color(0xFF2563EB),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'View Now',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                ),
-              ),
-            if (!_hasActivePlan)
-              ElevatedButton(
-                onPressed: () {
-                  _isPopupShowing = false;
-                  Navigator.pop(context);
-                  _openMembershipWebsite();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Subscribe Now',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                ),
-              ),
-            */
           ],
         );
       },
@@ -572,29 +449,20 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
     );
   }
 
-  // ================= ACCEPT REQUEST =================
+  // ================= 🔥 ACCEPT REQUEST WITH NAVIGATION =================
   Future<void> _acceptRequest(String requestId, Map<String, dynamic> requestData) async {
-    // 🔥 Plan check - COMMENTED
-    // if (!_hasActivePlan) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(
-    //       content: Text('Please subscribe to accept requests'),
-    //       backgroundColor: Colors.red,
-    //     ),
-    //   );
-    //   return;
-    // }
-
     try {
       User? user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
+      // 🔥 Show loading
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
+      // 🔥 Update request status
       await FirebaseFirestore.instance
           .collection('service_requests')
           .doc(requestId)
@@ -607,6 +475,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      // 🔥 Remove from pending requests
       final pendingDoc = await FirebaseFirestore.instance
           .collection('technician_pending_requests')
           .doc('${user.uid}_$requestId')
@@ -616,6 +485,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
         await pendingDoc.reference.delete();
       }
 
+      // 🔥 Send notification to customer
       await OneSignalNotificationService.sendRequestAcceptedNotification(
         customerId: requestData['userId'],
         technicianName: technicianName ?? 'Technician',
@@ -624,6 +494,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
         serviceName: requestData['serviceName'] ?? 'Service',
       );
 
+      // 🔥 Save notifications
       await FirebaseFirestore.instance.collection('notifications').add({
         'userId': requestData['userId'],
         'userRole': 'customer',
@@ -655,14 +526,30 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
         return;
       }
 
+      // 🔥 Close loading dialog
       Navigator.pop(context);
 
+      // 🔥 Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('✅ Service request accepted successfully!'),
           backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
         ),
       );
+
+      // 🔥 🔥 🔥 NAVIGATE TO TECHNICIAN MY SERVICES SCREEN 🔥 🔥 🔥
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const TechnicianMyServicesScreen(),
+            ),
+               // (route) => false,
+          );
+        }
+      });
 
     } catch (e) {
       Navigator.pop(context);
@@ -800,17 +687,6 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
   }
 
   void _showAcceptDialog(String requestId, Map<String, dynamic> data) {
-    // 🔥 Plan check - COMMENTED
-    // if (!_hasActivePlan) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(
-    //       content: Text('Please subscribe to accept requests'),
-    //       backgroundColor: Colors.red,
-    //     ),
-    //   );
-    //   return;
-    // }
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -836,9 +712,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                   const SizedBox(height: 4),
                   Text('Customer: ${data['userName']}'),
                   const SizedBox(height: 4),
-                  // 🔥 Phone - Always show
                   Text('Phone: ${data['userPhone'] ?? 'N/A'}'),
-                  // 🔥 Location - Always show
                   Text('Location: ${data['location'] ?? 'N/A'}'),
                 ],
               ),
@@ -968,15 +842,12 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
 
               _buildDetailRow('Customer Name', data['userName'] ?? 'N/A'),
               const SizedBox(height: 8),
-              // 🔥 Phone - Always show
               _buildDetailRow('Phone', data['userPhone'] ?? 'N/A'),
               const SizedBox(height: 8),
-              // 🔥 Email - Always show
               _buildDetailRow('Email', data['userEmail'] ?? 'N/A'),
               const SizedBox(height: 8),
               _buildDetailRow('Service Type', data['serviceType'] ?? 'N/A'),
               const SizedBox(height: 8),
-              // 🔥 Location - Always show
               _buildDetailRow('Location', data['location'] ?? 'N/A'),
               const SizedBox(height: 8),
               _buildDetailRow('Pincode', data['pincode'] ?? 'N/A'),
@@ -1130,10 +1001,10 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
         child: Column(
           children: [
             _buildWelcomeBanner(),
-            // 🔥 Plan Status Button - COMMENTED
-            // _buildPlanStatusButton(),
-            _buildAvailabilityToggle(),
+            _buildInBetweenBanner(),
             const SizedBox(height: 8),
+            _buildAvailabilityToggle(),
+            const SizedBox(height: 2),
             _buildStatsCards(),
             _buildPendingRequests(),
           ],
@@ -1141,88 +1012,6 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
       ),
     );
   }
-
-  // ================= PLAN STATUS BUTTON (COMMENTED) =================
-  /*
-  Widget _buildPlanStatusButton() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: _openMembershipWebsite,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: _hasActivePlan ? Colors.green.shade50 : Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _hasActivePlan ? Colors.green : Colors.red,
-                    width: 2,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: _hasActivePlan ? Colors.green : Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _hasActivePlan ? Icons.check : Icons.close,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _hasActivePlan ? '✅ Plan Active' : '❌ Plan Expired',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: _hasActivePlan ? Colors.green.shade700 : Colors.red.shade700,
-                            ),
-                          ),
-                          if (_hasActivePlan)
-                            Text(
-                              'Tap to manage subscription',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.green.shade600,
-                              ),
-                            )
-                          else
-                            Text(
-                              'Tap to subscribe now!',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.red.shade600,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      color: _hasActivePlan ? Colors.green : Colors.red,
-                      size: 16,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  */
 
   Widget _buildWelcomeBanner() {
     return Container(
@@ -1279,6 +1068,51 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInBetweenBanner() {
+    return GestureDetector(
+      onTap: () {
+        print('📱 Banner tapped');
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 5),
+        width: double.infinity,
+        height: 185,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Image.asset(
+            'assets/AppLogoo/abservice.PNG',
+            width: double.infinity,
+            height: 140,
+            fit: BoxFit.fill,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                width: double.infinity,
+                height: 140,
+                color: Colors.grey.shade200,
+                child: const Center(
+                  child: Text(
+                    'Banner not found',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -1615,7 +1449,6 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                // 🔥 Phone - Always show
                 Row(
                   children: [
                     const Icon(Icons.phone_outlined, size: 16, color: Colors.grey),
@@ -1629,7 +1462,6 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                // 🔥 Location - Always show
                 Row(
                   children: [
                     const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
@@ -1697,7 +1529,6 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: ElevatedButton(
-                        // 🔥 Accept - Always enabled
                         onPressed: () => _showAcceptDialog(request.id, data),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
@@ -1725,52 +1556,6 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                     ),
                   ],
                 ),
-
-                // 🔥 Plan expired message - COMMENTED
-                /*
-                if (!_hasActivePlan) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.shade200),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.lock, color: Colors.red, size: 14),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            'Subscribe to accept requests',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.red.shade700,
-                            ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: _openMembershipWebsite,
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: const Size(0, 0),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            '@99₹ Only',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red.shade700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                */
               ],
             ),
           ),
@@ -1783,7 +1568,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
   Widget _buildCountdownTimer(DateTime createdAt) {
     return StatefulBuilder(
       builder: (context, setStateTimer) {
-        final expiryTime = createdAt.add(const Duration(minutes: 3));
+        final expiryTime = createdAt.add(const Duration(minutes: _expireMinutes));
 
         return StreamBuilder(
           stream: Stream.periodic(const Duration(seconds: 1), (i) => i),
@@ -1804,9 +1589,9 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                     const Icon(Icons.timer_off, size: 14, color: Colors.red),
                     const SizedBox(width: 4),
                     const Text(
-                      '0:00',
+                      'Expired',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
                         color: Colors.red,
                       ),
@@ -1820,9 +1605,9 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
             final seconds = remaining.inSeconds.remainder(60);
 
             Color timerColor;
-            if (minutes >= 2) {
+            if (minutes >= 1) {
               timerColor = Colors.green;
-            } else if (minutes >= 1) {
+            } else if (minutes >= 0 && seconds >= 30) {
               timerColor = Colors.orange;
             } else {
               timerColor = Colors.red;

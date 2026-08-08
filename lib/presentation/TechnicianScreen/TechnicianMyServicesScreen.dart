@@ -14,11 +14,14 @@ class TechnicianMyServicesScreen extends StatefulWidget {
 }
 
 class _TechnicianMyServicesScreenState
-    extends State<TechnicianMyServicesScreen> {
+    extends State<TechnicianMyServicesScreen> with SingleTickerProviderStateMixin {
   List<QueryDocumentSnapshot> acceptedRequests = [];
   List<QueryDocumentSnapshot> completedRequests = [];
   bool isLoading = true;
   bool _isActive = true;
+
+  // 🔥 TabController
+  late TabController _tabController;
 
   // Cache for customer phone numbers
   final Map<String, String> _phoneNumberCache = {};
@@ -26,11 +29,14 @@ class _TechnicianMyServicesScreenState
   @override
   void initState() {
     super.initState();
+    // 🔥 Initialize TabController
+    _tabController = TabController(length: 2, vsync: this);
     _fetchMyServices();
   }
 
   @override
   void dispose() {
+    _tabController.dispose();
     _isActive = false;
     super.dispose();
   }
@@ -90,8 +96,8 @@ class _TechnicianMyServicesScreenState
 
   // Fetch phone numbers for all accepted requests
   Future<void> _fetchPhoneNumbersForRequests(
-    List<QueryDocumentSnapshot> requests,
-  ) async {
+      List<QueryDocumentSnapshot> requests,
+      ) async {
     for (var request in requests) {
       final data = request.data() as Map<String, dynamic>;
       final customerId = data['userId'];
@@ -105,9 +111,9 @@ class _TechnicianMyServicesScreenState
 
   // Get customer phone number from user document
   Future<String> _getCustomerPhoneNumber(
-    String customerId,
-    String requestId,
-  ) async {
+      String customerId,
+      String requestId,
+      ) async {
     // Check cache first
     if (_phoneNumberCache.containsKey(customerId)) {
       return _phoneNumberCache[customerId]!;
@@ -156,16 +162,16 @@ class _TechnicianMyServicesScreenState
           .collection('service_requests')
           .doc(requestId)
           .update({
-            'status': 'completed',
-            'completedAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+        'status': 'completed',
+        'completedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
       if (!_isActive || !mounted) return;
 
       // Move from accepted to completed list
       var requestDoc = acceptedRequests.firstWhere(
-        (doc) => doc.id == requestId,
+            (doc) => doc.id == requestId,
       );
       setState(() {
         acceptedRequests.removeWhere((doc) => doc.id == requestId);
@@ -254,30 +260,46 @@ class _TechnicianMyServicesScreenState
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
-    return DefaultTabController(
-      length: 2,
-      child: Column(
+    return Scaffold(
+      backgroundColor: Colors.grey.shade50,
+      appBar: AppBar(
+        title: const Text(
+          'My Services',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0C1B4D),
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF0C1B4D)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        bottom: TabBar(
+          controller: _tabController, // 🔥 Added controller
+          labelColor: const Color(0xFF2563EB),
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: const Color(0xFF2563EB),
+          tabs: [
+            Tab(text: 'Active (${acceptedRequests.length})'),
+            Tab(text: 'Completed (${completedRequests.length})'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController, // 🔥 Added controller
         children: [
-          Container(
-            color: Colors.white,
-            child: TabBar(
-              labelColor: const Color(0xFF2563EB),
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: const Color(0xFF2563EB),
-              tabs: [
-                Tab(text: 'Active (${acceptedRequests.length})'),
-                Tab(text: 'Completed (${completedRequests.length})'),
-              ],
-            ),
-          ),
-          Expanded(
-            child: TabBarView(
-              children: [_buildActiveRequests(), _buildCompletedRequests()],
-            ),
-          ),
+          _buildActiveRequests(),
+          _buildCompletedRequests(),
         ],
       ),
     );
@@ -350,10 +372,10 @@ class _TechnicianMyServicesScreenState
   }
 
   Widget _buildServiceCard(
-    String requestId,
-    Map<String, dynamic> data, {
-    required bool isActive,
-  }) {
+      String requestId,
+      Map<String, dynamic> data, {
+        required bool isActive,
+      }) {
     String customerName = data['userName'] ?? 'Customer';
     String customerId = data['userId'] ?? '';
     String customerPhone = data['userPhone'] ?? '';
@@ -378,7 +400,7 @@ class _TechnicianMyServicesScreenState
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.05),
+            color: Colors.grey.withOpacity(0.05),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -393,7 +415,7 @@ class _TechnicianMyServicesScreenState
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                  color: const Color(0xFF2563EB).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -433,8 +455,8 @@ class _TechnicianMyServicesScreenState
                 ),
                 decoration: BoxDecoration(
                   color: isActive
-                      ? Colors.blue.withValues(alpha: 0.1)
-                      : Colors.green.withValues(alpha: 0.1),
+                      ? Colors.blue.withOpacity(0.1)
+                      : Colors.green.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(

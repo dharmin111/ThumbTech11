@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:thumstechs/Services/oneSignalNotificationService.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:thumstechs/presentation/TechnicianScreen/TechnicianMyServicesScreen.dart';
 
 // ✅ Admin Screens (Web Only)
 import 'Admin/AdminScreens/AdminDashboard.dart';
@@ -149,6 +150,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       title: 'Thumb Tech',
@@ -169,6 +171,7 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const SignupScreen(),
         '/customer-dashboard': (context) => const CustomerDashboard(),
         '/technician-dashboard': (context) => const TechnicianDashboard(),
+        '/technician-my-services': (context) => const TechnicianMyServicesScreen(),
 
         // ✅ Admin Routes (Web + Mobile if needed)
         '/admin-login': (context) => const AdminLoginScreen(),
