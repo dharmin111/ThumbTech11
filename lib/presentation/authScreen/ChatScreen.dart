@@ -1,3 +1,5 @@
+// lib/presentation/authScreen/ChatScreen.dart
+
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -6,7 +8,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../Services/FirebaseMessageService.dart';
+import '../../Services/ReportService.dart';
 import '../../model/MessageModel.dart';
+import '../widgets/ReportDialog.dart';
+import '../widgets/BlockDialog.dart';
 
 /// Special marker used to encode "reply" metadata inside the plain message
 /// string, so no backend/model changes are required. Format:
@@ -14,10 +19,10 @@ import '../../model/MessageModel.dart';
 const String _kReplyMarker = '\u0001REPLY\u0001';
 
 String _encodeReplyMessage(
-  String replySender,
-  String replySnippet,
-  String actual,
-) {
+    String replySender,
+    String replySnippet,
+    String actual,
+    ) {
   return '$_kReplyMarker$replySender$_kReplyMarker$replySnippet$_kReplyMarker$actual';
 }
 
@@ -84,9 +89,8 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _imagePicker = ImagePicker();
-  final FocusNode _focusNode = FocusNode(); // ✅ For keyboard handling
+  final FocusNode _focusNode = FocusNode();
 
-  final bool _isSending = false;
   bool _isLoading = true;
   bool _isOtherUserOnline = false;
   DateTime? _otherUserLastSeen;
@@ -96,9 +100,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<_PendingMessage> _pendingMessages = [];
   _ReplyPreview? _replyingTo;
   bool _showScrollToBottom = false;
-  bool _isUserScrolling = false; // ✅ Track user scrolling
+  bool _isUserScrolling = false;
   Timer? _scrollDebounceTimer;
-  double _lastBottomInset = 0; // ✅ Reliable keyboard open/close detector
+  double _lastBottomInset = 0;
 
   @override
   void initState() {
@@ -124,7 +128,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _listenToUserPresence();
     _listenToTypingStatus();
 
-    // ✅ Keyboard listener for auto-scroll
     _focusNode.addListener(_onFocusChange);
     _scrollController.addListener(_handleScroll);
   }
@@ -141,8 +144,6 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
-  // ✅ Handle keyboard open/close (backup path — build() handles the main case
-  // via viewInsets, this covers the instant the field is tapped)
   void _onFocusChange() {
     if (_focusNode.hasFocus) {
       _isUserScrolling = false;
@@ -161,7 +162,6 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() => _showScrollToBottom = shouldShow);
     }
 
-    // ✅ Detect if user is scrolling up (away from bottom)
     final isNearBottom = distanceFromBottom < 100;
     if (!isNearBottom) {
       _isUserScrolling = true;
@@ -194,14 +194,14 @@ class _ChatScreenState extends State<ChatScreen> {
         .doc(widget.otherUserId)
         .snapshots()
         .listen((snapshot) {
-          if (snapshot.exists && mounted) {
-            final data = snapshot.data() as Map<String, dynamic>;
-            setState(() {
-              _isOtherUserOnline = data['isOnline'] ?? false;
-              _otherUserLastSeen = (data['lastSeen'] as Timestamp?)?.toDate();
-            });
-          }
+      if (snapshot.exists && mounted) {
+        final data = snapshot.data() as Map<String, dynamic>;
+        setState(() {
+          _isOtherUserOnline = data['isOnline'] ?? false;
+          _otherUserLastSeen = (data['lastSeen'] as Timestamp?)?.toDate();
         });
+      }
+    });
   }
 
   void _listenToTypingStatus() {
@@ -210,15 +210,15 @@ class _ChatScreenState extends State<ChatScreen> {
         .doc(widget.conversationId)
         .snapshots()
         .listen((snapshot) {
-          if (snapshot.exists && mounted) {
-            final data = snapshot.data() as Map<String, dynamic>;
-            final typingUserId = data['typingUserId'];
-            setState(() {
-              _isOtherUserTyping =
-                  typingUserId != null && typingUserId == widget.otherUserId;
-            });
-          }
+      if (snapshot.exists && mounted) {
+        final data = snapshot.data() as Map<String, dynamic>;
+        final typingUserId = data['typingUserId'];
+        setState(() {
+          _isOtherUserTyping =
+              typingUserId != null && typingUserId == widget.otherUserId;
         });
+      }
+    });
   }
 
   void _onTyping() {
@@ -229,9 +229,9 @@ class _ChatScreenState extends State<ChatScreen> {
         .collection('conversations')
         .doc(widget.conversationId)
         .update({
-          'typingUserId': currentUser.uid,
-          'typingAt': FieldValue.serverTimestamp(),
-        })
+      'typingUserId': currentUser.uid,
+      'typingAt': FieldValue.serverTimestamp(),
+    })
         .catchError((_) {});
 
     _typingTimer?.cancel();
@@ -329,7 +329,6 @@ class _ChatScreenState extends State<ChatScreen> {
       _replyingTo = null;
     });
 
-    // ✅ Sending is an explicit user action — always jump to bottom.
     _scrollToBottom(animated: true, force: true);
 
     _typingTimer?.cancel();
@@ -352,11 +351,10 @@ class _ChatScreenState extends State<ChatScreen> {
         receiverRole: widget.otherUserRole,
         message: pending.text,
       );
-      // Fallback cleanup
       Future.delayed(const Duration(seconds: 4), () {
         if (mounted) {
           setState(
-            () => _pendingMessages.removeWhere((p) => p.id == pending.id),
+                () => _pendingMessages.removeWhere((p) => p.id == pending.id),
           );
         }
       });
@@ -454,7 +452,6 @@ class _ChatScreenState extends State<ChatScreen> {
         _replyingTo = null;
       });
 
-      // ✅ Sending is an explicit user action — always jump to bottom.
       _scrollToBottom(animated: true, force: true);
 
       await _dispatchPendingImage(pending);
@@ -490,7 +487,7 @@ class _ChatScreenState extends State<ChatScreen> {
         Future.delayed(const Duration(seconds: 4), () {
           if (mounted) {
             setState(
-              () => _pendingMessages.removeWhere((p) => p.id == pending.id),
+                  () => _pendingMessages.removeWhere((p) => p.id == pending.id),
             );
           }
         });
@@ -509,11 +506,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // ==================== SCROLLING ====================
 
-  /// [force] = true skips the "user is reading old messages" guard.
-  /// Use force for things the user explicitly triggered (sending a message,
-  /// tapping the input field / keyboard opening, tapping the scroll-down FAB).
-  /// Leave force = false for background events (a new message arriving from
-  /// the other person while the user is scrolled up reading history).
   void _scrollToBottom({bool animated = true, bool force = false}) {
     if (_isUserScrolling && !force) return;
     if (force) _isUserScrolling = false;
@@ -533,34 +525,28 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     }
 
-    // Fire once right after this frame (covers the common case fast)...
     WidgetsBinding.instance.addPostFrameCallback((_) => doScroll());
-    // ...and once more shortly after, to cover keyboard-open / list-resize
-    // animations that are still settling when the first call fires.
     Future.delayed(const Duration(milliseconds: 260), doScroll);
   }
 
-  // ✅ Called when new messages arrive
   void _onNewMessage() {
     if (!_scrollController.hasClients) return;
     final isNearBottom =
         _scrollController.position.maxScrollExtent - _scrollController.offset <
-        200;
-    // Only yank the view if the user was already essentially at the bottom.
+            200;
     if (isNearBottom) {
       _scrollToBottom(animated: true, force: true);
     }
   }
 
-  // Removes any pending message once the real one has landed
   void _reconcilePending(List<MessageModel> liveMessages, String myUid) {
     if (_pendingMessages.isEmpty) return;
     final toRemove = <String>[];
     for (final p in _pendingMessages) {
       if (p.status == 'failed') continue;
       final matched = liveMessages.any(
-        (m) =>
-            m.senderId == myUid &&
+            (m) =>
+        m.senderId == myUid &&
             m.message == p.text &&
             m.sentAt.difference(p.sentAt).inSeconds.abs() < 20,
       );
@@ -570,7 +556,7 @@ class _ChatScreenState extends State<ChatScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(
-            () => _pendingMessages.removeWhere((p) => toRemove.contains(p.id)),
+                () => _pendingMessages.removeWhere((p) => toRemove.contains(p.id)),
           );
         }
       });
@@ -602,244 +588,138 @@ class _ChatScreenState extends State<ChatScreen> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  // ==================== BUILD ====================
+  // ==================== 🔥 REPORT + BLOCK ====================
 
-  @override
-  Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser!;
+  void _showChatActions(MessageModel message) {
+    final isImage = message.messageType == 'image' && message.imageUrl != null;
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final isMe = message.senderId == currentUser?.uid;
 
-    // ✅ Most reliable way to detect the keyboard opening/closing: Flutter
-    // rebuilds this widget automatically whenever viewInsets changes, so we
-    // just compare against the last known value. When it grows (keyboard
-    // opening), push the list to the bottom so the latest message stays
-    // visible above the keyboard — exactly like WhatsApp.
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    if (bottomInset > _lastBottomInset + 1) {
-      _scrollToBottom(animated: true, force: true);
-    }
-    _lastBottomInset = bottomInset;
-
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              widget.otherUserName,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-            const SizedBox(height: 2),
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _isOtherUserOnline ? Colors.green : Colors.grey,
-                  ),
+            const SizedBox(height: 16),
+
+            // Reply
+            ListTile(
+              leading: const Icon(Icons.reply, color: Color(0xFF2563EB)),
+              title: const Text('Reply', style: TextStyle(fontSize: 16)),
+              onTap: () {
+                Navigator.pop(context);
+                _startReply(
+                  message.senderName,
+                  message.message,
+                  isImage: isImage,
+                );
+              },
+            ),
+
+            // Copy
+            if (!isImage)
+              ListTile(
+                leading: const Icon(Icons.copy, color: Color(0xFF2563EB)),
+                title: const Text('Copy', style: TextStyle(fontSize: 16)),
+                onTap: () {
+                  Navigator.pop(context);
+                  final decoded = _decodeReplyMessage(message.message);
+                  final textToCopy = decoded != null
+                      ? decoded['actual']!
+                      : message.message;
+                  Clipboard.setData(ClipboardData(text: textToCopy));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Message copied'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+              ),
+
+            // 🔥 Report Message (only for others' messages)
+            if (!isMe)
+              ListTile(
+                leading: Icon(Icons.flag, color: Colors.red.shade700),
+                title: const Text('Report Message', style: TextStyle(fontSize: 16)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showReportDialog(
+                    targetId: message.id,
+                    targetType: 'message',
+                    targetName: 'Message from ${message.senderName}',
+                    additionalInfo: message.message,
+                  );
+                },
+              ),
+
+            // 🔥 Block User
+            if (!isMe)
+              ListTile(
+                leading: Icon(Icons.block, color: Colors.red.shade700),
+                title: Text(
+                  'Block ${widget.otherUserName}',
+                  style: const TextStyle(fontSize: 16),
                 ),
-                const SizedBox(width: 6),
-                Text(_getLastSeenText(), style: const TextStyle(fontSize: 10)),
-                if (_isOtherUserTyping) ...[
-                  const SizedBox(width: 8),
-                  const Text(
-                    'typing...',
-                    style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic),
-                  ),
-                ],
-              ],
-            ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _blockUser(widget.otherUserId, widget.otherUserName);
+                },
+              ),
+
+            const SizedBox(height: 12),
           ],
         ),
-        backgroundColor: const Color(0xFF2563EB),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () => _showRequestDetails(),
-            icon: const Icon(Icons.info_outline),
-          ),
-        ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: Stack(
-                    children: [
-                      StreamBuilder<List<MessageModel>>(
-                        stream: _messageService.getMessages(
-                          widget.conversationId,
-                        ),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasError) {
-                            return Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.error_outline,
-                                    size: 64,
-                                    color: Colors.grey[400],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text('Error: ${snapshot.error}'),
-                                  const SizedBox(height: 16),
-                                  ElevatedButton(
-                                    onPressed: () => _initializeChat(),
-                                    child: const Text('Retry'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
+    );
+  }
 
-                          if (!snapshot.hasData) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
+  void _showReportDialog({
+    required String targetId,
+    required String targetType,
+    required String targetName,
+    String? additionalInfo,
+  }) {
+    showDialog(
+      context: context,
+      builder: (context) => ReportDialog(
+        targetId: targetId,
+        targetType: targetType,
+        targetName: targetName,
+        additionalInfo: additionalInfo,
+      ),
+    );
+  }
 
-                          final messages = snapshot.data!;
-
-                          // ✅ Check if new message arrived from other user
-                          if (messages.isNotEmpty) {
-                            final lastMsg = messages.last;
-                            if (lastMsg.senderId != currentUser.uid) {
-                              // ✅ Auto-scroll on new message from other user
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                _onNewMessage();
-                              });
-                            }
-                          }
-
-                          _reconcilePending(messages, currentUser.uid);
-
-                          if (messages.isEmpty && _pendingMessages.isEmpty) {
-                            return Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.chat_bubble_outline,
-                                    size: 64,
-                                    color: Colors.grey[400],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'No messages yet',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Send a message to start the conversation',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[500],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-
-                          // Build flat list
-                          final items = <dynamic>[];
-                          DateTime? lastDate;
-                          for (final m in messages) {
-                            final d = DateTime(
-                              m.sentAt.year,
-                              m.sentAt.month,
-                              m.sentAt.day,
-                            );
-                            if (lastDate == null || d != lastDate) {
-                              items.add(d);
-                              lastDate = d;
-                            }
-                            items.add(m);
-                          }
-                          for (final p in _pendingMessages) {
-                            final d = DateTime(
-                              p.sentAt.year,
-                              p.sentAt.month,
-                              p.sentAt.day,
-                            );
-                            if (lastDate == null || d != lastDate) {
-                              items.add(d);
-                              lastDate = d;
-                            }
-                            items.add(p);
-                          }
-
-                          return ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.all(16),
-                            itemCount: items.length,
-                            itemBuilder: (context, index) {
-                              final item = items[index];
-                              if (item is DateTime) {
-                                return _buildDateSeparator(item);
-                              }
-                              if (item is _PendingMessage) {
-                                return _buildPendingBubble(item);
-                              }
-                              final message = item as MessageModel;
-                              final isMe = message.senderId == currentUser.uid;
-                              return _buildMessageBubble(message, isMe);
-                            },
-                          );
-                        },
-                      ),
-                      if (_showScrollToBottom)
-                        Positioned(
-                          right: 12,
-                          bottom: 12,
-                          child: FloatingActionButton.small(
-                            heroTag: 'scrollToBottom',
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF2563EB),
-                            elevation: 2,
-                            onPressed: () {
-                              _isUserScrolling = false;
-                              _scrollToBottom(animated: true);
-                            },
-                            child: const Icon(Icons.keyboard_arrow_down),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                if (_isOtherUserTyping)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.edit, size: 12, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${widget.otherUserName} is typing...',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (_replyingTo != null) _buildReplyPreviewBar(),
-                _buildMessageInput(),
-              ],
+  void _blockUser(String userId, String userName) {
+    showDialog(
+      context: context,
+      builder: (context) => BlockDialog(
+        userId: userId,
+        userName: userName,
+        onBlocked: () {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ $userName has been blocked'),
+              backgroundColor: Colors.green,
             ),
+          );
+        },
+      ),
     );
   }
 
@@ -914,10 +794,10 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _startReply(
-    String senderName,
-    String rawMessage, {
-    bool isImage = false,
-  }) {
+      String senderName,
+      String rawMessage, {
+        bool isImage = false,
+      }) {
     final decoded = _decodeReplyMessage(rawMessage);
     final actual = decoded != null ? decoded['actual']! : rawMessage;
     final snippet = isImage
@@ -930,58 +810,7 @@ class _ChatScreenState extends State<ChatScreen> {
         isImage: isImage,
       );
     });
-    // ✅ Focus on text field when replying
     _focusNode.requestFocus();
-  }
-
-  void _showMessageActions(MessageModel message, bool isMe) {
-    final decoded = _decodeReplyMessage(message.message);
-    final isImage = message.messageType == 'image' && message.imageUrl != null;
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            ListTile(
-              leading: const Icon(Icons.reply, color: Color(0xFF2563EB)),
-              title: const Text('Reply'),
-              onTap: () {
-                Navigator.pop(context);
-                _startReply(
-                  message.senderName,
-                  message.message,
-                  isImage: isImage,
-                );
-              },
-            ),
-            if (!isImage)
-              ListTile(
-                leading: const Icon(Icons.copy, color: Color(0xFF2563EB)),
-                title: const Text('Copy'),
-                onTap: () {
-                  Navigator.pop(context);
-                  final textToCopy = decoded != null
-                      ? decoded['actual']!
-                      : message.message;
-                  Clipboard.setData(ClipboardData(text: textToCopy));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Message copied'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
-                },
-              ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildQuotedReplyBlock(Map<String, String> decoded, bool isMe) {
@@ -1032,7 +861,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final displayText = decoded != null ? decoded['actual']! : message.message;
 
     return GestureDetector(
-      onLongPress: () => _showMessageActions(message, isMe),
+      onLongPress: () => _showChatActions(message),
       child: Dismissible(
         key: ValueKey(
           'msg_${message.sentAt.microsecondsSinceEpoch}_${message.senderId}',
@@ -1071,9 +900,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   padding: isImage
                       ? const EdgeInsets.all(8)
                       : const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: isMe ? const Color(0xFF2563EB) : Colors.white,
                     borderRadius: BorderRadius.only(
@@ -1107,16 +936,16 @@ class _ChatScreenState extends State<ChatScreen> {
                               fit: BoxFit.cover,
                               loadingBuilder:
                                   (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Container(
-                                      width: 200,
-                                      height: 200,
-                                      color: Colors.grey[200],
-                                      child: const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    );
-                                  },
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  width: 200,
+                                  height: 200,
+                                  color: Colors.grey[200],
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              },
                               errorBuilder: (context, error, stackTrace) =>
                                   Container(
                                     width: 200,
@@ -1282,7 +1111,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               child: TextField(
                 controller: _messageController,
-                focusNode: _focusNode, // ✅ Attach focus node
+                focusNode: _focusNode,
                 onChanged: (text) {
                   if (text.isNotEmpty) _onTyping();
                 },
@@ -1399,5 +1228,275 @@ class _ChatScreenState extends State<ChatScreen> {
     if (difference.inHours > 0) return '${difference.inHours}h ago';
     if (difference.inMinutes > 0) return '${difference.inMinutes}m ago';
     return 'Just now';
+  }
+
+  // ==================== BUILD ====================
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser!;
+
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    if (bottomInset > _lastBottomInset + 1) {
+      _scrollToBottom(animated: true, force: true);
+    }
+    _lastBottomInset = bottomInset;
+
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      backgroundColor: Colors.grey.shade100,
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.otherUserName,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _isOtherUserOnline ? Colors.green : Colors.grey,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(_getLastSeenText(), style: const TextStyle(fontSize: 10)),
+                if (_isOtherUserTyping) ...[
+                  const SizedBox(width: 8),
+                  const Text(
+                    'typing...',
+                    style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF2563EB),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () => _showRequestDetails(),
+            icon: const Icon(Icons.info_outline),
+          ),
+          // 🔥 Block from AppBar
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              if (value == 'block') {
+                _blockUser(widget.otherUserId, widget.otherUserName);
+              } else if (value == 'report') {
+                _showReportDialog(
+                  targetId: widget.otherUserId,
+                  targetType: 'user',
+                  targetName: widget.otherUserName,
+                );
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'report',
+                child: Row(
+                  children: [
+                    Icon(Icons.flag, color: Colors.red.shade700),
+                    const SizedBox(width: 8),
+                    const Text('Report User'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'block',
+                child: Row(
+                  children: [
+                    Icon(Icons.block, color: Colors.red.shade700),
+                    const SizedBox(width: 8),
+                    Text('Block ${widget.otherUserName}'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+        children: [
+          Expanded(
+            child: Stack(
+              children: [
+                StreamBuilder<List<MessageModel>>(
+                  stream: _messageService.getMessages(
+                    widget.conversationId,
+                  ),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text('Error: ${snapshot.error}'),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => _initializeChat(),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    if (!snapshot.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+
+                    final messages = snapshot.data!;
+
+                    if (messages.isNotEmpty) {
+                      final lastMsg = messages.last;
+                      if (lastMsg.senderId != currentUser.uid) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _onNewMessage();
+                        });
+                      }
+                    }
+
+                    _reconcilePending(messages, currentUser.uid);
+
+                    if (messages.isEmpty && _pendingMessages.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No messages yet',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Send a message to start the conversation',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    final items = <dynamic>[];
+                    DateTime? lastDate;
+                    for (final m in messages) {
+                      final d = DateTime(
+                        m.sentAt.year,
+                        m.sentAt.month,
+                        m.sentAt.day,
+                      );
+                      if (lastDate == null || d != lastDate) {
+                        items.add(d);
+                        lastDate = d;
+                      }
+                      items.add(m);
+                    }
+                    for (final p in _pendingMessages) {
+                      final d = DateTime(
+                        p.sentAt.year,
+                        p.sentAt.month,
+                        p.sentAt.day,
+                      );
+                      if (lastDate == null || d != lastDate) {
+                        items.add(d);
+                        lastDate = d;
+                      }
+                      items.add(p);
+                    }
+
+                    return ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: items.length,
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        if (item is DateTime) {
+                          return _buildDateSeparator(item);
+                        }
+                        if (item is _PendingMessage) {
+                          return _buildPendingBubble(item);
+                        }
+                        final message = item as MessageModel;
+                        final isMe = message.senderId == currentUser.uid;
+                        return _buildMessageBubble(message, isMe);
+                      },
+                    );
+                  },
+                ),
+                if (_showScrollToBottom)
+                  Positioned(
+                    right: 12,
+                    bottom: 12,
+                    child: FloatingActionButton.small(
+                      heroTag: 'scrollToBottom',
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF2563EB),
+                      elevation: 2,
+                      onPressed: () {
+                        _isUserScrolling = false;
+                        _scrollToBottom(animated: true);
+                      },
+                      child: const Icon(Icons.keyboard_arrow_down),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (_isOtherUserTyping)
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.edit, size: 12, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${widget.otherUserName} is typing...',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (_replyingTo != null) _buildReplyPreviewBar(),
+          _buildMessageInput(),
+        ],
+      ),
+    );
   }
 }
