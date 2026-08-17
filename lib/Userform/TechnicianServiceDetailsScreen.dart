@@ -1,3 +1,5 @@
+// lib/presentation/TechnicianOnboardingScreens/TechnicianServiceDetailsScreen.dart
+
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
@@ -17,6 +19,7 @@ class TechnicianServiceDetailsScreen extends StatefulWidget {
   final String pincode;
   final File? profileImage;
   final String userId;
+  final List<String>? existingPincodes; // 🔥 NEW - Receive existing pincodes
 
   const TechnicianServiceDetailsScreen({
     super.key,
@@ -26,6 +29,7 @@ class TechnicianServiceDetailsScreen extends StatefulWidget {
     required this.pincode,
     required this.userId,
     this.profileImage,
+    this.existingPincodes, // 🔥 Optional for edit mode
   });
 
   @override
@@ -44,8 +48,9 @@ class _TechnicianServiceDetailsScreenState
   final FirebaseFirestoreService _firestoreService = FirebaseFirestoreService();
 
   bool _isSubmitting = false;
+  bool _isLoading = true;
 
-  // Multiple pincodes list
+  // 🔥 Multiple pincodes list - LOAD FROM FIREBASE
   final List<String> _servicePincodes = [];
 
   // Categories with their subcategories
@@ -83,6 +88,9 @@ class _TechnicianServiceDetailsScreenState
 
   final ImagePicker _picker = ImagePicker();
 
+  // 🔥 Track if this is edit mode
+  bool get _isEditMode => widget.existingPincodes != null && widget.existingPincodes!.isNotEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -93,9 +101,59 @@ class _TechnicianServiceDetailsScreenState
       }
     }
 
-    // Add initial pincode from widget
-    if (widget.pincode.isNotEmpty) {
-      _servicePincodes.add(widget.pincode);
+    // 🔥 LOAD PINCODES FROM FIREBASE
+    _loadPincodes();
+  }
+
+  // ==================== LOAD PINCODES FROM FIREBASE ====================
+
+  Future<void> _loadPincodes() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // 🔥 Option 1: If passed from previous screen (UserInfoScreen)
+      if (widget.existingPincodes != null && widget.existingPincodes!.isNotEmpty) {
+        _servicePincodes.addAll(widget.existingPincodes!);
+        print('✅ Loaded ${_servicePincodes.length} pincodes from userData: $_servicePincodes');
+      }
+      // 🔥 Option 2: Load from Firestore directly
+      else {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.userId)
+            .get();
+
+        if (doc.exists) {
+          final data = doc.data() as Map<String, dynamic>;
+
+          // Check if pincodes list exists
+          if (data['pincodes'] != null && (data['pincodes'] as List).isNotEmpty) {
+            _servicePincodes.addAll(List<String>.from(data['pincodes']));
+            print('✅ Loaded ${_servicePincodes.length} pincodes from Firestore: $_servicePincodes');
+          }
+          // Fallback to single pincode
+          else if (data['pincode'] != null && data['pincode'].toString().isNotEmpty) {
+            _servicePincodes.add(data['pincode'].toString());
+            print('✅ Loaded single pincode from Firestore: ${data['pincode']}');
+          }
+        }
+      }
+
+      // 🔥 If still empty, add the initial pincode from widget
+      if (_servicePincodes.isEmpty && widget.pincode.isNotEmpty) {
+        _servicePincodes.add(widget.pincode);
+        print('✅ Added initial pincode from widget: ${widget.pincode}');
+      }
+    } catch (e) {
+      print('❌ Error loading pincodes: $e');
+      // Fallback to widget pincode
+      if (widget.pincode.isNotEmpty && _servicePincodes.isEmpty) {
+        _servicePincodes.add(widget.pincode);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -117,7 +175,6 @@ class _TechnicianServiceDetailsScreenState
 
       print('📱 Saving OneSignal ID for technician: ${user.uid}');
 
-      // Wait for OneSignal ID to be available (up to 5 seconds)
       String? oneSignalId;
       for (int i = 0; i < 10; i++) {
         oneSignalId = OneSignal.User.pushSubscription.id;
@@ -132,7 +189,6 @@ class _TechnicianServiceDetailsScreenState
         return;
       }
 
-      // Save to Firestore
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
         'oneSignalId': oneSignalId,
         'userRole': 'technician',
@@ -168,14 +224,14 @@ class _TechnicianServiceDetailsScreenState
             ],
           ),
         ) ??
-        false;
+            false;
 
     if (shouldLeave) {
       Navigator.pop(context);
     }
   }
 
-  // Add new pincode
+  // 🔥 Add new pincode
   void _addPincode() {
     if (_pincodeController.text.trim().isEmpty) {
       _showError('Please enter a pincode');
@@ -197,13 +253,35 @@ class _TechnicianServiceDetailsScreenState
       _servicePincodes.add(newPincode);
       _pincodeController.clear();
     });
+
+    // 🔥 Save to Firestore immediately
+    _savePincodesToFirestore();
   }
 
-  // Remove pincode
+  // 🔥 Remove pincode
   void _removePincode(String pincode) {
     setState(() {
       _servicePincodes.remove(pincode);
     });
+
+    // 🔥 Save to Firestore immediately
+    _savePincodesToFirestore();
+  }
+
+  // 🔥 Save pincodes to Firestore
+  Future<void> _savePincodesToFirestore() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .update({
+        'pincodes': _servicePincodes,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      print('✅ Pincodes saved to Firestore: $_servicePincodes');
+    } catch (e) {
+      print('❌ Error saving pincodes: $e');
+    }
   }
 
   Future<void> _pickImage(bool isPreviousWork, ImageSource source) async {
@@ -368,10 +446,10 @@ class _TechnicianServiceDetailsScreenState
       // 3. Upload Previous Work Images
       List<String> previousWorkUrls = await _storageService
           .uploadMultipleImages(
-            imageFiles: _previousWorkImages,
-            userId: widget.userId,
-            folderName: 'work_images',
-          );
+        imageFiles: _previousWorkImages,
+        userId: widget.userId,
+        folderName: 'work_images',
+      );
 
       // 4. Save all data to Firestore with multiple pincodes
       Map<String, dynamic> result = await _firestoreService.saveTechnicianData(
@@ -409,27 +487,68 @@ class _TechnicianServiceDetailsScreenState
                 Text('Application Submitted Successfully!'),
               ],
             ),
-            content: Text(
-              'Thank you ${widget.name} for applying to become a technician!\n\n'
-              'Your application for:\n'
-              '${selectedSkillsList.take(3).join(", ")}${selectedSkillsList.length > 3 ? " + ${selectedSkillsList.length - 3} more" : ""}\n\n'
-              'Service Areas: ${_servicePincodes.join(", ")}\n\n'
-              'has been received. Our team will review your application and contact you soon at ${widget.phone}.\n\n'
-              'Status: Pending Review',
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Thank you ${widget.name} for applying to become a technician!\n\n',
+                ),
+                const Text(
+                  '📋 Services:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  selectedSkillsList.take(5).join(", ") +
+                      (selectedSkillsList.length > 5
+                          ? " + ${selectedSkillsList.length - 5} more"
+                          : ""),
+                  style: const TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 8),
+                 Text(
+                  '📍 Service Areas (${_servicePincodes.length}):',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  _servicePincodes.join(", "),
+                  style: const TextStyle(fontSize: 13, color: Color(0xFF2563EB)),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade200),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.amber),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Our team will review your application and contact you soon.',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             actions: [
               TextButton(
                 onPressed: () {
-                  // Clear all navigation history and go to dashboard
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(
                       builder: (context) => const TechnicianDashboard(),
                     ),
-                    (route) => false,
+                        (route) => false,
                   );
                 },
                 child: const Text(
-                  'OK',
+                  'Go to Dashboard',
                   style: TextStyle(color: Color(0xFF2563EB)),
                 ),
               ),
@@ -451,7 +570,7 @@ class _TechnicianServiceDetailsScreenState
     }
   }
 
-  // Build pincode section UI
+  // 🔥 Build pincode section UI - SHOW ALL PINCODES
   Widget _buildPincodeSection() {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -461,7 +580,7 @@ class _TechnicianServiceDetailsScreenState
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.05),
+            color: Colors.grey.withAlpha(12),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -473,7 +592,7 @@ class _TechnicianServiceDetailsScreenState
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withValues(alpha: 0.05),
+              color: const Color(0xFF2563EB).withAlpha(12),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -484,7 +603,7 @@ class _TechnicianServiceDetailsScreenState
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                    color: const Color(0xFF2563EB).withAlpha(25),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -501,6 +620,24 @@ class _TechnicianServiceDetailsScreenState
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2563EB).withAlpha(20),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_servicePincodes.length} added',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2563EB),
                     ),
                   ),
                 ),
@@ -528,6 +665,7 @@ class _TechnicianServiceDetailsScreenState
                             vertical: 12,
                           ),
                         ),
+                        onSubmitted: (_) => _addPincode(),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -535,6 +673,7 @@ class _TechnicianServiceDetailsScreenState
                       onPressed: _addPincode,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2563EB),
+                        foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -551,13 +690,26 @@ class _TechnicianServiceDetailsScreenState
                 const Divider(),
                 const SizedBox(height: 12),
 
-                // Display pincodes list
+                // 🔥 Display pincodes list - SHOW ALL PINCODES
                 if (_servicePincodes.isEmpty)
                   const Padding(
                     padding: EdgeInsets.all(16),
-                    child: Text(
-                      'No pincodes added. Add your service areas above.',
-                      style: TextStyle(color: Colors.grey),
+                    child: Column(
+                      children: [
+                        Icon(Icons.location_off, size: 40, color: Colors.grey),
+                        SizedBox(height: 8),
+                        Text(
+                          'No pincodes added',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        Text(
+                          'Add your service areas above',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
                     ),
                   )
                 else
@@ -575,25 +727,52 @@ class _TechnicianServiceDetailsScreenState
                       Wrap(
                         spacing: 12,
                         runSpacing: 12,
-                        children: _servicePincodes.map((pincode) {
+                        children: _servicePincodes.asMap().entries.map((entry) {
+                          int index = entry.key;
+                          String pincode = entry.value;
                           return Chip(
                             label: Text(pincode),
                             deleteIcon: const Icon(Icons.close, size: 16),
                             onDeleted: () => _removePincode(pincode),
                             backgroundColor: const Color(
                               0xFF2563EB,
-                            ).withValues(alpha: 0.1),
+                            ).withAlpha(25),
                             labelStyle: const TextStyle(
                               color: Color(0xFF2563EB),
+                              fontWeight: FontWeight.w500,
                             ),
                             side: const BorderSide(color: Color(0xFF2563EB)),
+                            avatar: CircleAvatar(
+                              backgroundColor: const Color(0xFF2563EB),
+                              radius: 12,
+                              child: Text(
+                                '${index + 1}',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                           );
                         }).toList(),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        '${_servicePincodes.length} service area(s) selected',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 14,
+                            color: Colors.grey[600],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${_servicePincodes.length} service area(s) selected',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -607,10 +786,26 @@ class _TechnicianServiceDetailsScreenState
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Color(0xFF2563EB)),
+              SizedBox(height: 16),
+              Text('Loading your profile...'),
+            ],
+          ),
+        ),
+      );
+    }
+
     return WillPopScope(
       onWillPop: () async {
         await _showLeaveConfirmation();
-        return false; // We handle navigation manually
+        return false;
       },
       child: Scaffold(
         backgroundColor: Colors.grey.shade50,
@@ -639,16 +834,16 @@ class _TechnicianServiceDetailsScreenState
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      const Color(0xFF2563EB).withValues(alpha: 0.1),
-                      const Color(0xFF2563EB).withValues(alpha: 0.05),
+                      const Color(0xFF2563EB).withAlpha(25),
+                      const Color(0xFF2563EB).withAlpha(12),
                     ],
                   ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Technician Registration',
+                     Text(
+                      _isEditMode ? 'Edit Service Details' : 'Technician Registration',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -673,6 +868,15 @@ class _TechnicianServiceDetailsScreenState
                             'Address',
                             widget.address,
                           ),
+                          const Divider(),
+                          // 🔥 Show pincodes count
+                          _buildInfoRow(
+                            Icons.local_post_office,
+                            'Pincodes',
+                            _servicePincodes.isNotEmpty
+                                ? '${_servicePincodes.length} areas'
+                                : widget.pincode,
+                          ),
                         ],
                       ),
                     ),
@@ -687,7 +891,7 @@ class _TechnicianServiceDetailsScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Multiple Pincodes Section
+                      // Multiple Pincodes Section - SHOW ALL PINCODES
                       _buildPincodeSection(),
 
                       const SizedBox(height: 24),
@@ -713,7 +917,7 @@ class _TechnicianServiceDetailsScreenState
                           onSkillTapped: (skill) {
                             setState(() {
                               _selectedSkills[skill] =
-                                  !(_selectedSkills[skill] ?? false);
+                              !(_selectedSkills[skill] ?? false);
                             });
                           },
                         );
@@ -729,7 +933,7 @@ class _TechnicianServiceDetailsScreenState
                       const SizedBox(height: 12),
                       _buildImageUploadSection(
                         title:
-                            'Upload photos of your previous work (Max 10 images)',
+                        'Upload photos of your previous work (Max 10 images)',
                         images: _previousWorkImages,
                         onAddPressed: () => _showImageSourceDialog(true),
                         onRemovePressed: (index) => _removeImage(index, true),
@@ -744,7 +948,7 @@ class _TechnicianServiceDetailsScreenState
                       const SizedBox(height: 12),
                       _buildImageUploadSection(
                         title:
-                            'Upload your ID card (Aadhar, PAN, Driving License, etc.)',
+                        'Upload your ID card (Aadhar, PAN, Driving License, etc.)',
                         images: _idCardImage != null ? [_idCardImage!] : [],
                         isSingleImage: true,
                         onAddPressed: () => _showImageSourceDialog(false),
@@ -762,7 +966,7 @@ class _TechnicianServiceDetailsScreenState
                         controller: _descriptionController,
                         label: 'Work Description',
                         hint:
-                            'Describe your experience, expertise, tools you have, and approach to work...',
+                        'Describe your experience, expertise, tools you have, and approach to work...',
                         icon: Icons.edit_note,
                         maxLines: 5,
                         validator: (value) {
@@ -793,7 +997,7 @@ class _TechnicianServiceDetailsScreenState
                             BoxShadow(
                               color: const Color(
                                 0xFF2563EB,
-                              ).withValues(alpha: 0.3),
+                              ).withAlpha(77),
                               blurRadius: 10,
                               offset: const Offset(0, 5),
                             ),
@@ -810,23 +1014,23 @@ class _TechnicianServiceDetailsScreenState
                           ),
                           child: _isSubmitting
                               ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                )
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
                               : const Text(
-                                  'Submit Technician Application',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                            'Submit Technician Application',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
 
@@ -902,7 +1106,7 @@ class _TechnicianServiceDetailsScreenState
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.05),
+            color: Colors.grey.withAlpha(12),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -942,6 +1146,8 @@ class _TechnicianServiceDetailsScreenState
     required Map<String, bool> selectedSkills,
     required Function(String) onSkillTapped,
   }) {
+    int selectedCount = skills.where((s) => selectedSkills[s] == true).length;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
@@ -950,7 +1156,7 @@ class _TechnicianServiceDetailsScreenState
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.05),
+            color: Colors.grey.withAlpha(12),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -962,7 +1168,7 @@ class _TechnicianServiceDetailsScreenState
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withValues(alpha: 0.05),
+              color: const Color(0xFF2563EB).withAlpha(12),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -973,7 +1179,7 @@ class _TechnicianServiceDetailsScreenState
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                    color: const Color(0xFF2563EB).withAlpha(25),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -995,9 +1201,23 @@ class _TechnicianServiceDetailsScreenState
                     ),
                   ),
                 ),
-                Text(
-                  '${skills.where((s) => selectedSkills[s] == true).length} selected',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2563EB).withAlpha(20),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '$selectedCount/${skills.length}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1018,7 +1238,7 @@ class _TechnicianServiceDetailsScreenState
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF2563EB).withValues(alpha: 0.1)
+                          ? const Color(0xFF2563EB).withAlpha(25)
                           : Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(25),
                       border: Border.all(
@@ -1149,7 +1369,7 @@ class _TechnicianServiceDetailsScreenState
                             child: Container(
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.6),
+                                color: Colors.black.withAlpha(153),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -1163,7 +1383,7 @@ class _TechnicianServiceDetailsScreenState
                       ],
                     );
                   }),
-                  if (!isSingleImage)
+                  if (!isSingleImage && images.length < 10)
                     GestureDetector(
                       onTap: onAddPressed,
                       child: Container(

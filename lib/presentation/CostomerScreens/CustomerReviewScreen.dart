@@ -1,3 +1,5 @@
+// lib/presentation/CostomerScreens/ReviewScreen.dart
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -22,6 +24,7 @@ class ReviewScreen extends StatefulWidget {
   final String issueDescription;
   final List<XFile> images;
   final String budget;
+  final String? editRequestId; // 🔥 For editing existing requests
 
   const ReviewScreen({
     super.key,
@@ -32,6 +35,7 @@ class ReviewScreen extends StatefulWidget {
     required this.issueDescription,
     required this.images,
     required this.budget,
+    this.editRequestId, // 🔥 Optional for edit mode
   });
 
   @override
@@ -40,7 +44,7 @@ class ReviewScreen extends StatefulWidget {
 
 class _ReviewScreenState extends State<ReviewScreen> {
   final FirebaseFirestoreStorageCustomerOrder _firebaseService =
-      FirebaseFirestoreStorageCustomerOrder();
+  FirebaseFirestoreStorageCustomerOrder();
 
   bool _isProcessing = false;
   String additionalNote = '';
@@ -48,6 +52,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
   // Dialog State
   bool _termsAccepted = false;
   bool _showTermsError = false;
+
+  // 🔥 Check if in edit mode
+  bool get _isEditMode => widget.editRequestId != null && widget.editRequestId!.isNotEmpty;
 
   // ================= 🔥 MAIN METHOD: Check Availability First =================
   Future<void> _checkAvailabilityAndConfirm() async {
@@ -82,7 +89,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
               'Pincode: ${widget.pincode}',
               style: TextStyle(
                 fontSize: 12,
-                color: darkBlue.withValues(alpha: 0.6),
+                color: darkBlue.withOpacity(0.6),
               ),
             ),
           ],
@@ -162,9 +169,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
-              title: const Text(
-                'Terms & Conditions',
-                style: TextStyle(
+              title: Text(
+                _isEditMode ? 'Update Request' : 'Terms & Conditions',
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: darkBlue,
@@ -347,9 +354,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       vertical: 12,
                     ),
                   ),
-                  child: const Text(
-                    'Confirm Booking',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  child: Text(
+                    _isEditMode ? 'Update Booking' : 'Confirm Booking',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -360,7 +367,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     );
   }
 
-  // ================= SAVE SERVICE REQUEST =================
+  // ================= SAVE OR UPDATE SERVICE REQUEST =================
   Future<void> _saveServiceRequest() async {
     setState(() => _isProcessing = true);
 
@@ -390,7 +397,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Uploading images and finding technicians...',
+                _isEditMode
+                    ? 'Updating your request...'
+                    : 'Uploading images and finding technicians...',
                 style: TextStyle(color: darkBlue, fontWeight: FontWeight.w500),
               ),
             ],
@@ -424,23 +433,37 @@ class _ReviewScreenState extends State<ReviewScreen> {
         updatedAt: Timestamp.now(),
       );
 
-      final requestId = await _firebaseService.saveServiceRequestWithMatching(
-        request: serviceRequest,
-      );
+      String requestId;
 
-      print('Service request saved with ID: $requestId');
+      if (_isEditMode) {
+        // 🔥 UPDATE existing request
+        await _firebaseService.updateServiceRequest(
+          requestId: widget.editRequestId!,
+          request: serviceRequest,
+        );
+        requestId = widget.editRequestId!;
+        print('✅ Service request updated with ID: $requestId');
+      } else {
+        // 🔥 CREATE new request with matching
+        requestId = await _firebaseService.saveServiceRequestWithMatching(
+          request: serviceRequest,
+        );
+        print('✅ Service request saved with ID: $requestId');
+      }
 
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Service booked successfully! Technicians will be notified.',
+            _isEditMode
+                ? '✅ Service updated successfully!'
+                : '✅ Service booked successfully! Technicians will be notified.',
           ),
           backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
+          duration: const Duration(seconds: 3),
         ),
       );
 
@@ -448,7 +471,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => BookingSuccessScreen(requestId: requestId),
+            builder: (context) => BookingSuccessScreen(
+              requestId: requestId,
+            ),
           ),
         );
       });
@@ -460,7 +485,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
       print('Error saving service request: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error booking service: ${e.toString()}'),
+          content: Text('Error ${_isEditMode ? 'updating' : 'booking'} service: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
@@ -477,9 +502,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
-        title: const Text(
-          'Review & Confirm',
-          style: TextStyle(
+        title: Text(
+          _isEditMode ? 'Edit & Confirm' : 'Review & Confirm',
+          style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: darkBlue,
@@ -497,6 +522,38 @@ class _ReviewScreenState extends State<ReviewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 🔥 Edit Mode Banner
+            if (_isEditMode)
+              Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.edit_note,
+                      color: Colors.blue.shade700,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'You are editing this service request. The changes will be updated.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
             // Service Summary Card
             Container(
               margin: const EdgeInsets.all(16),
@@ -505,7 +562,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.1),
+                    color: Colors.grey.withOpacity(0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -518,7 +575,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: primaryCyan.withValues(alpha: 0.1),
+                      color: primaryCyan.withOpacity(0.1),
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20),
@@ -547,7 +604,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Service Summary',
+                          _isEditMode ? 'Edit Service Summary' : 'Service Summary',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -684,7 +741,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: darkBlue.withValues(alpha: 0.8),
+                        color: darkBlue.withOpacity(0.8),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -737,29 +794,31 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     ),
                     child: _isProcessing
                         ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
-                            ),
-                          )
-                        : const Text(
-                            'Confirm Booking',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Colors.white,
+                        ),
+                      ),
+                    )
+                        : Text(
+                      _isEditMode ? 'Update Booking' : 'Confirm Booking',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'You don\'t have to pay anything now.',
+                    _isEditMode
+                        ? 'Your request will be updated with new details.'
+                        : 'You don\'t have to pay anything now.',
                     style: TextStyle(
                       fontSize: 12,
-                      color: darkBlue.withValues(alpha: 0.5),
+                      color: darkBlue.withOpacity(0.5),
                     ),
                   ),
                 ],
@@ -815,7 +874,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: darkBlue.withValues(alpha: 0.6),
+                  color: darkBlue.withOpacity(0.6),
                   fontWeight: FontWeight.w500,
                 ),
               ),

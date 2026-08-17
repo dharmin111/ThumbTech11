@@ -1,24 +1,33 @@
-//<!--            android:value="thumstech_channel" />-->
+// lib/Services/oneSignalNotificationService.dart
+
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:http/http.dart' as http;
 import '../main.dart';
 
 class OneSignalNotificationService {
   static bool _isInitialized = false;
-  static const String _oneSignalAppId = '36709973-f516-4746-a694-c58ad52a532d';
-  static const String _oneSignalApiKey =
- 'os_v2_app_gzyjs47vczdunjuuywfnkkstfxezryqycbiue7u6iu467b5bluxxtvjaypafcyaldcqxkmqefinzzdxi5aqjjwe7gc3q4teixmac77y';
+
+  // ✅ CORRECT - Using .env file (NO hardcoded keys!)
+  static String get _oneSignalAppId => dotenv.env['ONESIGNAL_APP_ID'] ?? '';
+  static String get _oneSignalApiKey => dotenv.env['ONESIGNAL_API_KEY'] ?? '';
 
   // ================= INIT =================
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
+    // 🔥 Check if App ID is loaded
+    if (_oneSignalAppId.isEmpty) {
+      print('❌ ONESIGNAL_APP_ID not found in .env');
+      return;
+    }
+
     try {
       OneSignal.initialize(_oneSignalAppId);
-     await OneSignal.Notifications.requestPermission(true);
+      await OneSignal.Notifications.requestPermission(true);
       _isInitialized = true;
       print('✅ OneSignal initialized');
 
@@ -93,6 +102,8 @@ class OneSignalNotificationService {
       navigatorKey.currentState?.pushNamed('/customer-dashboard');
     } else if (type == 'request_rejected') {
       navigatorKey.currentState?.pushNamed('/customer-dashboard');
+    } else if (type == 'report') {
+      navigatorKey.currentState?.pushNamed('/admin-dashboard');
     } else {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
@@ -197,13 +208,19 @@ class OneSignalNotificationService {
     required Map<String, dynamic> data,
   }) async {
     try {
+      // 🔥 Check if API Key is loaded
+      if (_oneSignalApiKey.isEmpty) {
+        print('❌ ONESIGNAL_API_KEY not found in .env');
+        return false;
+      }
+
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
           .get();
 
       if (!doc.exists) {
-        print('❌ User not found');
+        print('❌ User document not found: $userId');
         return false;
       }
 
@@ -221,15 +238,16 @@ class OneSignalNotificationService {
 
       final payload = {
         'app_id': _oneSignalAppId,
-        'include_player_ids': [oneSignalId],
+        'include_player_ids': [oneSignalId.toString()],
         'headings': {'en': title},
         'contents': {'en': body},
         'data': data,
         'priority': 10,
         'android_channel_id': 'cbfb12cf-b86d-4007-95e6-8e6afc888a5b',
         'android_sound': 'notification_sound',
-
       };
+
+      print('📤 Sending payload: ${jsonEncode(payload)}');
 
       final response = await http.post(
         Uri.parse('https://onesignal.com/api/v1/notifications'),
@@ -240,15 +258,20 @@ class OneSignalNotificationService {
         body: jsonEncode(payload),
       );
 
+      print('📥 Response status: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        print('✅ Notification sent successfully. ID: ${responseData['id']}');
+        final notificationId = responseData['id'];
+        print('✅ Notification sent successfully. ID: $notificationId');
 
+        // Save to notifications collection
         await FirebaseFirestore.instance.collection('notifications').add({
           'userId': userId,
           'title': title,
           'body': body,
-          'type': data['type'],
+          'type': data['type'] ?? 'message',
           'data': data,
           'isRead': false,
           'createdAt': FieldValue.serverTimestamp(),
@@ -260,7 +283,7 @@ class OneSignalNotificationService {
         return false;
       }
     } catch (e) {
-      print('❌ Send error: $e');
+      print('❌ Send notification error: $e');
       return false;
     }
   }
@@ -388,6 +411,26 @@ class OneSignalNotificationService {
     );
   }
 
+  // ================= SEND REPORT NOTIFICATION =================
+  static Future<bool> sendReportNotification({
+    required String adminId,
+    required String targetName,
+    required String reason,
+    required String targetType,
+  }) async {
+    return sendNotificationToUser(
+      userId: adminId,
+      title: '🚨 New Report Received',
+      body: 'A report has been filed against $targetName for $reason',
+      data: {
+        'type': 'report',
+        'targetName': targetName,
+        'targetType': targetType,
+        'reason': reason,
+      },
+    );
+  }
+
   // ================= MATCH TECHNICIANS =================
   static Future<void> notifyMatchingTechnicians({
     required String serviceType,
@@ -414,6 +457,13 @@ class OneSignalNotificationService {
       for (final doc in techs.docs) {
         final d = doc.data();
 
+        // 🔥 Check if technician is active
+        final isActive = d['isActive'] ?? true;
+        if (!isActive) {
+          print('⏭️ Skipping inactive technician: ${d['name']}');
+          continue;
+        }
+
         final categories = List<String>.from(d['categories'] ?? []);
         List<String> technicianPincodes = [];
         if (d['pincodes'] != null && (d['pincodes'] as List).isNotEmpty) {
@@ -422,8 +472,16 @@ class OneSignalNotificationService {
           technicianPincodes = [d['pincode'].toString()];
         }
 
-        final categoryMatches = categories.contains(serviceType);
-        final pincodeMatches = technicianPincodes.contains(pincode);
+        // 🔥 Case-insensitive matching
+        final trimmedServiceType = serviceType.trim().toLowerCase();
+        final categoryMatches = categories.any((cat) =>
+        cat.trim().toLowerCase() == trimmedServiceType
+        );
+
+        final trimmedPincode = pincode.trim();
+        final pincodeMatches = technicianPincodes.any((p) =>
+        p.trim() == trimmedPincode
+        );
 
         if (categoryMatches && pincodeMatches) {
           matchedCount++;
@@ -458,6 +516,10 @@ class OneSignalNotificationService {
       }
 
       print('📊 Results: Matched=$matchedCount, Notifications Sent=$sentCount');
+
+      if (matchedCount == 0) {
+        print('⚠️ No matching technicians found for service: $serviceType, pincode: $pincode');
+      }
     } catch (e) {
       print('❌ Matching error: $e');
     }
@@ -502,5 +564,129 @@ class OneSignalNotificationService {
     }
 
     return results;
+  }
+
+  // ================= GET NOTIFICATIONS FOR USER =================
+  static Stream<List<Map<String, dynamic>>> getUserNotifications(String userId) {
+    return FirebaseFirestore.instance
+        .collection('notifications')
+        .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+    });
+  }
+
+  // ================= MARK NOTIFICATION AS READ =================
+  static Future<void> markNotificationAsRead(String notificationId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('notifications')
+          .doc(notificationId)
+          .update({
+        'isRead': true,
+        'readAt': FieldValue.serverTimestamp(),
+      });
+      print('✅ Notification marked as read');
+    } catch (e) {
+      print('❌ Error marking notification as read: $e');
+    }
+  }
+
+  // ================= MARK ALL NOTIFICATIONS AS READ =================
+  static Future<void> markAllNotificationsAsRead(String userId) async {
+    try {
+      final batch = FirebaseFirestore.instance.batch();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('notifications')
+          .where('userId', isEqualTo: userId)
+          .where('isRead', isEqualTo: false)
+          .get();
+
+      for (var doc in snapshot.docs) {
+        batch.update(doc.reference, {
+          'isRead': true,
+          'readAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      await batch.commit();
+      print('✅ All notifications marked as read');
+    } catch (e) {
+      print('❌ Error marking all notifications as read: $e');
+    }
+  }
+
+  // ================= GET UNREAD COUNT =================
+  static Future<int> getUnreadNotificationCount(String userId) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('notifications')
+          .where('userId', isEqualTo: userId)
+          .where('isRead', isEqualTo: false)
+          .get();
+      return snapshot.docs.length;
+    } catch (e) {
+      print('❌ Error getting unread count: $e');
+      return 0;
+    }
+  }
+
+  // ================= DELETE NOTIFICATION =================
+  static Future<void> deleteNotification(String notificationId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('notifications')
+          .doc(notificationId)
+          .delete();
+      print('✅ Notification deleted');
+    } catch (e) {
+      print('❌ Error deleting notification: $e');
+    }
+  }
+
+  // ================= SEND SERVICE UPDATE NOTIFICATION =================
+  static Future<bool> sendServiceUpdateNotification({
+    required String customerId,
+    required String serviceName,
+    required String status,
+    required String requestId,
+  }) async {
+    String title = '📋 Service Update';
+    String body = 'Your service "$serviceName" status is now: $status';
+
+    return sendNotificationToUser(
+      userId: customerId,
+      title: title,
+      body: body,
+      data: {
+        'type': 'service_update',
+        'requestId': requestId,
+        'serviceName': serviceName,
+        'status': status,
+      },
+    );
+  }
+
+  // ================= SEND REMINDER NOTIFICATION =================
+  static Future<bool> sendReminderNotification({
+    required String userId,
+    required String message,
+    required String requestId,
+  }) async {
+    return sendNotificationToUser(
+      userId: userId,
+      title: '⏰ Reminder',
+      body: message,
+      data: {
+        'type': 'reminder',
+        'requestId': requestId,
+      },
+    );
   }
 }

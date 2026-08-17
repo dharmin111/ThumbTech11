@@ -1,4 +1,5 @@
-// widgets/TechnicianProfileScreen.dart
+// lib/presentation/TechnicianScreen/TechnicianProfileScreen.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -64,7 +65,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
   void initState() {
     super.initState();
     _fetchTechnicianProfile();
-    _ensureOneSignalId(); // Auto-save OneSignal ID on profile load
+    _ensureOneSignalId();
   }
 
   @override
@@ -76,7 +77,191 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
     super.dispose();
   }
 
-  // ✅ Auto-save OneSignal ID (notifications always on)
+  // ==================== ACCOUNT DELETION ====================
+
+  Future<void> _deleteAccount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Deleting your account...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final userId = user.uid;
+
+      // 1. Delete profile image from Firebase Storage
+      if (profileImageUrl != null && profileImageUrl!.isNotEmpty) {
+        try {
+          final ref = FirebaseStorage.instance.refFromURL(profileImageUrl!);
+          await ref.delete();
+          print('✅ Profile image deleted');
+        } catch (e) {
+          print('⚠️ Error deleting profile image: $e');
+        }
+      }
+
+      // 2. Delete all service requests created by this user
+      final requestsSnapshot = await FirebaseFirestore.instance
+          .collection('service_requests')
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      for (var doc in requestsSnapshot.docs) {
+        await doc.reference.delete();
+      }
+      print('✅ ${requestsSnapshot.docs.length} service requests deleted');
+
+      // 3. Delete all chats/conversations
+      final chatsSnapshot = await FirebaseFirestore.instance
+          .collection('conversations')
+          .where('technicianId', isEqualTo: userId)
+          .get();
+
+      for (var doc in chatsSnapshot.docs) {
+        // Delete messages in this conversation
+        final messages = await FirebaseFirestore.instance
+            .collection('messages')
+            .where('conversationId', isEqualTo: doc.id)
+            .get();
+        for (var msg in messages.docs) {
+          await msg.reference.delete();
+        }
+        await doc.reference.delete();
+      }
+      print('✅ ${chatsSnapshot.docs.length} conversations deleted');
+
+      // 4. Delete technician pending requests
+      final pendingSnapshot = await FirebaseFirestore.instance
+          .collection('technician_pending_requests')
+          .where('technicianId', isEqualTo: userId)
+          .get();
+
+      for (var doc in pendingSnapshot.docs) {
+        await doc.reference.delete();
+      }
+      print('✅ ${pendingSnapshot.docs.length} pending requests deleted');
+
+      // 5. Delete user document from Firestore
+      await FirebaseFirestore.instance.collection('users').doc(userId).delete();
+      print('✅ User document deleted');
+
+      // 6. Delete the Authentication account
+      await user.delete();
+      print('✅ Authentication account deleted');
+
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Account deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Navigate to login
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+              (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error deleting account: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      print('❌ Account deletion error: $e');
+    }
+  }
+
+  void _showDeleteAccountConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Delete Account', style: TextStyle(color: Colors.red)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Are you sure you want to delete your account?'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.delete, color: Colors.red, size: 16),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'This will permanently delete:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('• Your profile and all data'),
+                  const Text('• All your service requests'),
+                  const Text('• All chat conversations'),
+                  const Text('• Your authentication account'),
+                  const Text('• All uploaded images'),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteAccount();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete Account'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==================== EXISTING METHODS ====================
+
   Future<void> _ensureOneSignalId() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -158,11 +343,11 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             .collection('users')
             .doc(user.uid)
             .update({
-              'name': _nameController.text,
-              'phoneNumber': _phoneController.text,
-              'address': _addressController.text,
-              'updatedAt': FieldValue.serverTimestamp(),
-            });
+          'name': _nameController.text,
+          'phoneNumber': _phoneController.text,
+          'address': _addressController.text,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
 
         setState(() {
           technicianName = _nameController.text;
@@ -264,9 +449,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             .collection('users')
             .doc(user.uid)
             .update({
-              'categories': newCategories,
-              'updatedAt': FieldValue.serverTimestamp(),
-            });
+          'categories': newCategories,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
 
         setState(() {
           technicianCategories = newCategories;
@@ -380,9 +565,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
               .collection('users')
               .doc(user.uid)
               .update({
-                'profileImageUrl': downloadUrl,
-                'updatedAt': FieldValue.serverTimestamp(),
-              });
+            'profileImageUrl': downloadUrl,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
 
           setState(() {
             profileImageUrl = downloadUrl;
@@ -497,7 +682,6 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
     );
   }
 
-  // ✅ MODIFIED: Keep OneSignal ID on logout (no deletion)
   void _showLogoutConfirmation() {
     showDialog(
       context: context,
@@ -514,52 +698,39 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              // Close the dialog
               if (mounted) {
                 Navigator.pop(dialogContext);
               }
 
-              // Show loading indicator
               if (mounted) {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
                   builder: (BuildContext loadingContext) =>
-                      const Center(child: CircularProgressIndicator()),
+                  const Center(child: CircularProgressIndicator()),
                 );
               }
 
               try {
-                // ✅ IMPORTANT: DO NOT remove OneSignal ID
-                // Just sign out - keep the ID in Firestore for future notifications
-                print('✅ Logging out - OneSignal ID preserved in Firestore');
-
-                // Sign out
                 await FirebaseAuth.instance.signOut();
-
-                // Small delay to ensure sign out completes
                 await Future.delayed(const Duration(milliseconds: 500));
 
-                // Check if widget is still mounted before navigation
                 if (mounted) {
-                  // Close loading dialog if still open
                   if (Navigator.canPop(context)) {
                     Navigator.pop(context);
                   }
 
-                  // Navigate to login screen and clear all routes
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const LoginScreen(),
                     ),
-                    (route) => false,
+                        (route) => false,
                   );
                 }
               } catch (e) {
                 print('Logout error: $e');
                 if (mounted) {
-                  // Close loading dialog if open
                   if (Navigator.canPop(context)) {
                     Navigator.pop(context);
                   }
@@ -579,6 +750,8 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
       ),
     );
   }
+
+  // ==================== BUILD ====================
 
   @override
   Widget build(BuildContext context) {
@@ -633,6 +806,14 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             title: 'Privacy Policy',
             subtitle: 'Learn how we protect your data',
             onTap: _showPrivacyPolicy,
+          ),
+          const Divider(height: 1),
+          _buildProfileMenuItem(
+            icon: Icons.delete_forever,
+            title: 'Delete Account',
+            subtitle: 'Permanently delete your account and all data',
+            onTap: _showDeleteAccountConfirmation,
+            isRed: true,
           ),
           const Divider(height: 1),
           _buildProfileMenuItem(
@@ -733,7 +914,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
                         onDeleted: () => _removePincode(pincode),
                         backgroundColor: const Color(
                           0xFF2563EB,
-                        ).withValues(alpha: 0.1),
+                        ).withOpacity(0.1),
                         labelStyle: const TextStyle(color: Color(0xFF2563EB)),
                         side: const BorderSide(color: Color(0xFF2563EB)),
                       );
@@ -764,8 +945,8 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF2563EB).withValues(alpha: 0.1),
-            const Color(0xFF2563EB).withValues(alpha: 0.05),
+            const Color(0xFF2563EB).withOpacity(0.1),
+            const Color(0xFF2563EB).withOpacity(0.05),
           ],
         ),
       ),
@@ -778,7 +959,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
                 radius: 55,
                 backgroundColor: Colors.grey.shade200,
                 backgroundImage:
-                    profileImageUrl != null && profileImageUrl!.isNotEmpty
+                profileImageUrl != null && profileImageUrl!.isNotEmpty
                     ? NetworkImage(profileImageUrl!)
                     : null,
                 child: profileImageUrl == null || profileImageUrl!.isEmpty
@@ -819,8 +1000,8 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               color: isActive
-                  ? Colors.green.withValues(alpha: 0.1)
-                  : Colors.red.withValues(alpha: 0.1),
+                  ? Colors.green.withOpacity(0.1)
+                  : Colors.red.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -915,12 +1096,12 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                          color: const Color(0xFF2563EB).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: const Color(
                               0xFF2563EB,
-                            ).withValues(alpha: 0.3),
+                            ).withOpacity(0.3),
                           ),
                         ),
                         child: Text(
@@ -954,7 +1135,6 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
     );
   }
 
-  // ✅ Updated Settings Card - NO notification toggle (always enabled)
   Widget _buildSettingsCard() {
     return Container(
       decoration: BoxDecoration(
@@ -975,7 +1155,6 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             icon: Icons.security,
             title: 'Privacy & Security',
             onTap: () {
-              // Future implementation
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(const SnackBar(content: Text('Coming soon')));
@@ -986,7 +1165,6 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             icon: Icons.help_outline,
             title: 'Help & Support',
             onTap: () {
-              // Future implementation
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(const SnackBar(content: Text('Coming soon')));
@@ -1009,13 +1187,17 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
     String? subtitle,
     Widget? trailing,
     VoidCallback? onTap,
+    bool isRed = false,
   }) {
     return ListTile(
-      leading: Icon(icon, color: const Color(0xFF2563EB)),
-      title: Text(title),
+      leading: Icon(
+        icon,
+        color: isRed ? Colors.red : const Color(0xFF2563EB),
+      ),
+      title: Text(title, style: isRed ? const TextStyle(color: Colors.red) : null),
       subtitle: subtitle != null ? Text(subtitle) : null,
       trailing:
-          trailing ?? (onTap != null ? const Icon(Icons.chevron_right) : null),
+      trailing ?? (onTap != null ? const Icon(Icons.chevron_right) : null),
       onTap: onTap,
     );
   }

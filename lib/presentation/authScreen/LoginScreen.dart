@@ -349,24 +349,24 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
 
             /// ADMIN LOGIN BUTTON
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AdminLoginScreen(),
-                  ),
-                );
-              },
-              child: const Text(
-                'Admin Login',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
+            // TextButton(
+            //   onPressed: () {
+            //     Navigator.push(
+            //       context,
+            //       MaterialPageRoute(
+            //         builder: (context) => const AdminLoginScreen(),
+            //       ),
+            //     );
+            //   },
+            //   child: const Text(
+            //     'Admin Login',
+            //     style: TextStyle(
+            //       color: Colors.white,
+            //       fontWeight: FontWeight.w600,
+            //     ),
+            //   ),
+            // ),
+            const SizedBox(height: 14),
 
             /// Terms & Conditions Checkbox
             Padding(

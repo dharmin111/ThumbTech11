@@ -1,49 +1,69 @@
+// lib/main.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
-import 'package:thumstechs/Services/oneSignalNotificationService.dart';
-import 'package:onesignal_flutter/onesignal_flutter.dart';
-import 'package:thumstechs/presentation/TechnicianScreen/TechnicianMyServicesScreen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-// ✅ Admin Screens (Web Only)
+// ✅ Services
+import 'Services/oneSignalNotificationService.dart';
+import 'Services/ReportService.dart';
+import 'firebase_options.dart';
+
+// ✅ Admin Screens (Web & Mobile)
 import 'Admin/AdminScreens/AdminDashboard.dart';
 import 'Admin/AdminScreens/AdminLoginScreen.dart';
 import 'Admin/AdminScreens/AdminPendingScreen.dart';
 import 'Admin/AdminScreens/AdminSignupScreen.dart';
 
-// ✅ Services
-// import 'Services/oneSignalNotificationService.dart';
-import 'firebase_options.dart';
-
-// ✅ User Screens (Mobile Only)
+// ✅ User Screens (Mobile)
 import 'presentation/authScreen/splashScreen.dart';
 import 'presentation/CostomerScreens/ServiceDetailScreen.dart';
 import 'presentation/authScreen/ChatScreen.dart';
 import 'presentation/CostomerScreens/BookingScreen.dart';
+import 'presentation/CostomerScreens/ServiceBookingScreen.dart';
 import 'presentation/DashBoard/CustomerDashboard.dart';
 import 'presentation/DashBoard/TechnicianDashboard.dart';
 import 'presentation/authScreen/LoginScreen.dart';
 import 'presentation/authScreen/SignupScreen.dart';
+import 'presentation/TechnicianScreen/TechnicianMyServicesScreen.dart';
+
+// ✅ Profile & Settings
+import 'presentation/CostomerScreens/ProfileScreen.dart';
+import 'presentation/TechnicianScreen/TechnicianProfileScreen.dart';
+
+// ✅ Privacy & Terms
+import 'presentation/privacy/PrivacyPolicyScreen.dart';
+
+// ✅ Report & Block Widgets
+import 'presentation/widgets/ReportDialog.dart';
+import 'presentation/widgets/BlockDialog.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // ================= LOAD .env =================
+  try {
+    await dotenv.load(fileName: ".env");
+    print('✅ .env file loaded successfully');
+  } catch (e) {
+    print('⚠️ .env file not found, using default values');
+  }
+
   // ================= FIREBASE =================
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
   print("✅ Firebase Initialized");
 
   // ================= ONESIGNAL INIT (Mobile Only) =================
   if (!kIsWeb) {
     try {
-      OneSignal.initialize("36709973-f516-4746-a694-c58ad52a532d");
+      // ✅ Initialize OneSignal using .env
       await OneSignalNotificationService.initialize();
-      // await OneSignal.Notifications.requestPermission(true);
       print("✅ OneSignal Initialized");
 
       final user = FirebaseAuth.instance.currentUser;
@@ -70,6 +90,8 @@ void main() async {
 // ================= HANDLE NOTIFICATION TAP =================
 void _handleNotificationTap(Map<String, dynamic> data) {
   String type = data['type'] ?? '';
+  print('🔍 Notification type: $type');
+  print('📦 Data: $data');
 
   if (type == 'new_request') {
     navigatorKey.currentState?.pushNamed(
@@ -114,6 +136,14 @@ void _handleNotificationTap(Map<String, dynamic> data) {
     );
   } else if (type == 'request_accepted' || type == 'task') {
     navigatorKey.currentState?.pushNamed('/technician-dashboard');
+  } else if (type == 'request_posted') {
+    navigatorKey.currentState?.pushNamed('/customer-dashboard');
+  } else if (type == 'request_rejected') {
+    navigatorKey.currentState?.pushNamed('/customer-dashboard');
+  } else if (type == 'report') {
+    navigatorKey.currentState?.pushNamed('/admin-dashboard');
+  } else if (type == 'service_update') {
+    navigatorKey.currentState?.pushNamed('/customer-dashboard');
   } else {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -122,21 +152,21 @@ void _handleNotificationTap(Map<String, dynamic> data) {
           .doc(user.uid)
           .get()
           .then((doc) {
-            if (doc.exists) {
-              final role = doc.data()?['role'] ?? 'customer';
-              if (role == 'technician') {
-                navigatorKey.currentState?.pushNamed('/technician-dashboard');
-              } else if (role == 'admin') {
-                navigatorKey.currentState?.pushNamed('/admin-dashboard');
-              } else {
-                navigatorKey.currentState?.pushNamed('/customer-dashboard');
-              }
-            }
-          })
+        if (doc.exists) {
+          final role = doc.data()?['role'] ?? 'customer';
+          if (role == 'technician') {
+            navigatorKey.currentState?.pushNamed('/technician-dashboard');
+          } else if (role == 'admin') {
+            navigatorKey.currentState?.pushNamed('/admin-dashboard');
+          } else {
+            navigatorKey.currentState?.pushNamed('/customer-dashboard');
+          }
+        }
+      })
           .catchError((e) {
-            print('❌ Error fetching user role: $e');
-            navigatorKey.currentState?.pushNamed('/login');
-          });
+        print('❌ Error fetching user role: $e');
+        navigatorKey.currentState?.pushNamed('/login');
+      });
     } else {
       navigatorKey.currentState?.pushNamed('/login');
     }
@@ -150,7 +180,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       title: 'Thumb Tech',
@@ -160,20 +189,29 @@ class MyApp extends StatelessWidget {
           primary: const Color(0xFF42D7D7),
         ),
         useMaterial3: true,
-        appBarTheme: const AppBarTheme(elevation: 0, centerTitle: true),
+        appBarTheme: const AppBarTheme(
+          elevation: 0,
+          centerTitle: true,
+        ),
       ),
       // ✅ Web: Admin Login, Mobile: Splash Screen
       initialRoute: kIsWeb ? '/admin-login' : '/',
       routes: {
-        // ✅ Mobile Routes Only
+        // ✅ Mobile Routes
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/customer-dashboard': (context) => const CustomerDashboard(),
         '/technician-dashboard': (context) => const TechnicianDashboard(),
         '/technician-my-services': (context) => const TechnicianMyServicesScreen(),
+        '/my-bookings': (context) => const BookingScreen(),
+        '/service-bookings': (context) => const ServiceBookingScreen(),
+        '/profile': (context) => const ProfileScreen(),
+        '/technician-profile': (context) => const TechnicianProfileScreen(),
+       // '/privacy-policy': (context) =>  PrivacyPolicyScreen(),
+        //'/terms': (context) => const TermsScreen(),
 
-        // ✅ Admin Routes (Web + Mobile if needed)
+        // ✅ Admin Routes (Web + Mobile)
         '/admin-login': (context) => const AdminLoginScreen(),
         '/admin-signup': (context) => const AdminSignupScreen(),
         '/admin-pending': (context) => const AdminPendingScreen(),
@@ -181,15 +219,16 @@ class MyApp extends StatelessWidget {
 
         // ✅ Common Routes (Both Web & Mobile)
         '/service-details': (context) {
-          final args =
-              ModalRoute.of(context)!.settings.arguments
-                  as Map<String, dynamic>;
-          return ServiceDetailScreen(serviceName: args['serviceName'] ?? '');
+          final args = ModalRoute.of(context)!.settings.arguments
+          as Map<String, dynamic>? ?? {};
+          return ServiceDetailScreen(
+            serviceName: args['serviceName'] ?? '',
+            editRequestId: args['editRequestId'],
+          );
         },
         '/chat': (context) {
-          final args =
-              ModalRoute.of(context)!.settings.arguments
-                  as Map<String, dynamic>;
+          final args = ModalRoute.of(context)!.settings.arguments
+          as Map<String, dynamic>? ?? {};
           return ChatScreen(
             conversationId: args['conversationId'] ?? '',
             requestId: args['requestId'] ?? '',
@@ -198,11 +237,29 @@ class MyApp extends StatelessWidget {
             otherUserRole: args['otherUserRole'] ?? 'customer',
           );
         },
-        '/my-bookings': (context) => const BookingScreen(),
+        '/report-dialog': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments
+          as Map<String, dynamic>? ?? {};
+          return ReportDialog(
+            targetId: args['targetId'] ?? '',
+            targetType: args['targetType'] ?? '',
+            targetName: args['targetName'] ?? '',
+            additionalInfo: args['additionalInfo'],
+          );
+        },
+        '/block-dialog': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments
+          as Map<String, dynamic>? ?? {};
+          return BlockDialog(
+            userId: args['userId'] ?? '',
+            userName: args['userName'] ?? '',
+            onBlocked: args['onBlocked'],
+          );
+        },
       },
       // ✅ Error handling for unknown routes
       onGenerateRoute: (settings) {
-        // Web: Admin Login, Mobile: Splash Screen
+        // Default fallback: Web → Admin Login, Mobile → Splash Screen
         if (kIsWeb) {
           return MaterialPageRoute(
             builder: (context) => const AdminLoginScreen(),

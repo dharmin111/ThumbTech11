@@ -74,6 +74,7 @@ class TechReadFour extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (context) => TechnicianServiceDetailsScreen(
                           name: userData?['name'] ?? '',
+
                           phone:
                               userData?['phoneNumber'] ??
                               userData?['phone'] ??
