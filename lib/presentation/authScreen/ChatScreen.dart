@@ -96,6 +96,7 @@ class _ChatScreenState extends State<ChatScreen> {
   DateTime? _otherUserLastSeen;
   Timer? _typingTimer;
   bool _isOtherUserTyping = false;
+  bool _isBlocked = false; // 🔥 Track block status
 
   final List<_PendingMessage> _pendingMessages = [];
   _ReplyPreview? _replyingTo;
@@ -127,6 +128,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _initializeChat();
     _listenToUserPresence();
     _listenToTypingStatus();
+    _checkBlockStatus(); // 🔥 Check if blocked on init
 
     _focusNode.addListener(_onFocusChange);
     _scrollController.addListener(_handleScroll);
@@ -142,6 +144,67 @@ class _ChatScreenState extends State<ChatScreen> {
     _typingTimer?.cancel();
     _scrollDebounceTimer?.cancel();
     super.dispose();
+  }
+
+  // ==================== BLOCK CHECK ====================
+
+  /// 🔥 Check if user is blocked
+  Future<void> _checkBlockStatus() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      // Check if current user blocked other user
+      final doc = await FirebaseFirestore.instance
+          .collection('blocked_users')
+          .doc('${currentUser.uid}_${widget.otherUserId}')
+          .get();
+
+      setState(() {
+        _isBlocked = doc.exists;
+      });
+
+      if (_isBlocked) {
+        print('⚠️ ${widget.otherUserName} is blocked');
+      }
+    } catch (e) {
+      print('Error checking block status: $e');
+    }
+  }
+
+  /// 🔥 Check if user can send messages
+  Future<bool> _canSendMessage() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return false;
+
+      // Check if other user blocked current user
+      final doc1 = await FirebaseFirestore.instance
+          .collection('blocked_users')
+          .doc('${widget.otherUserId}_${currentUser.uid}')
+          .get();
+
+      if (doc1.exists) {
+        print('❌ You are blocked by ${widget.otherUserName}');
+        return false;
+      }
+
+      // Check if current user blocked other user
+      final doc2 = await FirebaseFirestore.instance
+          .collection('blocked_users')
+          .doc('${currentUser.uid}_${widget.otherUserId}')
+          .get();
+
+      if (doc2.exists) {
+        print('❌ You have blocked ${widget.otherUserName}');
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      print('Error checking send permission: $e');
+      return false;
+    }
   }
 
   void _onFocusChange() {
@@ -231,8 +294,7 @@ class _ChatScreenState extends State<ChatScreen> {
         .update({
       'typingUserId': currentUser.uid,
       'typingAt': FieldValue.serverTimestamp(),
-    })
-        .catchError((_) {});
+    }).catchError((_) {});
 
     _typingTimer?.cancel();
     _typingTimer = Timer(const Duration(seconds: 2), () {
@@ -308,6 +370,18 @@ class _ChatScreenState extends State<ChatScreen> {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
 
+    // 🔥 Check if blocked BEFORE sending
+    final canSend = await _canSendMessage();
+    if (!canSend) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ You cannot send messages to this user.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     String finalMessage = rawText;
     if (_replyingTo != null) {
       finalMessage = _encodeReplyMessage(
@@ -378,6 +452,18 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _pickAndSendImage() async {
+    // 🔥 Check if blocked BEFORE sending image
+    final canSend = await _canSendMessage();
+    if (!canSend) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ You cannot send messages to this user.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -425,6 +511,18 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
+      // 🔥 Check if blocked BEFORE sending image
+      final canSend = await _canSendMessage();
+      if (!canSend) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ You cannot send messages to this user.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       final XFile? image = await _imagePicker.pickImage(
         source: source,
         imageQuality: 80,
@@ -711,7 +809,20 @@ class _ChatScreenState extends State<ChatScreen> {
         userId: userId,
         userName: userName,
         onBlocked: () {
-          Navigator.pop(context);
+          // 🔥 Update block status
+          setState(() {
+            _isBlocked = true;
+          });
+
+          // 🔥 Clear message input
+          _messageController.clear();
+
+          // 🔥 Remove pending messages
+          setState(() {
+            _pendingMessages.clear();
+          });
+
+          // 🔥 Show blocked message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('✅ $userName has been blocked'),
@@ -1084,6 +1195,42 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageInput() {
+    // 🔥 Show blocked message if blocked
+    if (_isBlocked) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        color: Colors.grey.shade100,
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.block, color: Colors.red, size: 20),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'You have blocked this user. Unblock to send messages.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -1249,9 +1396,22 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.otherUserName,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                Text(
+                  widget.otherUserName,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                // 🔥 Show blocked icon if blocked
+                if (_isBlocked) ...[
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.block,
+                    color: Colors.red,
+                    size: 16,
+                  ),
+                ],
+              ],
             ),
             const SizedBox(height: 2),
             Row(
@@ -1290,7 +1450,11 @@ class _ChatScreenState extends State<ChatScreen> {
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {
               if (value == 'block') {
-                _blockUser(widget.otherUserId, widget.otherUserName);
+                if (_isBlocked) {
+                  _showUnblockDialog(widget.otherUserId, widget.otherUserName);
+                } else {
+                  _blockUser(widget.otherUserId, widget.otherUserName);
+                }
               } else if (value == 'report') {
                 _showReportDialog(
                   targetId: widget.otherUserId,
@@ -1314,9 +1478,12 @@ class _ChatScreenState extends State<ChatScreen> {
                 value: 'block',
                 child: Row(
                   children: [
-                    Icon(Icons.block, color: Colors.red.shade700),
+                    Icon(
+                      _isBlocked ? Icons.block_rounded : Icons.block,
+                      color: Colors.red.shade700,
+                    ),
                     const SizedBox(width: 8),
-                    Text('Block ${widget.otherUserName}'),
+                    Text(_isBlocked ? 'Unblock User' : 'Block User'),
                   ],
                 ),
               ),
@@ -1331,130 +1498,161 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: Stack(
               children: [
-                StreamBuilder<List<MessageModel>>(
-                  stream: _messageService.getMessages(
-                    widget.conversationId,
+                // 🔥 Show blocked message in chat if blocked
+                if (_isBlocked)
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.block,
+                          size: 64,
+                          color: Colors.red.shade200,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'You have blocked ${widget.otherUserName}',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Unblock to continue chatting',
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  StreamBuilder<List<MessageModel>>(
+                    stream: _messageService.getMessages(
+                      widget.conversationId,
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text('Error: ${snapshot.error}'),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: () => _initializeChat(),
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      if (!snapshot.hasData) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+
+                      final messages = snapshot.data!;
+
+                      if (messages.isNotEmpty) {
+                        final lastMsg = messages.last;
+                        if (lastMsg.senderId != currentUser.uid) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _onNewMessage();
+                          });
+                        }
+                      }
+
+                      _reconcilePending(messages, currentUser.uid);
+
+                      if (messages.isEmpty && _pendingMessages.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.chat_bubble_outline,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No messages yet',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Send a message to start the conversation',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      final items = <dynamic>[];
+                      DateTime? lastDate;
+                      for (final m in messages) {
+                        final d = DateTime(
+                          m.sentAt.year,
+                          m.sentAt.month,
+                          m.sentAt.day,
+                        );
+                        if (lastDate == null || d != lastDate) {
+                          items.add(d);
+                          lastDate = d;
+                        }
+                        items.add(m);
+                      }
+                      for (final p in _pendingMessages) {
+                        final d = DateTime(
+                          p.sentAt.year,
+                          p.sentAt.month,
+                          p.sentAt.day,
+                        );
+                        if (lastDate == null || d != lastDate) {
+                          items.add(d);
+                          lastDate = d;
+                        }
+                        items.add(p);
+                      }
+
+                      return ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: items.length,
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          if (item is DateTime) {
+                            return _buildDateSeparator(item);
+                          }
+                          if (item is _PendingMessage) {
+                            return _buildPendingBubble(item);
+                          }
+                          final message = item as MessageModel;
+                          final isMe = message.senderId == currentUser.uid;
+                          return _buildMessageBubble(message, isMe);
+                        },
+                      );
+                    },
                   ),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 64,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 16),
-                            Text('Error: ${snapshot.error}'),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: () => _initializeChat(),
-                              child: const Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    if (!snapshot.hasData) {
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    }
-
-                    final messages = snapshot.data!;
-
-                    if (messages.isNotEmpty) {
-                      final lastMsg = messages.last;
-                      if (lastMsg.senderId != currentUser.uid) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _onNewMessage();
-                        });
-                      }
-                    }
-
-                    _reconcilePending(messages, currentUser.uid);
-
-                    if (messages.isEmpty && _pendingMessages.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.chat_bubble_outline,
-                              size: 64,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No messages yet',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Send a message to start the conversation',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[500],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    final items = <dynamic>[];
-                    DateTime? lastDate;
-                    for (final m in messages) {
-                      final d = DateTime(
-                        m.sentAt.year,
-                        m.sentAt.month,
-                        m.sentAt.day,
-                      );
-                      if (lastDate == null || d != lastDate) {
-                        items.add(d);
-                        lastDate = d;
-                      }
-                      items.add(m);
-                    }
-                    for (final p in _pendingMessages) {
-                      final d = DateTime(
-                        p.sentAt.year,
-                        p.sentAt.month,
-                        p.sentAt.day,
-                      );
-                      if (lastDate == null || d != lastDate) {
-                        items.add(d);
-                        lastDate = d;
-                      }
-                      items.add(p);
-                    }
-
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        if (item is DateTime) {
-                          return _buildDateSeparator(item);
-                        }
-                        if (item is _PendingMessage) {
-                          return _buildPendingBubble(item);
-                        }
-                        final message = item as MessageModel;
-                        final isMe = message.senderId == currentUser.uid;
-                        return _buildMessageBubble(message, isMe);
-                      },
-                    );
-                  },
-                ),
-                if (_showScrollToBottom)
+                if (_showScrollToBottom && !_isBlocked)
                   Positioned(
                     right: 12,
                     bottom: 12,
@@ -1473,7 +1671,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ],
             ),
           ),
-          if (_isOtherUserTyping)
+          if (_isOtherUserTyping && !_isBlocked)
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -1495,6 +1693,56 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           if (_replyingTo != null) _buildReplyPreviewBar(),
           _buildMessageInput(),
+        ],
+      ),
+    );
+  }
+
+  // ==================== UNBLOCK USER ====================
+
+  void _showUnblockDialog(String userId, String userName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unblock User'),
+        content: Text('Are you sure you want to unblock $userName?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await ReportService.unblockUser(
+                  blockedUserId: userId,
+                );
+                setState(() {
+                  _isBlocked = false;
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('✅ $userName has been unblocked'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('❌ Error: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Unblock'),
+          ),
         ],
       ),
     );

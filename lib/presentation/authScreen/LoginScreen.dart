@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:thumstechs/TechnicianCustomertermAndCondition/TermsAndConditionsScreen.dart';
 import 'package:thumstechs/presentation/DashBoard/CustomerDashboard.dart';
 import 'package:thumstechs/presentation/DashBoard/TechnicianDashboard.dart';
+import 'package:thumstechs/presentation/TechnicianScreen/TechnicianHomeScreen.dart';
 import 'package:thumstechs/presentation/authScreen/signupScreen.dart';
 import '../../Admin/AdminScreens/AdminLoginScreen.dart';
 import '../../Admin/AdminScreens/AdminPendingScreen.dart';
@@ -349,24 +350,24 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
 
             /// ADMIN LOGIN BUTTON
-            // TextButton(
-            //   onPressed: () {
-            //     Navigator.push(
-            //       context,
-            //       MaterialPageRoute(
-            //         builder: (context) => const AdminLoginScreen(),
-            //       ),
-            //     );
-            //   },
-            //   child: const Text(
-            //     'Admin Login',
-            //     style: TextStyle(
-            //       color: Colors.white,
-            //       fontWeight: FontWeight.w600,
-            //     ),
-            //   ),
-            // ),
-            const SizedBox(height: 14),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TechnicianDashboard(),
+                  ),
+                );
+              },
+              child: const Text(
+                'Visit as a Guest',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 3),
 
             /// Terms & Conditions Checkbox
             Padding(

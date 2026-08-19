@@ -7,6 +7,9 @@ import 'package:firebase_storage/firebase_storage.dart';
 import '../../TechnicianCustomertermAndCondition/TermsAndConditionsScreen.dart';
 import '../authScreen/LoginScreen.dart';
 import '../../Services/oneSignalNotificationService.dart';
+import '../widgets/ReportDialog.dart';
+import '../widgets/BlockDialog.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const primaryCyan = Color(0xFF42D7D7);
 const darkBlue = Color(0xFF0C1B4D);
@@ -22,55 +25,97 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   Map<String, dynamic>? _userData;
   bool _isLoading = true;
+  String? _profileImageUrl;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _ensureOneSignalId();
   }
 
-  Future<void> _loadUserData() async {
-    setState(() {
-      _isLoading = true;
-    });
+  // ==================== RE-AUTHENTICATION ====================
 
-    final user = _auth.currentUser;
-    if (user != null) {
-      try {
-        final doc = await _firestore.collection('users').doc(user.uid).get();
-        if (doc.exists) {
-          setState(() {
-            _userData = doc.data();
-          });
-        }
-      } catch (e) {
-        print('Error loading user data: $e');
-      }
-    }
+  Future<String?> _showPasswordDialog() async {
+    final controller = TextEditingController();
 
-    setState(() {
-      _isLoading = false;
-    });
-  }
-
-  Future<void> _logout() async {
-    await _auth.signOut();
-    if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.lock, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Confirm Your Password'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'For security, please enter your current password to delete your account.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                obscureText: true,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  hintText: 'Enter your current password',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context, controller.text.trim());
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Continue'),
+            ),
+          ],
+        );
+      },
     );
   }
 
   // ==================== ACCOUNT DELETION ====================
 
   Future<void> _deleteAccount() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user == null) return;
+
+    final email = user.email;
+    if (email == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Email not found. Please contact support.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final password = await _showPasswordDialog();
+    if (password == null || password.isEmpty) return;
 
     showDialog(
       context: context,
@@ -88,12 +133,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     try {
+      // Re-authenticate
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(credential);
+      print('✅ Re-authentication successful');
+
       final userId = user.uid;
 
-      // 1. Delete profile image from Firebase Storage (if exists)
-      if (_userData?['profileImageUrl'] != null && _userData!['profileImageUrl'].toString().isNotEmpty) {
+      // Delete profile image
+      if (_profileImageUrl != null && _profileImageUrl!.isNotEmpty) {
         try {
-          final ref = FirebaseStorage.instance.refFromURL(_userData!['profileImageUrl']);
+          final ref = _storage.refFromURL(_profileImageUrl!);
           await ref.delete();
           print('✅ Profile image deleted');
         } catch (e) {
@@ -101,19 +154,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
 
-      // 2. Delete all service requests created by this user
+      // Delete service requests
       final requestsSnapshot = await _firestore
           .collection('service_requests')
           .where('userId', isEqualTo: userId)
           .get();
 
       for (var doc in requestsSnapshot.docs) {
-        // Delete associated images from storage
         final data = doc.data();
         if (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty) {
           for (String url in List<String>.from(data['imageUrls'])) {
             try {
-              final ref = FirebaseStorage.instance.refFromURL(url);
+              final ref = _storage.refFromURL(url);
               await ref.delete();
             } catch (e) {
               print('⚠️ Error deleting image: $e');
@@ -124,14 +176,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
       print('✅ ${requestsSnapshot.docs.length} service requests deleted');
 
-      // 3. Delete all chats/conversations
+      // Delete conversations
       final chatsSnapshot = await _firestore
           .collection('conversations')
           .where('customerId', isEqualTo: userId)
           .get();
 
       for (var doc in chatsSnapshot.docs) {
-        // Delete messages in this conversation
         final messages = await _firestore
             .collection('messages')
             .where('conversationId', isEqualTo: doc.id)
@@ -143,16 +194,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
       print('✅ ${chatsSnapshot.docs.length} conversations deleted');
 
-      // 4. Delete user document from Firestore
+      // Delete user document
       await _firestore.collection('users').doc(userId).delete();
-      print('✅ User document deleted');
+      print('✅ User Firestore document deleted');
 
-      // 5. Delete the Authentication account
+      // Delete auth account
       await user.delete();
-      print('✅ Authentication account deleted');
+      print('✅ Firebase Authentication account deleted');
 
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('✅ Account deleted successfully'),
@@ -160,24 +211,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
 
-        // Navigate to login
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),
               (route) => false,
         );
       }
+    } on FirebaseAuthException catch (e) {
+      print('❌ Firebase Auth error: ${e.code}');
+
+      if (mounted) {
+        Navigator.pop(context);
+        String message;
+        switch (e.code) {
+          case 'wrong-password':
+            message = '❌ Incorrect password. Please try again.';
+            break;
+          case 'user-disabled':
+            message = '❌ This account has been disabled.';
+            break;
+          case 'user-not-found':
+            message = '❌ User not found.';
+            break;
+          case 'requires-recent-login':
+            message = '❌ Please log in again before deleting account.';
+            break;
+          default:
+            message = '❌ Account deletion failed: ${e.message}';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     } catch (e) {
+      print('❌ Account deletion error: $e');
+
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error deleting account: ${e.toString()}'),
+            content: Text('❌ Error deleting account: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
-      print('❌ Account deletion error: $e');
     }
   }
 
@@ -211,10 +293,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Row(
                     children: [
                       Icon(Icons.delete, color: Colors.red, size: 16),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 4),
                       const Text(
                         'This will permanently delete:',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                     ],
                   ),
@@ -251,6 +333,147 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ==================== EXISTING METHODS ====================
+
+  Future<void> _ensureOneSignalId() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      final oneSignalId = doc.data()?['oneSignalId'];
+
+      if (oneSignalId == null || oneSignalId.toString().isEmpty) {
+        print('📱 Auto-saving OneSignal ID for customer');
+        await OneSignalNotificationService.saveOneSignalId(
+          userId: user.uid,
+          userRole: 'customer',
+        );
+      } else {
+        print('✅ OneSignal ID already exists: $oneSignalId');
+      }
+    } catch (e) {
+      print('Error ensuring OneSignal ID: $e');
+    }
+  }
+
+  Future<void> _loadUserData() async {
+    setState(() => _isLoading = true);
+
+    final user = _auth.currentUser;
+    if (user != null) {
+      try {
+        final doc = await _firestore.collection('users').doc(user.uid).get();
+        if (doc.exists) {
+          setState(() {
+            _userData = doc.data();
+            _profileImageUrl = _userData?['profileImageUrl'];
+          });
+        }
+      } catch (e) {
+        print('Error loading user data: $e');
+      }
+    }
+
+    setState(() => _isLoading = false);
+  }
+  void _showLogoutConfirmation() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.logout, color: Colors.red),
+            SizedBox(width: 8),
+            Text(
+              'Logout',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to logout?',
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+            },
+            child: const Text(
+              'Cancel',
+              style: TextStyle(fontSize: 15),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              // Close dialog
+              Navigator.pop(dialogContext);
+
+              // Show loading
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (BuildContext loadingContext) =>
+                const Center(child: CircularProgressIndicator()),
+              );
+
+              try {
+                await _auth.signOut();
+                await Future.delayed(const Duration(milliseconds: 500));
+
+                if (mounted) {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  }
+
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
+                        (route) => false,
+                  );
+                }
+              } catch (e) {
+                print('Logout error: $e');
+                if (mounted) {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Error logging out'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text(
+              'Logout',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _editField(String field) {
     TextEditingController controller = TextEditingController(
@@ -320,6 +543,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _showHelpSupport() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Help & Support'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('📧 Email: flakeinsta@gmail.com'),
+            SizedBox(height: 8),
+            Text('📱 Phone: +91 7087 234563'),
+            SizedBox(height: 8),
+            Text('🕐 Support Hours: 9:00 AM – 9:00 PM (Mon–Sat)'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==================== OPEN SUPPORT PAGE ====================
+
+  Future<void> _openSupportPage() async {
+    const supportUrl = 'https://thumbtech-521ae.web.app/support';
+    final Uri uri = Uri.parse(supportUrl);
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        throw 'Could not launch $supportUrl';
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not open support page: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // ==================== BUILD ====================
+
   @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser;
@@ -359,9 +632,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/login');
-                },
+                onPressed: () => Navigator.pushNamed(context, '/login'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryCyan,
                   foregroundColor: Colors.white,
@@ -490,9 +761,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildInfoCard(
                     icon: Icons.local_post_office,
                     title: 'Pincode',
-                    value:
-                    _userData?['pincode']?.toString() ??
-                        'Not provided',
+                    value: _userData?['pincode']?.toString() ?? 'Not provided',
                     onEdit: () => _editField('pincode'),
                   ),
                   const SizedBox(height: 12),
@@ -508,6 +777,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 25),
 
+            // ✅ Terms & Conditions
             GestureDetector(
               onTap: () => Navigator.push(
                 context,
@@ -515,28 +785,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   builder: (context) => TermsAndConditionsScreen(),
                 ),
               ),
-              child: Text(
-                "                 Terms & Conditions ",
-                style: TextStyle(color: Colors.red),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.description, color: Colors.red, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Terms & Conditions",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 5),
+
+            // ✅ Support - Opens Support Page
+            GestureDetector(
+              onTap: _openSupportPage,
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.help_outline, color: primaryCyan, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Get Support",
+                      style: TextStyle(
+                        color: primaryCyan,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
 
             const SizedBox(height: 25),
 
-            // Logout Button
+            // ✅ Help & Support (In-App Dialog)
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: OutlinedButton.icon(
-                onPressed: _logout,
-                icon: const Icon(Icons.logout),
-                label: const Text('Logout'),
+                onPressed: _showHelpSupport,
+                icon: const Icon(Icons.support_agent),
+                label: const Text('Help & Support'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: const BorderSide(color: Colors.red),
-                  minimumSize: const Size(double.infinity, 50),
+                  foregroundColor: primaryCyan,
+                  side: const BorderSide(color: primaryCyan),
+                  minimumSize: const Size(double.infinity, 45),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -544,12 +852,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
 
-            // 🔥 Delete Account Button
+            const SizedBox(height: 12),
+
+            // ✅ Logout Button
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: OutlinedButton.icon(
+                onPressed: _showLogoutConfirmation,
+                icon: const Icon(Icons.logout),
+                label: const Text('Logout'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(color: Colors.red),
+                  minimumSize: const Size(double.infinity, 45),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // ✅ Delete Account Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: OutlinedButton.icon(
                 onPressed: _showDeleteAccountConfirmation,
                 icon: const Icon(Icons.delete_forever),
@@ -557,7 +884,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.red.shade700,
                   side: BorderSide(color: Colors.red.shade700),
-                  minimumSize: const Size(double.infinity, 50),
+                  minimumSize: const Size(double.infinity, 45),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -566,48 +893,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
 
             const SizedBox(height: 30),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, IconData icon) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: primaryCyan, size: 24),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: darkBlue,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 11,
-                color: darkBlue.withOpacity(0.5),
-              ),
-              textAlign: TextAlign.center,
-            ),
           ],
         ),
       ),

@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support - Thumb Tech</title>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f7fa;
+            color: #1a1a2e;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 50px 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 30px;
+            border-bottom: 2px solid #e8ecf1;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 36px;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+        .header .subtitle {
+            color: #6b7280;
+            font-size: 18px;
+        }
+        .header .badge {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+        .section {
+            margin-bottom: 28px;
+            padding-bottom: 28px;
+            border-bottom: 1px solid #e8ecf1;
+        }
+        .section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .section h2 {
+            font-size: 20px;
+            color: #1a1a2e;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section h2 .icon {
+            font-size: 24px;
+        }
+        .section p, .section li {
+            color: #4b5563;
+            font-size: 15px;
+        }
+
+        /* ==================== CONTACT FORM ==================== */
+        .contact-form {
+            background: #f8fafc;
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 14px;
+            color: #1a1a2e;
+        }
+        .form-group .required {
+            color: #dc2626;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+            background: white;
+            font-family: inherit;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .form-submit {
+            background: #2563eb;
+            color: white;
+            padding: 14px 32px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            justify-content: center;
+        }
+        .form-submit:hover {
+            background: #1d4ed8;
+        }
+        .form-submit:disabled {
+            background: #93a3b8;
+            cursor: not-allowed;
+        }
+        .form-success {
+            display: none;
+            background: #f0fdf4;
+            border: 1px solid #16a34a;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            color: #16a34a;
+            text-align: center;
+        }
+        .form-success.show {
+            display: block;
+        }
+        .form-error {
+            display: none;
+            background: #fef2f2;
+            border: 1px solid #dc2626;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            color: #dc2626;
+            text-align: center;
+        }
+        .form-error.show {
+            display: block;
+        }
+
+        /* Other styles */
+        .highlight-box {
+            background: #f0f7ff;
+            border-left: 4px solid #2563eb;
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin: 12px 0;
+        }
+        .highlight-box.green {
+            background: #f0fdf4;
+            border-left-color: #16a34a;
+        }
+        .highlight-box.orange {
+            background: #fffbeb;
+            border-left-color: #f59e0b;
+        }
+        .highlight-box.red {
+            background: #fef2f2;
+            border-left-color: #dc2626;
+        }
+        .contact-card {
+            background: #f0f7ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 12px 0;
+            border: 1px solid #bfdbfe;
+        }
+        .contact-card .row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 6px 0;
+        }
+        .contact-card .row .emoji {
+            font-size: 20px;
+            width: 32px;
+        }
+        .contact-card a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .contact-card a:hover {
+            text-decoration: underline;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e8ecf1;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        .footer .links {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            margin: 12px 0;
+        }
+        .footer .links a {
+            color: #4b5563;
+            font-size: 14px;
+        }
+        .footer .links a:hover {
+            color: #2563eb;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 12px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .response-time {
+            display: inline-block;
+            background: #16a34a;
+            color: white;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 12px 0;
+        }
+        .grid-2 .card {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #e8ecf1;
+            transition: transform 0.2s;
+        }
+        .grid-2 .card:hover {
+            transform: translateY(-2px);
+        }
+        .grid-2 .card .emoji {
+            font-size: 32px;
+        }
+        .grid-2 .card .label {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        @media (max-width: 600px) {
+            .container { padding: 24px 16px; }
+            .header h1 { font-size: 24px; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .footer .links { gap: 12px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <h1>🛠️ Thumb Tech Support</h1>
+        <p class="subtitle">We're here to help you 24/7</p>
+        <p class="badge">⚡ Response within 24 hours</p>
+    </div>
+
+    <!-- ==================== CONTACT FORM ==================== -->
+    <div class="section">
+        <h2><span class="icon">✉️</span> Send us a Message</h2>
+        <p style="margin-bottom: 16px;">
+            Have a question, feedback, or need help? Fill out the form below and we'll get back to you within 24 hours.
+        </p>
+
+        <form class="contact-form" id="supportForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Your Name <span class="required">*</span></label>
+                    <input type="text" id="userName" placeholder="Enter your full name" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address <span class="required">*</span></label>
+                    <input type="email" id="userEmail" placeholder="Enter your email address" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" id="userPhone" placeholder="Enter your phone number">
+                </div>
+                <div class="form-group">
+                    <label>Category <span class="required">*</span></label>
+                    <select id="issueCategory" required>
+                        <option value="">Select a category...</option>
+                        <option value="technical">Technical Issue</option>
+                        <option value="payment">Payment Problem</option>
+                        <option value="report">Report Abuse / User</option>
+                        <option value="account">Account Related</option>
+                        <option value="booking">Booking Issue</option>
+                        <option value="feedback">Feedback / Suggestion</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Subject <span class="required">*</span></label>
+                <input type="text" id="subject" placeholder="Brief subject of your issue" required>
+            </div>
+
+            <div class="form-group">
+                <label>Message <span class="required">*</span></label>
+                <textarea id="message" placeholder="Describe your issue or question in detail..." required></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 8px;">
+                <label style="font-size: 13px; font-weight: normal; color: #6b7280;">
+                    <input type="checkbox" id="agreeTerms" required>
+                    I agree to the <a href="/privacy-policy.html" target="_blank">Privacy Policy</a> and <a href="/terms.html" target="_blank">Terms of Use</a>
+                    <span class="required">*</span>
+                </label>
+            </div>
+
+            <button type="submit" class="form-submit" id="submitBtn">
+                <i class="fas fa-paper-plane"></i> Send Message
+            </button>
+
+            <div class="form-success" id="successMessage">
+                <i class="fas fa-check-circle" style="font-size: 24px;"></i>
+                <br><br>
+                <strong>✅ Message Sent Successfully!</strong>
+                <br>
+                Thank you for contacting us. We will respond within 24 hours.
+            </div>
+
+            <div class="form-error" id="errorMessage">
+                <i class="fas fa-exclamation-circle" style="font-size: 24px;"></i>
+                <br><br>
+                <strong>❌ Something went wrong!</strong>
+                <br>
+                Please try again or email us directly at <a href="mailto:flakeinsta@gmail.com" style="color: #2563eb;">flakeinsta@gmail.com</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Quick Contact -->
+    <div class="section">
+        <h2><span class="icon">📞</span> Or Contact Us Directly</h2>
+        <div class="contact-card">
+            <div class="row">
+                <span class="emoji">📧</span>
+                <span><strong>Email:</strong> <a href="mailto:flakeinsta@gmail.com">flakeinsta@gmail.com</a></span>
+            </div>
+            <div class="row">
+                <span class="emoji">📱</span>
+                <span><strong>Phone:</strong> <a href="tel:+917087234563">+91 7087 234563</a></span>
+            </div>
+            <div class="row">
+                <span class="emoji">🕐</span>
+                <span><strong>Support Hours:</strong> 9:00 AM – 9:00 PM (Mon–Sat)</span>
+            </div>
+            <div class="row">
+                <span class="emoji">⏱️</span>
+                <span><strong>Response Time:</strong> <span class="response-time">Within 24 hours</span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report a Problem -->
+    <div class="section">
+        <h2><span class="icon">🚨</span> Report a Problem in App</h2>
+        <div class="highlight-box red">
+            <strong>⚠️ Reporting Inappropriate Content or Users</strong>
+            <ul>
+                <li>Use the <strong>Report</strong> button in the app</li>
+                <li>Select the reason for reporting</li>
+                <li>Our team reviews within <strong>24 hours</strong></li>
+                <li>Action is taken immediately on verified reports</li>
+            </ul>
+        </div>
+        <p style="margin-top: 12px;">
+            <strong>In the app:</strong>
+        <ul>
+            <li><strong>Report Message:</strong> Long press the message → Report</li>
+            <li><strong>Report User:</strong> Profile → ⋮ menu → Report User</li>
+            <li><strong>Report Booking:</strong> Booking → ⋮ menu → Report</li>
+        </ul>
+        </p>
+    </div>
+
+    <!-- Account Deletion -->
+    <div class="section">
+        <h2><span class="icon">🗑️</span> Account Deletion Instructions</h2>
+        <div class="highlight-box orange">
+            <strong>⚠️ Important:</strong> This action is <strong>permanent</strong> and cannot be undone.
+        </div>
+        <ol style="padding-left: 24px; margin-top: 8px;">
+            <li>Open the <strong>Thumb Tech</strong> app</li>
+            <li>Go to <strong>Profile</strong> (bottom navigation bar)</li>
+            <li>Tap on <strong>Delete Account</strong></li>
+            <li>Read the confirmation dialog carefully</li>
+            <li>Enter your <strong>password</strong> to confirm</li>
+            <li>Tap <strong>Delete Permanently</strong></li>
+        </ol>
+    </div>
+
+    <!-- FAQ -->
+    <div class="section">
+        <h2><span class="icon">❓</span> Frequently Asked Questions</h2>
+
+        <div style="padding: 12px 0; border-bottom: 1px solid #e8ecf1;">
+            <div style="font-weight: 600;">📱 How do I book a service?</div>
+            <div style="color: #4b5563; font-size: 14px;">Open the app → Browse services → Select a service → Enter details → Confirm booking.</div>
+        </div>
+
+        <div style="padding: 12px 0; border-bottom: 1px solid #e8ecf1;">
+            <div style="font-weight: 600;">🔧 How do I become a technician?</div>
+            <div style="color: #4b5563; font-size: 14px;">Create an account → Select "Technician" role → Fill in your details → Submit for verification.</div>
+        </div>
+
+        <div style="padding: 12px 0; border-bottom: 1px solid #e8ecf1;">
+            <div style="font-weight: 600;">💳 Is my payment secure?</div>
+            <div style="color: #4b5563; font-size: 14px;">Yes! All payments are processed through Razorpay. We never store your credit card information.</div>
+        </div>
+
+        <div style="padding: 12px 0; border-bottom: 1px solid #e8ecf1;">
+            <div style="font-weight: 600;">🚫 How do I report a user?</div>
+            <div style="color: #4b5563; font-size: 14px;">Go to the user's profile → Tap the three dots (⋮) → Select "Report User" → Choose a reason → Submit.</div>
+        </div>
+
+        <div style="padding: 12px 0;">
+            <div style="font-weight: 600;">🗑️ How do I delete my account?</div>
+            <div style="color: #4b5563; font-size: 14px;">Profile → Delete Account → Enter password → Confirm deletion. See instructions above.</div>
+        </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="section">
+        <h2><span class="icon">🔗</span> Quick Links</h2>
+        <div class="grid-2">
+            <div class="card">
+                <div class="emoji">🔒</div>
+                <div><strong><a href="/privacy-policy.html" style="color: #2563eb; text-decoration: none;">Privacy Policy</a></strong></div>
+                <div class="label">Read our privacy policy</div>
+            </div>
+            <div class="card">
+                <div class="emoji">📄</div>
+                <div><strong><a href="/terms.html" style="color: #2563eb; text-decoration: none;">Terms of Use</a></strong></div>
+                <div class="label">Read our terms and conditions</div>
+            </div>
+            <div class="card">
+                <div class="emoji">📱</div>
+                <div><strong><a href="https://thumbtech-521ae.web.app" style="color: #2563eb; text-decoration: none;">Home</a></strong></div>
+                <div class="label">Back to homepage</div>
+            </div>
+            <div class="card">
+                <div class="emoji">📧</div>
+                <div><strong><a href="mailto:flakeinsta@gmail.com" style="color: #2563eb; text-decoration: none;">Email Us</a></strong></div>
+                <div class="label">Contact us directly</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="links">
+            <a href="/">Home</a>
+            <a href="/privacy-policy.html">Privacy Policy</a>
+            <a href="/terms.html">Terms of Use</a>
+            <a href="mailto:flakeinsta@gmail.com">Contact</a>
+        </div>
+        <p>© 2026 Thumb Tech. All rights reserved.</p>
+        <p>Version 1.0.0</p>
+        <a href="/privacy-policy.html" class="back-link">🔒 View Privacy Policy</a>
+        <br>
+        <a href="/" class="back-link">🏠 Back to Home</a>
+    </div>
+</div>
+
+<!-- ==================== JAVASCRIPT - WITH CORRECT CONFIG ==================== -->
+<script>
+    // ==================== ✅ CORRECT FIREBASE CONFIG ====================
+    // App nickname: thumbtech-web
+    // App ID: 1:988985361848:web:ec231f5653dbae80c3fb4d
+    // Hosting site: thumbtech-521ae-68381
+    const firebaseConfig = {
+        apiKey: "AIzaSyCny9NE3IbWGyapnM1EBLw7g9nxw-loAJQ",
+        authDomain: "thumbtech-521ae.firebaseapp.com",
+        projectId: "thumbtech-521ae",
+        storageBucket: "thumbtech-521ae.firebasestorage.app",
+        messagingSenderId: "988985361848",
+        appId: "1:988985361848:web:ec231f5653dbae80c3fb4d",
+        measurementId: "G-G9QL0489RB"
+    };
+
+    console.log('🔥 Firebase Config loaded:', firebaseConfig);
+    console.log('✅ App ID:', firebaseConfig.appId);
+
+    // ==================== INIT FIREBASE ====================
+    let db;
+
+    function initFirebase() {
+        try {
+            if (typeof firebase !== 'undefined') {
+                // Check if already initialized
+                if (!firebase.apps || firebase.apps.length === 0) {
+                    firebase.initializeApp(firebaseConfig);
+                    console.log('✅ Firebase initialized successfully');
+                } else {
+                    console.log('✅ Firebase already initialized');
+                }
+                db = firebase.firestore();
+                console.log('✅ Firestore ready');
+                return true;
+            } else {
+                console.log('⚠️ Firebase not loaded, waiting for SDK...');
+                return false;
+            }
+        } catch (e) {
+            console.error('❌ Firebase init error:', e);
+            return false;
+        }
+    }
+
+    // ==================== DOM READY ====================
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('📄 DOM loaded');
+
+        // Try to init Firebase
+        const firebaseReady = initFirebase();
+
+        if (!firebaseReady) {
+            // If Firebase not loaded, load SDK first
+            console.log('📦 Loading Firebase SDK...');
+            const script = document.createElement('script');
+            script.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js';
+            script.onload = function() {
+                console.log('✅ Firebase App loaded');
+                const dbScript = document.createElement('script');
+                dbScript.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js';
+                dbScript.onload = function() {
+                    console.log('✅ Firestore loaded');
+                    firebase.initializeApp(firebaseConfig);
+                    db = firebase.firestore();
+                    console.log('✅ Firebase initialized successfully');
+                };
+                document.head.appendChild(dbScript);
+            };
+            document.head.appendChild(script);
+        }
+
+        // Setup form
+        setupForm();
+    });
+
+    // ==================== SETUP FORM ====================
+    function setupForm() {
+        const form = document.getElementById('supportForm');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('📝 Form submitted');
+
+            // Get values
+            const name = document.getElementById('userName').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const phone = document.getElementById('userPhone').value.trim();
+            const category = document.getElementById('issueCategory').value;
+            const subject = document.getElementById('subject').value.trim();
+            const message = document.getElementById('message').value.trim();
+            const agree = document.getElementById('agreeTerms').checked;
+
+            console.log('📋 Form Values:', { name, email, phone, category, subject, message, agree });
+
+            // Validate
+            if (!name || !email || !category || !subject || !message || !agree) {
+                alert('Please fill in all required fields and accept the terms.');
+                return;
+            }
+
+            // Validate email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+
+            // Disable button
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+            // Prepare data
+            const supportData = {
+                name: name,
+                email: email,
+                phone: phone || '',
+                category: category,
+                subject: subject,
+                message: message,
+                status: 'pending',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            console.log('📤 Sending data:', supportData);
+
+            // Send to Firebase
+            sendToFirebase(supportData, submitBtn);
+        });
+    }
+
+    // ==================== SEND TO FIREBASE ====================
+    function sendToFirebase(data, submitBtn) {
+        console.log('📤 sendToFirebase called');
+
+        // Make sure Firebase is initialized
+        if (!db) {
+            console.log('⚠️ Firebase not initialized, initializing...');
+            try {
+                if (typeof firebase !== 'undefined') {
+                    if (!firebase.apps || firebase.apps.length === 0) {
+                        firebase.initializeApp(firebaseConfig);
+                        console.log('✅ Firebase initialized in sendToFirebase');
+                    }
+                    db = firebase.firestore();
+                    console.log('✅ Firestore ready');
+                } else {
+                    throw new Error('Firebase not available');
+                }
+            } catch (e) {
+                console.error('❌ Failed to initialize Firebase:', e);
+                showError('Failed to initialize Firebase: ' + e.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Message';
+                return;
+            }
+        }
+
+        // Save to Firestore
+        db.collection('support_messages').add(data)
+            .then((docRef) => {
+                console.log('✅ Message saved! ID:', docRef.id);
+                showSuccess();
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Message';
+                document.getElementById('supportForm').reset();
+            })
+            .catch((error) => {
+                console.error('❌ Error saving:', error);
+                showError('Error: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Message';
+            });
+    }
+
+    // ==================== UI HELPERS ====================
+    function showSuccess() {
+        const success = document.getElementById('successMessage');
+        const error = document.getElementById('errorMessage');
+        success.classList.add('show');
+        error.classList.remove('show');
+        setTimeout(() => { success.classList.remove('show'); }, 5000);
+    }
+
+    function showError(message) {
+        const error = document.getElementById('errorMessage');
+        const success = document.getElementById('successMessage');
+        // Update error message
+        error.innerHTML = '<i class="fas fa-exclamation-circle" style="font-size: 24px;"></i><br><br>' +
+            '<strong>❌ Something went wrong!</strong><br>' +
+            message + '<br>' +
+            'Please try again or email us directly at <a href="mailto:flakeinsta@gmail.com" style="color: #2563eb;">flakeinsta@gmail.com</a>';
+        error.classList.add('show');
+        success.classList.remove('show');
+        setTimeout(() => { error.classList.remove('show'); }, 8000);
+    }
+</script>
+
+<!-- ==================== LOAD FIREBASE SDK ==================== -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</body>
+</html>

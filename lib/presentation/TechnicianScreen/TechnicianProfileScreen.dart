@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 
 import '../../Services/oneSignalNotificationService.dart';
 import '../../TechnicianCustomertermAndCondition/TechnicianTermsScreen.dart';
 import '../authScreen/LoginScreen.dart';
+import '../privacy/PrivacyPolicyScreen.dart';
 
 class TechnicianProfileScreen extends StatefulWidget {
   const TechnicianProfileScreen({super.key});
@@ -20,6 +22,10 @@ class TechnicianProfileScreen extends StatefulWidget {
 }
 
 class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
   String? technicianName;
   String? technicianEmail;
   String? technicianPhone;
@@ -77,11 +83,91 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
     super.dispose();
   }
 
+  // ==================== SHOW PASSWORD DIALOG ====================
+
+  Future<String?> _showPasswordDialog() async {
+    final controller = TextEditingController();
+
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.lock, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Confirm Your Password'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'For security, please enter your current password to delete your account.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                obscureText: true,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  hintText: 'Enter your current password',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(
+                  context,
+                  controller.text.trim(),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Continue'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // ==================== ACCOUNT DELETION ====================
 
   Future<void> _deleteAccount() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user == null) return;
+
+    final email = user.email;
+    if (email == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Email not found. Please contact support.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final password = await _showPasswordDialog();
+    if (password == null || password.isEmpty) {
+      return;
+    }
 
     showDialog(
       context: context,
@@ -99,12 +185,20 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
     );
 
     try {
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+
+      await user.reauthenticateWithCredential(credential);
+      print('✅ Re-authentication successful');
+
       final userId = user.uid;
 
-      // 1. Delete profile image from Firebase Storage
+      // Delete profile image
       if (profileImageUrl != null && profileImageUrl!.isNotEmpty) {
         try {
-          final ref = FirebaseStorage.instance.refFromURL(profileImageUrl!);
+          final ref = _storage.refFromURL(profileImageUrl!);
           await ref.delete();
           print('✅ Profile image deleted');
         } catch (e) {
@@ -112,26 +206,36 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
         }
       }
 
-      // 2. Delete all service requests created by this user
-      final requestsSnapshot = await FirebaseFirestore.instance
+      // Delete service requests
+      final requestsSnapshot = await _firestore
           .collection('service_requests')
-          .where('userId', isEqualTo: userId)
+          .where('technicianId', isEqualTo: userId)
           .get();
 
       for (var doc in requestsSnapshot.docs) {
+        final data = doc.data();
+        if (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty) {
+          for (String url in List<String>.from(data['imageUrls'])) {
+            try {
+              final ref = _storage.refFromURL(url);
+              await ref.delete();
+            } catch (e) {
+              print('⚠️ Error deleting image: $e');
+            }
+          }
+        }
         await doc.reference.delete();
       }
       print('✅ ${requestsSnapshot.docs.length} service requests deleted');
 
-      // 3. Delete all chats/conversations
-      final chatsSnapshot = await FirebaseFirestore.instance
+      // Delete conversations
+      final chatsSnapshot = await _firestore
           .collection('conversations')
           .where('technicianId', isEqualTo: userId)
           .get();
 
       for (var doc in chatsSnapshot.docs) {
-        // Delete messages in this conversation
-        final messages = await FirebaseFirestore.instance
+        final messages = await _firestore
             .collection('messages')
             .where('conversationId', isEqualTo: doc.id)
             .get();
@@ -142,8 +246,8 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
       }
       print('✅ ${chatsSnapshot.docs.length} conversations deleted');
 
-      // 4. Delete technician pending requests
-      final pendingSnapshot = await FirebaseFirestore.instance
+      // Delete pending requests
+      final pendingSnapshot = await _firestore
           .collection('technician_pending_requests')
           .where('technicianId', isEqualTo: userId)
           .get();
@@ -153,16 +257,16 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
       }
       print('✅ ${pendingSnapshot.docs.length} pending requests deleted');
 
-      // 5. Delete user document from Firestore
-      await FirebaseFirestore.instance.collection('users').doc(userId).delete();
-      print('✅ User document deleted');
+      // Delete user document
+      await _firestore.collection('users').doc(userId).delete();
+      print('✅ User Firestore document deleted');
 
-      // 6. Delete the Authentication account
+      // Delete auth account
       await user.delete();
-      print('✅ Authentication account deleted');
+      print('✅ Firebase Authentication account deleted');
 
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('✅ Account deleted successfully'),
@@ -170,14 +274,46 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
           ),
         );
 
-        // Navigate to login
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),
               (route) => false,
         );
       }
+    } on FirebaseAuthException catch (e) {
+      print('❌ Firebase Auth error: ${e.code}');
+
+      if (mounted) {
+        Navigator.pop(context);
+        String message;
+        switch (e.code) {
+          case 'wrong-password':
+            message = '❌ Incorrect password. Please try again.';
+            break;
+          case 'user-disabled':
+            message = '❌ This account has been disabled.';
+            break;
+          case 'user-not-found':
+            message = '❌ User not found.';
+            break;
+          case 'requires-recent-login':
+            message = '❌ Please log in again before deleting account.';
+            break;
+          default:
+            message = '❌ Account deletion failed: ${e.message}';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     } catch (e) {
+      print('❌ Account deletion error: $e');
+
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -187,7 +323,6 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
           ),
         );
       }
-      print('❌ Account deletion error: $e');
     }
   }
 
@@ -221,10 +356,10 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
                   Row(
                     children: [
                       Icon(Icons.delete, color: Colors.red, size: 16),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 4),
                       const Text(
                         'This will permanently delete:',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                     ],
                   ),
@@ -260,18 +395,58 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
     );
   }
 
+  // ==================== SUPPORT PAGE ====================
+
+  Future<void> _openSupportPage() async {
+    const supportUrl = 'https://thumbtech-521ae.web.app/support';
+    final Uri uri = Uri.parse(supportUrl);
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        throw 'Could not launch $supportUrl';
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not open support page: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+
+  Future<void> _privacyPolicy() async {
+    const supportUrl = 'https://thumbtech-521ae.web.app/privacy-policy';
+    final Uri uri = Uri.parse(supportUrl);
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        throw 'Could not launch $supportUrl';
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not open support page: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+
   // ==================== EXISTING METHODS ====================
 
   Future<void> _ensureOneSignalId() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user == null) return;
 
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
+      final doc = await _firestore.collection('users').doc(user.uid).get();
       final oneSignalId = doc.data()?['oneSignalId'];
 
       if (oneSignalId == null || oneSignalId.toString().isEmpty) {
@@ -294,11 +469,11 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
     });
 
     try {
-      User? user = FirebaseAuth.instance.currentUser;
+      User? user = _auth.currentUser;
       if (user != null) {
         technicianEmail = user.email;
 
-        DocumentSnapshot doc = await FirebaseFirestore.instance
+        DocumentSnapshot doc = await _firestore
             .collection('users')
             .doc(user.uid)
             .get();
@@ -337,9 +512,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
 
   Future<void> _updateProfile() async {
     try {
-      User? user = FirebaseAuth.instance.currentUser;
+      User? user = _auth.currentUser;
       if (user != null) {
-        await FirebaseFirestore.instance
+        await _firestore
             .collection('users')
             .doc(user.uid)
             .update({
@@ -397,9 +572,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
       return;
     }
 
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user != null) {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
+      await _firestore.collection('users').doc(user.uid).update(
         {
           'pincodes': FieldValue.arrayUnion([newPincode]),
           'updatedAt': FieldValue.serverTimestamp(),
@@ -418,9 +593,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
   }
 
   Future<void> _removePincode(String pincode) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user != null) {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
+      await _firestore.collection('users').doc(user.uid).update(
         {
           'pincodes': FieldValue.arrayRemove([pincode]),
           'updatedAt': FieldValue.serverTimestamp(),
@@ -439,13 +614,13 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
 
   Future<void> _updateCategories(List<String> newCategories) async {
     try {
-      User? user = FirebaseAuth.instance.currentUser;
+      User? user = _auth.currentUser;
       if (user != null) {
         setState(() {
           isLoading = true;
         });
 
-        await FirebaseFirestore.instance
+        await _firestore
             .collection('users')
             .doc(user.uid)
             .update({
@@ -552,16 +727,16 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
           ),
         );
 
-        final User? user = FirebaseAuth.instance.currentUser;
+        final User? user = _auth.currentUser;
         if (user != null) {
-          final storageRef = FirebaseStorage.instance.ref().child(
+          final storageRef = _storage.ref().child(
             'technicians/${user.uid}/profile/${DateTime.now().millisecondsSinceEpoch}.jpg',
           );
 
           await storageRef.putFile(File(image.path));
           final downloadUrl = await storageRef.getDownloadURL();
 
-          await FirebaseFirestore.instance
+          await _firestore
               .collection('users')
               .doc(user.uid)
               .update({
@@ -712,7 +887,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
               }
 
               try {
-                await FirebaseAuth.instance.signOut();
+                await _auth.signOut();
                 await Future.delayed(const Duration(milliseconds: 500));
 
                 if (mounted) {
@@ -794,6 +969,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
       ),
       child: Column(
         children: [
+          // ✅ Terms & Conditions
           _buildProfileMenuItem(
             icon: Icons.description,
             title: 'Terms & Conditions',
@@ -801,13 +977,26 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             onTap: _showTermsAndConditions,
           ),
           const Divider(height: 1),
+
+          // ✅ Privacy Policy
+          // _buildProfileMenuItem(
+          //   icon: Icons.privacy_tip,
+          //   title: 'Privacy Policy',
+          //   subtitle: 'Learn how we protect your data',
+          //   onTap: _showPrivacyPolicy,
+          // ),
+          const Divider(height: 1),
+
+          // ✅ Get Support - Opens Support Page
           _buildProfileMenuItem(
-            icon: Icons.privacy_tip,
-            title: 'Privacy Policy',
-            subtitle: 'Learn how we protect your data',
-            onTap: _showPrivacyPolicy,
+            icon: Icons.help_outline,
+            title: 'Get Support',
+            subtitle: 'Visit our support page',
+            onTap: _openSupportPage,
           ),
           const Divider(height: 1),
+
+          // ✅ Delete Account
           _buildProfileMenuItem(
             icon: Icons.delete_forever,
             title: 'Delete Account',
@@ -816,6 +1005,8 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             isRed: true,
           ),
           const Divider(height: 1),
+
+          // ✅ Logout
           _buildProfileMenuItem(
             icon: Icons.logout,
             title: 'Logout',
@@ -834,14 +1025,14 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
     );
   }
 
-  void _showPrivacyPolicy() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Privacy Policy coming soon'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
+  // void _showPrivacyPolicy() {
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
+  //   );
+  // }
+
+  // ==================== REST OF THE EXISTING CODE ====================
 
   Widget _buildPincodesCard() {
     return Container(
@@ -1151,24 +1342,25 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             onTap: null,
           ),
           const Divider(height: 1),
+
+
+
+
           _buildProfileMenuItem(
             icon: Icons.security,
             title: 'Privacy & Security',
             onTap: () {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Coming soon')));
+              _privacyPolicy();
             },
           ),
+
+
+
           const Divider(height: 1),
           _buildProfileMenuItem(
             icon: Icons.help_outline,
             title: 'Help & Support',
-            onTap: () {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Coming soon')));
-            },
+            onTap: _openSupportPage,
           ),
           const Divider(height: 1),
           _buildProfileMenuItem(
@@ -1297,7 +1489,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
         content: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Service Provider App'),
+            Text('Thumb Tech - Service Provider App'),
             SizedBox(height: 8),
             Text('Version 1.0.0'),
             SizedBox(height: 8),
