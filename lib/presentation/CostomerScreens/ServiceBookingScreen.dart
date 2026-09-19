@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../Services/FirebaseFirestoreStorageCustomerOrder.dart';
 import '../../Services/ReportService.dart';
 import '../../model/ServiceRequestModel.dart';
+import '../../profile/customer_technician_data_seen.dart';
 import '../DashBoard/CustomerDashboard.dart';
 import '../authScreen/ChatScreen.dart';
 import 'ServiceDetailScreen.dart';
@@ -18,7 +19,8 @@ const darkBlue = Color(0xFF0C1B4D);
 const background = Color(0xFFFFFFFF);
 
 class ServiceBookingScreen extends StatefulWidget {
-  const ServiceBookingScreen({super.key});
+  final int initialTab;
+  const ServiceBookingScreen({super.key, this.initialTab = 0});
 
   @override
   State<ServiceBookingScreen> createState() => _ServiceBookingScreenState();
@@ -37,7 +39,11 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
   void initState() {
     super.initState();
     _userId = _firebaseService.getCurrentUserId();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(
+      length: 4,
+      vsync: this,
+      initialIndex: widget.initialTab,
+    );
     _loadUserName();
   }
 
@@ -264,14 +270,46 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
 
   // ==================== 🔥 CHAT ====================
 
-  void _openChat(ServiceRequestModel booking) {
-    if (booking.technicianId != null && booking.technicianId!.isNotEmpty) {
+  // ==================== 🔥 CHAT ====================
+
+  void _openChat(ServiceRequestModel booking) async {
+    if (booking.technicianId == null || booking.technicianId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Technician information not available'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
       final conversationId = _generateConversationId(
         _userId!,
         booking.technicianId!,
         booking.id!,
       );
 
+      // ✅ Check if conversation already exists
+      final conversationRef = FirebaseFirestore.instance
+          .collection('conversations')
+          .doc(conversationId);
+
+      final conversationDoc = await conversationRef.get();
+
+      // ✅ If conversation doesn't exist, create it
+      if (!conversationDoc.exists) {
+        await _createConversation(
+          conversationId: conversationId,
+          requestId: booking.id!,
+          customerId: _userId!,
+          customerName: _userName ?? 'Customer',
+          technicianId: booking.technicianId!,
+          technicianName: booking.technicianName ?? 'Technician',
+        );
+      }
+
+      // ✅ Navigate to ChatScreen
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -281,20 +319,63 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
             otherUserId: booking.technicianId!,
             otherUserName: booking.technicianName ?? 'Technician',
             otherUserRole: 'technician',
+            otherUserProfileImage: booking.technicianProfileImage,
           ),
         ),
       );
-    } else {
+    } catch (e) {
+      print('❌ Error opening chat: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Technician information not available'),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          content: Text('Error opening chat: $e'),
+          backgroundColor: Colors.red,
         ),
       );
     }
   }
 
-  /// Generate a unique conversation ID
+// ✅ Create conversation helper
+  Future<void> _createConversation({
+    required String conversationId,
+    required String requestId,
+    required String customerId,
+    required String customerName,
+    required String technicianId,
+    required String technicianName,
+  }) async {
+    try {
+      final conversationRef = FirebaseFirestore.instance
+          .collection('conversations')
+          .doc(conversationId);
+
+      // ✅ Check if already exists
+      final doc = await conversationRef.get();
+      if (doc.exists) {
+        print('✅ Conversation already exists: $conversationId');
+        return;
+      }
+      await conversationRef.set({
+        'conversationId': conversationId,
+        'requestId': requestId,
+        'customerId': customerId,
+        'customerName': customerName,
+        'technicianId': technicianId,
+        'technicianName': technicianName,
+        'lastMessage': '',
+        'lastMessageTime': FieldValue.serverTimestamp(),
+        'customerUnreadCount': 0,
+        'technicianUnreadCount': 0,
+        'status': 'active',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      print('✅ Conversation created: $conversationId');
+    } catch (e) {
+      print('❌ Error creating conversation: $e');
+      rethrow;
+    }
+  }
+
   String _generateConversationId(String userId1, String userId2, String requestId) {
     final ids = [userId1, userId2]..sort();
     return '${ids[0]}_${ids[1]}_$requestId';
@@ -530,8 +611,6 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
               ),
             ),
             const SizedBox(height: 16),
-
-            // Report Booking
             ListTile(
               leading: Icon(Icons.flag, color: Colors.red.shade700),
               title: const Text(
@@ -548,8 +627,6 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                 );
               },
             ),
-
-            // Block Technician (only if accepted)
             if (booking.status.toLowerCase() == 'accepted' &&
                 booking.technicianId != null &&
                 booking.technicianId!.isNotEmpty)
@@ -567,7 +644,6 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                   );
                 },
               ),
-
             const SizedBox(height: 12),
           ],
         ),
@@ -605,6 +681,43 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
     );
   }
 
+  // ==================== TAB WITH BADGE ====================
+
+  Widget _buildTabWithBadge({
+    required String text,
+    required int count,
+    required Color color,
+  }) {
+    return Tab(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(text),
+          if (count > 0) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              constraints: const BoxConstraints(minWidth: 20),
+              child: Text(
+                count > 99 ? '99+' : count.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   // ==================== BUILD ====================
 
   @override
@@ -636,18 +749,64 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
           backgroundColor: background,
           elevation: 0,
           centerTitle: true,
-          bottom: TabBar(
-            controller: _tabController,
-            labelColor: primaryCyan,
-            unselectedLabelColor: darkBlue.withOpacity(0.5),
-            indicatorColor: primaryCyan,
-            isScrollable: true,
-            tabs: const [
-              Tab(text: 'Pending'),
-              Tab(text: 'Accepted'),
-              Tab(text: 'Rejected'),
-              Tab(text: 'Expired'),
-            ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(48),
+            child: StreamBuilder<List<ServiceRequestModel>>(
+              stream: _firebaseService.getUserServiceRequests(),
+              builder: (context, snapshot) {
+                int pendingCount = 0;
+                int acceptedCount = 0;
+                int rejectedCount = 0;
+                int expiredCount = 0;
+
+                if (snapshot.hasData) {
+                  final allBookings = snapshot.data ?? [];
+                  pendingCount = allBookings
+                      .where((b) => b.status.toLowerCase() == 'pending')
+                      .length;
+                  acceptedCount = allBookings
+                      .where((b) => b.status.toLowerCase() == 'accepted')
+                      .length;
+                  rejectedCount = allBookings
+                      .where((b) => b.status.toLowerCase() == 'rejected' ||
+                      b.status.toLowerCase() == 'cancelled')
+                      .length;
+                  expiredCount = allBookings
+                      .where((b) => b.status.toLowerCase() == 'expired')
+                      .length;
+                }
+
+                return TabBar(
+                  controller: _tabController,
+                  labelColor: primaryCyan,
+                  unselectedLabelColor: darkBlue.withOpacity(0.5),
+                  indicatorColor: primaryCyan,
+                  isScrollable: true,
+                  tabs: [
+                    _buildTabWithBadge(
+                      text: 'Pending',
+                      count: pendingCount,
+                      color: Colors.red,
+                    ),
+                    _buildTabWithBadge(
+                      text: 'Accepted',
+                      count: acceptedCount,
+                      color: Colors.green,
+                    ),
+                    _buildTabWithBadge(
+                      text: 'Rejected',
+                      count: rejectedCount,
+                      color: Colors.red,
+                    ),
+                    _buildTabWithBadge(
+                      text: 'Expired',
+                      count: expiredCount,
+                      color: Colors.orange,
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
         body: StreamBuilder<List<ServiceRequestModel>>(
@@ -969,7 +1128,6 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                     ],
                   ),
                 ),
-                // 🔥 Three-dot menu for Report
                 PopupMenuButton<String>(
                   icon: Icon(Icons.more_vert, color: statusColor),
                   onSelected: (value) {
@@ -990,13 +1148,13 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                     }
                   },
                   itemBuilder: (context) => [
-                    PopupMenuItem(
+                    const PopupMenuItem(
                       value: 'report',
                       child: Row(
                         children: [
-                          Icon(Icons.flag, color: Colors.red.shade700),
-                          const SizedBox(width: 8),
-                          const Text('Report'),
+                          Icon(Icons.flag, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Report'),
                         ],
                       ),
                     ),
@@ -1089,7 +1247,9 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                   ),
                 ),
 
-                // Technician Info (only for accepted)
+                // ✅ Technician Info with Profile Image (Fixed)
+
+                // ✅ Technician Info with Verified Text Below Avatar
                 if (status == 'accepted' &&
                     booking.technicianName != null &&
                     booking.technicianName!.isNotEmpty)
@@ -1104,20 +1264,60 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                       ),
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: primaryCyan,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            size: 20,
-                            color: Colors.white,
+                        // ✅ Avatar Column with Verified Text Below
+                        InkWell(
+                          onTap: () {
+                            if (booking.technicianId != null &&
+                                booking.technicianId!.isNotEmpty) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CustomerTechnicianDataSeen(
+                                    userId: booking.technicianId!,
+                                    userRole: 'technician',
+                                    requestId: booking.id,
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                          child: Column(
+                            children: [
+                              // Avatar
+                              CircleAvatar(
+                                radius: 30,
+                                backgroundColor: primaryCyan.withOpacity(0.2),
+                                backgroundImage:
+                                booking.technicianProfileImage != null &&
+                                    booking.technicianProfileImage!.isNotEmpty
+                                    ? NetworkImage(booking.technicianProfileImage!)
+                                    : null,
+                                child: (booking.technicianProfileImage == null ||
+                                    booking.technicianProfileImage!.isEmpty)
+                                    ? Text(
+                                  booking.technicianName != null &&
+                                      booking.technicianName!.isNotEmpty
+                                      ? booking.technicianName![0].toUpperCase()
+                                      : 'T',
+                                  style: TextStyle(
+                                    color: primaryCyan,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                )
+                                    : null,
+                              ),
+                              // ✅ VERIFIED Text Below Avatar
+                            //  if (booking.isAccepted)
+
+  ]
+
                           ),
                         ),
                         const SizedBox(width: 12),
+                        // ✅ Info Column
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1130,48 +1330,83 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                                 ),
                               ),
                               const SizedBox(height: 2),
-                              Text(
-                                booking.technicianName!,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: darkBlue,
+                              // ✅ Technician Name with Verified Icon
+                              GestureDetector(
+                                onTap: () {
+                                  if (booking.technicianId != null &&
+                                      booking.technicianId!.isNotEmpty) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => CustomerTechnicianDataSeen(
+                                          userId: booking.technicianId!,
+                                          userRole: 'technician',
+                                          requestId: booking.id,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      booking.technicianName ?? 'Technician',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: darkBlue,
+                                      ),
+                                    ),
+                                    SizedBox(width: 10,),
+                                    if (booking.isAccepted ) ...[
+
+                                      Padding(
+                                        padding: EdgeInsets.only(top: 4),
+                                        child: Container(
+                                          width:85,
+                                          height: 20,
+
+                                          decoration: BoxDecoration(
+                                              color: Colors.blueAccent,
+                                              borderRadius: BorderRadius.circular(10)
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(left: 14,top: 2,bottom: 1),
+                                            child: Row(
+                                              children: [
+                                                Text(
+                                                  'VERIFIED',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 9,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                SizedBox(width: 2,),
+                                                Icon(Icons.verified,size: 15,color: Colors.white,),
+
+                                                
+
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+
+
+
+                                    ],
+                                  ],
                                 ),
                               ),
-                              if (booking.technicianPhone != null &&
-                                  booking.technicianPhone!.isNotEmpty)
-                                Text(
-                                  booking.technicianPhone!,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: primaryCyan,
-                                  ),
-                                ),
+
                             ],
                           ),
                         ),
-                        if (booking.technicianPhone != null &&
-                            booking.technicianPhone!.isNotEmpty)
-                          GestureDetector(
-                            onTap: () =>
-                                _makePhoneCall(booking.technicianPhone!),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: primaryCyan.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(
-                                Icons.phone,
-                                size: 20,
-                                color: primaryCyan,
-                              ),
-                            ),
-                          ),
+
                       ],
                     ),
                   ),
-
                 // Expired Info
                 if (status == 'expired')
                   Container(
@@ -1274,7 +1509,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                 _buildDetailRow(
                   Icons.currency_rupee,
                   'Budget',
-                  '₹${booking.budget.toStringAsFixed(0)}',
+                  '₹${booking.budget.toStringAsFixed(0)} ${booking.visitingCharges ?? ''}',
                 ),
 
                 if (booking.estimatedPrice != null) ...[
@@ -1310,7 +1545,7 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
 
                 const SizedBox(height: 16),
 
-                // ==================== 🔥 ACTION BUTTONS ====================
+                // ==================== ACTION BUTTONS ====================
 
                 // Pending: Edit + Cancel
                 if (status == 'pending') ...[
@@ -1362,6 +1597,35 @@ class _ServiceBookingScreenState extends State<ServiceBookingScreen>
                           label: const Text('Chat'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryCyan,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            if (booking.technicianPhone != null &&
+                                booking.technicianPhone!.isNotEmpty) {
+                              _makePhoneCall(booking.technicianPhone!);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Technician phone number not available'),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.phone, size: 18),
+                          label: const Text('Call'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4CAF50), // ✅ Light Green
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(

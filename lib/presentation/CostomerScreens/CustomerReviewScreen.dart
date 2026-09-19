@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:thumstechs/model/LocationModel.dart';
 import '../../Services/FirebaseFirestoreStorageCustomerOrder.dart';
 import '../../Services/TechnicianAvailabilityService.dart';
 import '../../model/ServiceRequestModel.dart';
@@ -19,23 +20,27 @@ const background = Color(0xFFFFFFFF);
 class ReviewScreen extends StatefulWidget {
   final String serviceName;
   final String serviceType;
+  final String phoneNumber;
   final String pincode;
   final String address;
   final String issueDescription;
   final List<XFile> images;
   final String budget;
-  final String? editRequestId; // 🔥 For editing existing requests
+  final String? editRequestId;
+  final LocationModel? locationModel;
 
   const ReviewScreen({
     super.key,
     required this.serviceName,
     required this.serviceType,
+    required this.phoneNumber,
     required this.pincode,
     required this.address,
     required this.issueDescription,
     required this.images,
     required this.budget,
-    this.editRequestId, // 🔥 Optional for edit mode
+    this.editRequestId,
+    this.locationModel,
   });
 
   @override
@@ -49,20 +54,18 @@ class _ReviewScreenState extends State<ReviewScreen> {
   bool _isProcessing = false;
   String additionalNote = '';
 
-  // Dialog State
   bool _termsAccepted = false;
   bool _showTermsError = false;
 
-  // 🔥 Check if in edit mode
-  bool get _isEditMode => widget.editRequestId != null && widget.editRequestId!.isNotEmpty;
+  bool get _isEditMode =>
+      widget.editRequestId != null && widget.editRequestId!.isNotEmpty;
 
-  // ================= 🔥 MAIN METHOD: Check Availability First =================
+  // ================= CHECK AVAILABILITY =================
   Future<void> _checkAvailabilityAndConfirm() async {
     if (_isProcessing) return;
 
     setState(() => _isProcessing = true);
 
-    // 🔥 Show Loading Dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -92,31 +95,34 @@ class _ReviewScreenState extends State<ReviewScreen> {
                 color: darkBlue.withOpacity(0.6),
               ),
             ),
+            Text(
+              'Phone: ${widget.phoneNumber}',
+              style: TextStyle(
+                fontSize: 12,
+                color: darkBlue.withOpacity(0.6),
+              ),
+            ),
           ],
         ),
       ),
     );
 
     try {
-      // 🔥 STEP 1: Check if technicians available
       final result = await TechnicianAvailabilityService.checkAvailability(
         pincode: widget.pincode,
         serviceType: widget.serviceType,
       );
 
-      // 🔥 Close Loading Dialog
       if (context.mounted) Navigator.pop(context);
 
       print('📊 Availability Result: ${result.isAvailable}');
       print('📊 Matched Technicians: ${result.count}');
 
       if (result.isAvailable) {
-        // ✅ Technicians Available → Show Terms Dialog
         if (context.mounted) {
           _showConfirmBookingDialog();
         }
       } else {
-        // ❌ No Technicians Available → Show Image Screen
         if (context.mounted) {
           Navigator.push(
             context,
@@ -126,7 +132,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
                 serviceName: widget.serviceName,
                 onRetry: () {
                   Navigator.pop(context);
-                  // Retry checking
                   _checkAvailabilityAndConfirm();
                 },
               ),
@@ -135,7 +140,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
         }
       }
     } catch (e) {
-      // 🔥 Close Loading Dialog
       if (context.mounted) Navigator.pop(context);
 
       print('❌ Error checking availability: $e');
@@ -152,7 +156,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     }
   }
 
-  // ================= SHOW TERMS & CONDITIONS DIALOG =================
+  // ================= TERMS DIALOG =================
   void _showConfirmBookingDialog() {
     setState(() {
       _termsAccepted = false;
@@ -183,8 +187,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 16),
-
-                    // 🔥 Available Technicians Count
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -213,10 +215,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
-                    // Terms & Conditions Checkbox
                     Row(
                       children: [
                         SizedBox(
@@ -240,11 +239,12 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         Expanded(
                           child: GestureDetector(
                             onTap: () {
-                              // TODO: Navigate to Terms & Conditions Screen
+                              // TODO: Navigate to Terms
                             },
                             child: RichText(
                               text: TextSpan(
-                                style: TextStyle(fontSize: 14, color: darkBlue),
+                                style:
+                                TextStyle(fontSize: 14, color: darkBlue),
                                 children: [
                                   const TextSpan(text: 'I agree to the '),
                                   TextSpan(
@@ -262,8 +262,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         ),
                       ],
                     ),
-
-                    // Terms Error
                     if (_showTermsError)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
@@ -285,10 +283,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                           ],
                         ),
                       ),
-
                     const SizedBox(height: 16),
-
-                    // Disclaimer Box
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -331,7 +326,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    // Check if terms accepted
                     if (!_termsAccepted) {
                       setDialogState(() {
                         _showTermsError = true;
@@ -339,7 +333,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       return;
                     }
 
-                    // Close dialog and save
                     Navigator.pop(context);
                     _saveServiceRequest();
                   },
@@ -356,7 +349,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   ),
                   child: Text(
                     _isEditMode ? 'Update Booking' : 'Confirm Booking',
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -367,7 +363,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     );
   }
 
-  // ================= SAVE OR UPDATE SERVICE REQUEST =================
+  // ================= SAVE SERVICE REQUEST WITH LOCATION =================
   Future<void> _saveServiceRequest() async {
     setState(() => _isProcessing = true);
 
@@ -381,9 +377,20 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
       final userData = await _firebaseService.getCurrentUserData();
       final userName = userData?['name'] ?? 'Customer';
-      final userPhone = userData?['phone'] ?? '';
 
-      // Show progress dialog
+      // ✅ PHONE NUMBER: widget se lein, agar khali ho to Firestore se fallback
+      final userPhone = widget.phoneNumber.isNotEmpty
+          ? widget.phoneNumber
+          : (userData?['phone'] ?? '');
+
+      // ✅ DEBUG
+      print('═══════════════════════════════════════════');
+      print('📞 SAVING SERVICE REQUEST');
+      print('📞 widget.phoneNumber: ${widget.phoneNumber}');
+      print('📞 userData[phone]: ${userData?['phone']}');
+      print('📞 FINAL userPhone: $userPhone');
+      print('═══════════════════════════════════════════');
+
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -400,7 +407,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
                 _isEditMode
                     ? 'Updating your request...'
                     : 'Uploading images and finding technicians...',
-                style: TextStyle(color: darkBlue, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: darkBlue,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -415,11 +425,12 @@ class _ReviewScreenState extends State<ReviewScreen> {
         );
       }
 
+      // ✅ Create request WITH LOCATION and PHONE
       final serviceRequest = ServiceRequestModel(
         userId: userId,
         userEmail: userEmail,
         userName: userName,
-        userPhone: userPhone,
+        userPhone: userPhone, // ✅ Ab sahi phone number
         serviceName: widget.serviceName,
         serviceType: widget.serviceType,
         issue: widget.issueDescription,
@@ -429,6 +440,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
         additionalNote: additionalNote,
         imageUrls: imageUrls,
         status: 'pending',
+        locationModel: widget.locationModel,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       );
@@ -436,19 +448,25 @@ class _ReviewScreenState extends State<ReviewScreen> {
       String requestId;
 
       if (_isEditMode) {
-        // 🔥 UPDATE existing request
         await _firebaseService.updateServiceRequest(
           requestId: widget.editRequestId!,
           request: serviceRequest,
+          locationModel: widget.locationModel,
         );
         requestId = widget.editRequestId!;
         print('✅ Service request updated with ID: $requestId');
+        print('📞 Phone saved: $userPhone');
+        print(
+            '📍 Location: ${widget.locationModel?.latitude}, ${widget.locationModel?.longitude}');
       } else {
-        // 🔥 CREATE new request with matching
         requestId = await _firebaseService.saveServiceRequestWithMatching(
           request: serviceRequest,
+          locationModel: widget.locationModel,
         );
         print('✅ Service request saved with ID: $requestId');
+        print('📞 Phone saved: $userPhone');
+        print(
+            '📍 Location: ${widget.locationModel?.latitude}, ${widget.locationModel?.longitude}');
       }
 
       if (Navigator.canPop(context)) {
@@ -485,7 +503,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
       print('Error saving service request: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error ${_isEditMode ? 'updating' : 'booking'} service: ${e.toString()}'),
+          content: Text(
+            'Error ${_isEditMode ? 'updating' : 'booking'} service: ${e.toString()}',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -522,7 +542,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔥 Edit Mode Banner
             if (_isEditMode)
               Container(
                 margin: const EdgeInsets.all(16),
@@ -571,7 +590,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -604,8 +622,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          _isEditMode ? 'Edit Service Summary' : 'Service Summary',
-                          style: TextStyle(
+                          _isEditMode
+                              ? 'Edit Service Summary'
+                              : 'Service Summary',
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: darkBlue,
@@ -615,7 +635,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     ),
                   ),
 
-                  // Service Details
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -634,6 +653,17 @@ class _ReviewScreenState extends State<ReviewScreen> {
                               : widget.issueDescription,
                         ),
                         const SizedBox(height: 16),
+
+                        // ✅ PHONE NUMBER ROW
+                        _buildSummaryRow(
+                          imagePath: 'assets/revicon/phone.png',
+                          label: 'Phone Number',
+                          value: widget.phoneNumber.isEmpty
+                              ? 'Not provided'
+                              : widget.phoneNumber,
+                        ),
+                        const SizedBox(height: 16),
+
                         _buildSummaryRow(
                           imagePath: 'assets/revicon/location.png',
                           label: 'Location',
@@ -665,6 +695,62 @@ class _ReviewScreenState extends State<ReviewScreen> {
                             showEditIcon: true,
                           ),
                         ),
+
+                        // ✅ LOCATION CARD (if location available)
+                        if (widget.locationModel != null) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            width: 350,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.green.shade200),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.location_on,
+                                      color: Colors.green.shade700,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '📍 GPS Location',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  widget.locationModel!.address ?? 'N/A',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Lat: ${widget.locationModel!.latitude.toStringAsFixed(6)}, '
+                                      'Lng: ${widget.locationModel!.longitude.toStringAsFixed(6)}',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -727,9 +813,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 3),
 
-            // Uploaded Images (if any)
             if (widget.images.isNotEmpty)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -772,17 +857,15 @@ class _ReviewScreenState extends State<ReviewScreen> {
                 ),
               ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 10),
 
-            // 🔥 CONFIRM BOOKING BUTTON - Calls check first
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               child: Column(
                 children: [
                   ElevatedButton(
-                    onPressed: _isProcessing
-                        ? null
-                        : _checkAvailabilityAndConfirm,
+                    onPressed:
+                    _isProcessing ? null : _checkAvailabilityAndConfirm,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryCyan,
                       foregroundColor: Colors.white,
@@ -829,8 +912,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
       ),
     );
   }
-
-  // ================= HELPER WIDGETS =================
 
   Widget _buildSummaryRow({
     required String imagePath,
@@ -881,7 +962,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
               const SizedBox(height: 4),
               Text(
                 value,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   color: darkBlue,
                   fontWeight: FontWeight.w500,
@@ -890,7 +971,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
             ],
           ),
         ),
-        if (showEditIcon) const Icon(Icons.edit, size: 18, color: primaryCyan),
+        if (showEditIcon)
+          const Icon(Icons.edit, size: 18, color: primaryCyan),
       ],
     );
   }
@@ -901,6 +983,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
         return Icons.build;
       case 'Issue':
         return Icons.warning_amber_rounded;
+      case 'Phone Number':
+        return Icons.phone;
       case 'Location':
         return Icons.location_on;
       case 'Pincode':

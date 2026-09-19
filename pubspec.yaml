@@ -1,8 +1,8 @@
 name: thumstechs
-description: "A new Flutter project."
+description: "A new  Flutter project."
 publish_to: 'none'
 
-version: 1.0.0+11
+version: 1.0.0+19
 
 environment:
   sdk: ^3.11.1
@@ -27,9 +27,14 @@ dependencies:
   onesignal_flutter: ^5.1.0
   flutter_launcher_icons: ^0.14.4
   youtube_player_iframe: ^6.0.2
+  video_player: ^2.8.6
   flutter_inappwebview: ^6.1.5
   razorpay_flutter: ^1.4.5
   flutter_dotenv: ^6.0.1
+  google_maps_flutter: ^2.18.0
+  geocoding: ^2.1.1
+  geolocator: ^14.0.3
+  connectivity_plus: ^7.3.1
 
 dev_dependencies:
   flutter_test:
@@ -52,12 +57,17 @@ flutter:
 
   assets:
     - assets/images/img_2.png
+    - assets/videos/projectVideo.MP4
+
     - assets/images/forgetpassword.png
     - assets/images/logins.png
     - assets/images/dash1.png
     - assets/images/LoginIcon.PNG
     - assets/images/d2.png
     - assets/images/das2.png
+
+    - assets/images/signUpUI.PNG
+
     - assets/Appliance/Ap1.png
     - assets/Appliance/Ac.jpeg
     - assets/Appliance/chimney.jpeg
@@ -82,10 +92,14 @@ flutter:
     - assets/revicon/pino.PNG
 
     - assets/AppLogoo/AppLogo.PNG
+    - assets/AppLogoo/washingspecial.PNG
+    - assets/AppLogoo/waterspecial.PNG
+    - assets/AppLogoo/waterui.PNG
 
 #    Special offer for washing machine
-    - assets/AppLogoo/specialoffer.png
+    - assets/AppLogoo/specialoffer.PNG
     - assets/AppLogoo/machine cleaning.PNG
+    - assets/AppLogoo/machinecleaning1.png
     - assets/AppLogoo/abservice.PNG
 #
 
@@ -95,9 +109,19 @@ flutter:
     - assets/membership/Trial Pack.png
     - assets/membership/img.png
     - assets/membership/img_1.png
+# Step image
+    - assets/Step/stepthree.png
+    - assets/Step/stepSix.png
+    - assets/Step/steptwo.PNG
+    - assets/Step/stepFour.PNG
+    - assets/Step/stepFive.PNG
+#      Tech partner
+    - assets/Step/techMember.PNG
+    - assets/Step/stepSeven.PNG
 
 
     - assets/AppLogoo/firststart.PNG
+    - assets/AppLogoo/newimg.PNG
     - assets/AppLogoo/secondstart.PNG
     - assets/AppLogoo/thirdstart.PNG
     - assets/AppLogoo/splash.PNG

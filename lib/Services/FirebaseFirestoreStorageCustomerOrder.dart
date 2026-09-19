@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import '../model/ServiceRequestModel.dart';
+import '../model/LocationModel.dart';
 import 'oneSignalNotificationService.dart';
 
 class FirebaseFirestoreStorageCustomerOrder {
@@ -29,9 +30,8 @@ class FirebaseFirestoreStorageCustomerOrder {
       try {
         final XFile image = images[i];
         final String fileName = '${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
-        final Reference storageRef = _storage.ref().child(
-            'service_requests/$userId/$fileName'
-        );
+        final Reference storageRef =
+        _storage.ref().child('service_requests/$userId/$fileName');
 
         await storageRef.putFile(File(image.path));
         final String downloadUrl = await storageRef.getDownloadURL();
@@ -55,9 +55,8 @@ class FirebaseFirestoreStorageCustomerOrder {
   }) async {
     try {
       final String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final Reference storageRef = _storage.ref().child(
-          '$folder/$userId/$fileName'
-      );
+      final Reference storageRef =
+      _storage.ref().child('$folder/$userId/$fileName');
 
       await storageRef.putFile(File(image.path));
       final String downloadUrl = await storageRef.getDownloadURL();
@@ -84,9 +83,11 @@ class FirebaseFirestoreStorageCustomerOrder {
 
   // ==================== SERVICE REQUEST METHODS ====================
 
-  /// Save service request with automatic technician matching and notifications
+  /// ✅ Save service request with automatic technician matching and notifications
+  /// ✅ WITH LOCATION SUPPORT
   Future<String> saveServiceRequestWithMatching({
     required ServiceRequestModel request,
+    LocationModel? locationModel, // ✅ Add location parameter
   }) async {
     try {
       final user = currentUser;
@@ -98,38 +99,45 @@ class FirebaseFirestoreStorageCustomerOrder {
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       final userData = userDoc.data();
 
-      // Update request with user details
+      // ✅ Update request with user details AND location
       final updatedRequest = request.copyWith(
         userId: user.uid,
         userEmail: user.email ?? '',
         userName: userData?['name'] ?? 'Customer',
         userPhone: userData?['phone'] ?? '',
+        profileImageUrl: userData?['profileImageUrl'] ?? '',
+        locationModel: locationModel, // ✅ Location add
       );
 
-      // Save to Firestore
-      final docRef = await _firestore.collection('service_requests').add(updatedRequest.toFirestore());
+      // ✅ Save to Firestore (location included via toFirestore)
+      final docRef = await _firestore
+          .collection('service_requests')
+          .add(updatedRequest.toFirestore());
       final requestId = docRef.id;
 
       print('📝 Service request saved. ID: $requestId');
+      print('📍 Location saved: ${locationModel?.latitude}, ${locationModel?.longitude}');
+      print('📍 Address: ${locationModel?.address}');
 
-      // Send notifications to matching technicians
+      // ✅ SAME AS BEFORE - Matching logic unchanged
       await _sendNotificationsToMatchingTechnicians(requestId, updatedRequest);
 
-      // Send confirmation to customer
+      // ✅ SAME AS BEFORE - Customer confirmation
       await _sendCustomerConfirmation(user.uid, requestId, updatedRequest);
 
       print('✅ Service request saved successfully. ID: $requestId');
       return requestId;
-
     } catch (e) {
       print('❌ Error saving service request: $e');
       rethrow;
     }
   }
 
-  /// Save service request without matching (direct booking)
+  /// ✅ Save service request without matching (direct booking)
+  /// ✅ WITH LOCATION SUPPORT
   Future<String> saveServiceRequest({
     required ServiceRequestModel request,
+    LocationModel? locationModel, // ✅ Add location parameter
   }) async {
     try {
       final user = currentUser;
@@ -145,24 +153,29 @@ class FirebaseFirestoreStorageCustomerOrder {
         userEmail: user.email ?? '',
         userName: userData?['name'] ?? 'Customer',
         userPhone: userData?['phone'] ?? '',
+        locationModel: locationModel, // ✅ Location add
       );
 
-      final docRef = await _firestore.collection('service_requests').add(updatedRequest.toFirestore());
+      final docRef = await _firestore
+          .collection('service_requests')
+          .add(updatedRequest.toFirestore());
       final requestId = docRef.id;
 
       print('✅ Service request saved. ID: $requestId');
-      return requestId;
+      print('📍 Location saved: ${locationModel?.latitude}, ${locationModel?.longitude}');
 
+      return requestId;
     } catch (e) {
       print('❌ Error saving service request: $e');
       rethrow;
     }
   }
 
-  /// Update existing service request
+  /// ✅ Update existing service request WITH LOCATION
   Future<void> updateServiceRequest({
     required String requestId,
     required ServiceRequestModel request,
+    LocationModel? locationModel, // ✅ Add location parameter
   }) async {
     try {
       final user = currentUser;
@@ -177,19 +190,23 @@ class FirebaseFirestoreStorageCustomerOrder {
         throw Exception('Request not found');
       }
 
-      // Only update if the request belongs to the current user
       final data = doc.data()!;
       if (data['userId'] != user.uid) {
         throw Exception('You are not authorized to update this request');
       }
 
+      // ✅ Update with location
+      final updatedRequest = request.copyWith(
+        locationModel: locationModel,
+      );
+
       await docRef.update({
-        ...request.toFirestore(),
+        ...updatedRequest.toFirestore(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
       print('✅ Service request updated: $requestId');
-
+      print('📍 Location: ${locationModel?.latitude}, ${locationModel?.longitude}');
     } catch (e) {
       print('❌ Error updating service request: $e');
       rethrow;
@@ -211,7 +228,6 @@ class FirebaseFirestoreStorageCustomerOrder {
         throw Exception('Request not found');
       }
 
-      // Only cancel if the request belongs to the current user
       final data = doc.data()!;
       if (data['userId'] != user.uid) {
         throw Exception('You are not authorized to cancel this request');
@@ -224,7 +240,6 @@ class FirebaseFirestoreStorageCustomerOrder {
       });
 
       print('✅ Request cancelled: $requestId');
-
     } catch (e) {
       print('❌ Error cancelling request: $e');
       rethrow;
@@ -249,13 +264,10 @@ class FirebaseFirestoreStorageCustomerOrder {
       }
 
       final data = doc.data()!;
-
-      // Check if user owns this request
       if (data['userId'] != user.uid) {
         throw Exception('You are not authorized to repost this request');
       }
 
-      // Update request status back to pending
       await docRef.update({
         'status': 'pending',
         'technicianId': null,
@@ -268,11 +280,9 @@ class FirebaseFirestoreStorageCustomerOrder {
         'repostCount': FieldValue.increment(1),
       });
 
-      // Send notification to matching technicians again
+      // ✅ Location is preserved (not touched)
       final request = ServiceRequestModel.fromFirestore(doc, null);
       await _sendNotificationsToMatchingTechnicians(requestId, request);
-
-      // Send confirmation to customer
       await _sendCustomerConfirmation(user.uid, requestId, request);
 
       print('✅ Request re-posted successfully: $requestId');
@@ -298,13 +308,11 @@ class FirebaseFirestoreStorageCustomerOrder {
         throw Exception('Request not found');
       }
 
-      // Check if user owns this request
       final data = doc.data()!;
       if (data['userId'] != user.uid) {
         throw Exception('You are not authorized to delete this request');
       }
 
-      // Delete any associated images
       if (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty) {
         await deleteImages(List<String>.from(data['imageUrls']));
       }
@@ -319,7 +327,6 @@ class FirebaseFirestoreStorageCustomerOrder {
 
   // ==================== NOTIFICATION METHODS ====================
 
-  /// Send notifications to matching technicians using OneSignal
   Future<void> _sendNotificationsToMatchingTechnicians(
       String requestId,
       ServiceRequestModel request,
@@ -332,7 +339,7 @@ class FirebaseFirestoreStorageCustomerOrder {
         pincode: request.pincode,
         requestId: requestId,
         serviceName: request.serviceName,
-        customerName: request.userName,
+        customerName: request.userName ?? 'Customer',
       );
 
       print('✅ Notifications sent to matching technicians');
@@ -341,7 +348,6 @@ class FirebaseFirestoreStorageCustomerOrder {
     }
   }
 
-  /// Send confirmation to customer
   Future<void> _sendCustomerConfirmation(
       String userId,
       String requestId,
@@ -360,7 +366,6 @@ class FirebaseFirestoreStorageCustomerOrder {
     }
   }
 
-  /// Send notification when no technicians available
   Future<void> _sendNoTechniciansNotification(
       String userId,
       String requestId,
@@ -371,7 +376,8 @@ class FirebaseFirestoreStorageCustomerOrder {
         'userId': userId,
         'userRole': 'customer',
         'title': 'No Technicians Available',
-        'body': 'Currently no technicians available in your area for ${request.serviceName}. We will notify you when someone is available.',
+        'body':
+        'Currently no technicians available in your area for ${request.serviceName}. We will notify you when someone is available.',
         'type': 'no_technicians',
         'requestId': requestId,
         'isRead': false,
@@ -384,7 +390,6 @@ class FirebaseFirestoreStorageCustomerOrder {
 
   // ==================== REQUEST ACCEPTANCE METHODS ====================
 
-  /// Accept service request by technician
   Future<void> acceptServiceRequest({
     required String requestId,
     required String technicianId,
@@ -394,14 +399,14 @@ class FirebaseFirestoreStorageCustomerOrder {
     String? estimatedTime,
   }) async {
     try {
-      final requestDoc = await _firestore.collection('service_requests').doc(requestId).get();
+      final requestDoc =
+      await _firestore.collection('service_requests').doc(requestId).get();
       if (!requestDoc.exists) {
         throw Exception('Service request not found');
       }
 
       final requestData = requestDoc.data()!;
 
-      // Update service request status
       await _firestore.collection('service_requests').doc(requestId).update({
         'technicianId': technicianId,
         'technicianName': technicianName,
@@ -413,7 +418,6 @@ class FirebaseFirestoreStorageCustomerOrder {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Remove from technician's pending requests
       final pendingDoc = await _firestore
           .collection('technician_pending_requests')
           .doc('${technicianId}_$requestId')
@@ -423,11 +427,11 @@ class FirebaseFirestoreStorageCustomerOrder {
         await pendingDoc.reference.delete();
       }
 
-      // Send notification to customer using OneSignal
       await OneSignalNotificationService.sendNotificationToUser(
         userId: requestData['userId'],
         title: '🎉 Service Request Accepted!',
-        body: 'Your request has been accepted by $technicianName. They will contact you soon.',
+        body:
+        'Your request has been accepted by $technicianName. They will contact you soon.',
         data: {
           'type': 'request_accepted',
           'requestId': requestId,
@@ -438,11 +442,11 @@ class FirebaseFirestoreStorageCustomerOrder {
         },
       );
 
-      // Send confirmation to technician using OneSignal
       await OneSignalNotificationService.sendNotificationToUser(
         userId: technicianId,
         title: '✅ Request Accepted!',
-        body: 'You have accepted the service request from ${requestData['userName']}.',
+        body:
+        'You have accepted the service request from ${requestData['userName']}.',
         data: {
           'type': 'offer_accepted',
           'requestId': requestId,
@@ -452,28 +456,26 @@ class FirebaseFirestoreStorageCustomerOrder {
       );
 
       print('✅ Technician $technicianName accepted request $requestId');
-
     } catch (e) {
       print('❌ Error accepting request: $e');
       rethrow;
     }
   }
 
-  /// Reject service request by technician
   Future<void> rejectServiceRequest({
     required String requestId,
     required String technicianId,
     String? reason,
   }) async {
     try {
-      final requestDoc = await _firestore.collection('service_requests').doc(requestId).get();
+      final requestDoc =
+      await _firestore.collection('service_requests').doc(requestId).get();
       if (!requestDoc.exists) {
         throw Exception('Service request not found');
       }
 
       final requestData = requestDoc.data()!;
 
-      // Update service request status
       await _firestore.collection('service_requests').doc(requestId).update({
         'status': 'rejected',
         'rejectedAt': FieldValue.serverTimestamp(),
@@ -483,7 +485,6 @@ class FirebaseFirestoreStorageCustomerOrder {
         'rejectedByName': requestData['technicianName'] ?? 'Technician',
       });
 
-      // Remove from technician's pending requests
       final pendingDoc = await _firestore
           .collection('technician_pending_requests')
           .doc('${technicianId}_$requestId')
@@ -493,11 +494,11 @@ class FirebaseFirestoreStorageCustomerOrder {
         await pendingDoc.reference.delete();
       }
 
-      // Send notification to customer
       await OneSignalNotificationService.sendNotificationToUser(
         userId: requestData['userId'],
         title: '❌ Request Rejected',
-        body: 'Your request has been rejected by ${requestData['technicianName'] ?? 'Technician'}. Reason: ${reason ?? "Not specified"}',
+        body:
+        'Your request has been rejected by ${requestData['technicianName'] ?? 'Technician'}. Reason: ${reason ?? "Not specified"}',
         data: {
           'type': 'request_rejected',
           'requestId': requestId,
@@ -506,14 +507,12 @@ class FirebaseFirestoreStorageCustomerOrder {
       );
 
       print('✅ Request $requestId rejected by technician');
-
     } catch (e) {
       print('❌ Error rejecting request: $e');
       rethrow;
     }
   }
 
-  /// Complete service request (mark as completed)
   Future<void> completeServiceRequest({
     required String requestId,
     String? feedback,
@@ -526,17 +525,14 @@ class FirebaseFirestoreStorageCustomerOrder {
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      if (feedback != null) {
-        updates['feedback'] = feedback;
-      }
+      if (feedback != null) updates['feedback'] = feedback;
+      if (rating != null) updates['rating'] = rating;
 
-      if (rating != null) {
-        updates['rating'] = rating;
-      }
-
-      await _firestore.collection('service_requests').doc(requestId).update(updates);
+      await _firestore
+          .collection('service_requests')
+          .doc(requestId)
+          .update(updates);
       print('✅ Service request $requestId completed');
-
     } catch (e) {
       print('❌ Error completing request: $e');
       rethrow;
@@ -545,7 +541,6 @@ class FirebaseFirestoreStorageCustomerOrder {
 
   // ==================== UPDATE STATUS METHODS ====================
 
-  /// Update service request status
   Future<void> updateServiceRequestStatus({
     required String requestId,
     required String status,
@@ -560,25 +555,24 @@ class FirebaseFirestoreStorageCustomerOrder {
       if (cancellationReason != null) {
         updates['cancellationReason'] = cancellationReason;
       }
-
       if (status == 'completed') {
         updates['completedAt'] = FieldValue.serverTimestamp();
       }
-
       if (status == 'expired') {
         updates['expiredAt'] = FieldValue.serverTimestamp();
       }
 
-      await _firestore.collection('service_requests').doc(requestId).update(updates);
+      await _firestore
+          .collection('service_requests')
+          .doc(requestId)
+          .update(updates);
       print('✅ Service request $requestId status updated to $status');
-
     } catch (e) {
       print('❌ Error updating status: $e');
       rethrow;
     }
   }
 
-  /// Mark request as expired
   Future<void> markRequestAsExpired(String requestId) async {
     try {
       await _firestore.collection('service_requests').doc(requestId).update({
@@ -594,12 +588,9 @@ class FirebaseFirestoreStorageCustomerOrder {
 
   // ==================== FETCH METHODS ====================
 
-  /// Get all service requests for current user
   Stream<List<ServiceRequestModel>> getUserServiceRequests() {
     final user = currentUser;
-    if (user == null) {
-      return Stream.value([]);
-    }
+    if (user == null) return Stream.value([]);
 
     return _firestore
         .collection('service_requests')
@@ -613,10 +604,10 @@ class FirebaseFirestoreStorageCustomerOrder {
     });
   }
 
-  /// Get service request by ID
   Future<ServiceRequestModel?> getServiceRequestById(String requestId) async {
     try {
-      final doc = await _firestore.collection('service_requests').doc(requestId).get();
+      final doc =
+      await _firestore.collection('service_requests').doc(requestId).get();
       if (doc.exists) {
         return ServiceRequestModel.fromFirestore(doc, null);
       }
@@ -627,7 +618,6 @@ class FirebaseFirestoreStorageCustomerOrder {
     }
   }
 
-  /// Get all pending service requests (for technicians)
   Stream<List<ServiceRequestModel>> getPendingServiceRequests() {
     return _firestore
         .collection('service_requests')
@@ -641,8 +631,8 @@ class FirebaseFirestoreStorageCustomerOrder {
     });
   }
 
-  /// Get pending requests for a specific technician
-  Stream<List<ServiceRequestModel>> getTechnicianPendingRequests(String technicianId) {
+  Stream<List<ServiceRequestModel>> getTechnicianPendingRequests(
+      String technicianId) {
     return _firestore
         .collection('service_requests')
         .where('technicianId', isEqualTo: technicianId)
@@ -656,8 +646,8 @@ class FirebaseFirestoreStorageCustomerOrder {
     });
   }
 
-  /// Get technician's accepted requests
-  Stream<List<ServiceRequestModel>> getTechnicianAcceptedRequests(String technicianId) {
+  Stream<List<ServiceRequestModel>> getTechnicianAcceptedRequests(
+      String technicianId) {
     return _firestore
         .collection('service_requests')
         .where('technicianId', isEqualTo: technicianId)
@@ -671,8 +661,8 @@ class FirebaseFirestoreStorageCustomerOrder {
     });
   }
 
-  /// Get technician's completed requests
-  Stream<List<ServiceRequestModel>> getTechnicianCompletedRequests(String technicianId) {
+  Stream<List<ServiceRequestModel>> getTechnicianCompletedRequests(
+      String technicianId) {
     return _firestore
         .collection('service_requests')
         .where('technicianId', isEqualTo: technicianId)
@@ -686,12 +676,9 @@ class FirebaseFirestoreStorageCustomerOrder {
     });
   }
 
-  /// Get requests by status for current user
   Future<List<ServiceRequestModel>> getRequestsByStatus(String status) async {
     final user = currentUser;
-    if (user == null) {
-      return [];
-    }
+    if (user == null) return [];
 
     try {
       final snapshot = await _firestore
@@ -710,7 +697,6 @@ class FirebaseFirestoreStorageCustomerOrder {
     }
   }
 
-  /// Get requests by pincode (for technicians)
   Stream<List<ServiceRequestModel>> getRequestsByPincode(String pincode) {
     return _firestore
         .collection('service_requests')
@@ -725,8 +711,8 @@ class FirebaseFirestoreStorageCustomerOrder {
     });
   }
 
-  /// Get requests by service type
-  Stream<List<ServiceRequestModel>> getRequestsByServiceType(String serviceType) {
+  Stream<List<ServiceRequestModel>> getRequestsByServiceType(
+      String serviceType) {
     return _firestore
         .collection('service_requests')
         .where('serviceType', isEqualTo: serviceType)
@@ -740,7 +726,6 @@ class FirebaseFirestoreStorageCustomerOrder {
     });
   }
 
-  /// Get matching requests for technician
   Stream<List<ServiceRequestModel>> getMatchingRequestsForTechnician({
     required String technicianId,
     required String pincode,
@@ -762,7 +747,6 @@ class FirebaseFirestoreStorageCustomerOrder {
 
   // ==================== TECHNICIAN PENDING REQUESTS ====================
 
-  /// Add request to technician's pending requests
   Future<void> addTechnicianPendingRequest({
     required String technicianId,
     required String requestId,
@@ -789,7 +773,6 @@ class FirebaseFirestoreStorageCustomerOrder {
     }
   }
 
-  /// Remove request from technician's pending requests
   Future<void> removeTechnicianPendingRequest({
     required String technicianId,
     required String requestId,
@@ -805,8 +788,8 @@ class FirebaseFirestoreStorageCustomerOrder {
     }
   }
 
-  /// Get technician's pending requests
-  Stream<List<Map<String, dynamic>>> getTechnicianPendingRequestsList(String technicianId) {
+  Stream<List<Map<String, dynamic>>> getTechnicianPendingRequestsList(
+      String technicianId) {
     return _firestore
         .collection('technician_pending_requests')
         .where('technicianId', isEqualTo: technicianId)
@@ -823,7 +806,6 @@ class FirebaseFirestoreStorageCustomerOrder {
 
   // ==================== RATINGS AND REVIEWS ====================
 
-  /// Add rating and review for technician
   Future<void> addTechnicianRating({
     required String technicianId,
     required double rating,
@@ -831,7 +813,6 @@ class FirebaseFirestoreStorageCustomerOrder {
     required String requestId,
   }) async {
     try {
-      // Add rating to technician's profile
       final techRef = _firestore.collection('users').doc(technicianId);
 
       await _firestore.runTransaction((transaction) async {
@@ -841,7 +822,8 @@ class FirebaseFirestoreStorageCustomerOrder {
           final currentRating = data['rating'] ?? 0.0;
           final currentReviews = data['totalReviews'] ?? 0;
           final newTotal = currentReviews + 1;
-          final newRating = ((currentRating * currentReviews) + rating) / newTotal;
+          final newRating =
+              ((currentRating * currentReviews) + rating) / newTotal;
 
           transaction.update(techRef, {
             'rating': newRating,
@@ -850,7 +832,6 @@ class FirebaseFirestoreStorageCustomerOrder {
         }
       });
 
-      // Add review to reviews collection
       await _firestore.collection('reviews').add({
         'technicianId': technicianId,
         'requestId': requestId,
@@ -861,7 +842,6 @@ class FirebaseFirestoreStorageCustomerOrder {
         'userName': currentUser?.displayName ?? 'Customer',
       });
 
-      // Update request with rating
       await _firestore.collection('service_requests').doc(requestId).update({
         'rating': rating,
         'review': review,
@@ -875,7 +855,6 @@ class FirebaseFirestoreStorageCustomerOrder {
     }
   }
 
-  /// Get technician ratings
   Future<Map<String, dynamic>> getTechnicianRatings(String technicianId) async {
     try {
       final reviews = await _firestore
@@ -940,7 +919,6 @@ class FirebaseFirestoreStorageCustomerOrder {
     }
   }
 
-  /// Get user data by ID
   Future<Map<String, dynamic>?> getUserData(String userId) async {
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
@@ -954,7 +932,6 @@ class FirebaseFirestoreStorageCustomerOrder {
     }
   }
 
-  /// Check if technician is available for service
   Future<bool> isTechnicianAvailable({
     required String technicianId,
     required String serviceType,
@@ -965,19 +942,16 @@ class FirebaseFirestoreStorageCustomerOrder {
       if (!doc.exists) return false;
 
       final data = doc.data()!;
-
-      // Check if technician is active
       if (data['isActive'] != true) return false;
 
-      // Check categories
       final categories = List<String>.from(data['categories'] ?? []);
       if (!categories.contains(serviceType)) return false;
 
-      // Check pincodes
       List<String> pincodes = [];
       if (data['pincodes'] != null && (data['pincodes'] as List).isNotEmpty) {
         pincodes = List<String>.from(data['pincodes']);
-      } else if (data['pincode'] != null && data['pincode'].toString().isNotEmpty) {
+      } else if (data['pincode'] != null &&
+          data['pincode'].toString().isNotEmpty) {
         pincodes = [data['pincode'].toString()];
       }
 

@@ -1,5 +1,3 @@
-// lib/main.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -58,6 +56,10 @@ void main() async {
   // ================= FIREBASE =================
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print("✅ Firebase Initialized");
+
+  // ✅ Debug: Check if API key is loaded
+  print('Android API Key: ${dotenv.env['Android_Google_Map_Api']}');
+  print('iOS API Key: ${dotenv.env['IOS_Google_Map_Api']}');
 
   // ================= ONESIGNAL INIT (Mobile Only) =================
   if (!kIsWeb) {

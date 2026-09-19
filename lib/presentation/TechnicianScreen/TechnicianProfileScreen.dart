@@ -97,7 +97,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             children: [
               Icon(Icons.lock, color: Colors.orange),
               SizedBox(width: 8),
-              Text('Confirm Your Password'),
+              Text('Confirm Your Password',style: TextStyle(fontSize: 15),),
             ],
           ),
           content: Column(

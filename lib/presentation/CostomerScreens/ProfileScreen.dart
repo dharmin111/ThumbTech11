@@ -536,8 +536,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return 'Phone Number';
       case 'address':
         return 'Address';
-      case 'pincode':
-        return 'Pincode';
+      case 'pincodes':
+        return 'Pincodes';
       default:
         return field;
     }

@@ -2,8 +2,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:thumstechs/presentation/DashBoard/TechnicianDashboard.dart';
+import 'package:thumstechs/presentation/TechnicianScreen/TechnicianHomeScreen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../authScreen/ChatScreen.dart';
+import '../../profile/customer_technician_data_seen.dart';
 
 class TechnicianMyServicesScreen extends StatefulWidget {
   const TechnicianMyServicesScreen({super.key});
@@ -14,22 +17,20 @@ class TechnicianMyServicesScreen extends StatefulWidget {
 }
 
 class _TechnicianMyServicesScreenState
-    extends State<TechnicianMyServicesScreen> with SingleTickerProviderStateMixin {
+    extends State<TechnicianMyServicesScreen>
+    with SingleTickerProviderStateMixin {
   List<QueryDocumentSnapshot> acceptedRequests = [];
   List<QueryDocumentSnapshot> completedRequests = [];
   bool isLoading = true;
   bool _isActive = true;
 
-  // 🔥 TabController
   late TabController _tabController;
 
-  // Cache for customer phone numbers
   final Map<String, String> _phoneNumberCache = {};
 
   @override
   void initState() {
     super.initState();
-    // 🔥 Initialize TabController
     _tabController = TabController(length: 2, vsync: this);
     _fetchMyServices();
   }
@@ -39,6 +40,17 @@ class _TechnicianMyServicesScreenState
     _tabController.dispose();
     _isActive = false;
     super.dispose();
+  }
+
+  // ✅ Check if visiting charges text should show
+  bool _shouldShowVisitingChargesText(Map<String, dynamic> data) {
+    String serviceType = data['serviceType']?.toString() ?? '';
+    double budget = (data['budget'] ?? 0).toDouble();
+
+    bool isWaterPurifier = serviceType.toLowerCase().contains('water purifier');
+    bool isBudget199 = budget == 199.0;
+
+    return isWaterPurifier && isBudget199;
   }
 
   Future<void> _fetchMyServices() async {
@@ -51,7 +63,6 @@ class _TechnicianMyServicesScreenState
     try {
       User? user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        // Get accepted requests
         QuerySnapshot acceptedSnapshot = await FirebaseFirestore.instance
             .collection('service_requests')
             .where('technicianId', isEqualTo: user.uid)
@@ -61,7 +72,6 @@ class _TechnicianMyServicesScreenState
 
         if (!_isActive || !mounted) return;
 
-        // Get completed requests
         QuerySnapshot completedSnapshot = await FirebaseFirestore.instance
             .collection('service_requests')
             .where('technicianId', isEqualTo: user.uid)
@@ -77,7 +87,6 @@ class _TechnicianMyServicesScreenState
           isLoading = false;
         });
 
-        // Fetch phone numbers for all accepted requests in background
         _fetchPhoneNumbersForRequests(acceptedRequests);
       } else {
         if (!_isActive || !mounted) return;
@@ -94,7 +103,6 @@ class _TechnicianMyServicesScreenState
     }
   }
 
-  // Fetch phone numbers for all accepted requests
   Future<void> _fetchPhoneNumbersForRequests(
       List<QueryDocumentSnapshot> requests,
       ) async {
@@ -109,12 +117,10 @@ class _TechnicianMyServicesScreenState
     }
   }
 
-  // Get customer phone number from user document
   Future<String> _getCustomerPhoneNumber(
       String customerId,
       String requestId,
       ) async {
-    // Check cache first
     if (_phoneNumberCache.containsKey(customerId)) {
       return _phoneNumberCache[customerId]!;
     }
@@ -130,10 +136,8 @@ class _TechnicianMyServicesScreenState
             userDoc.data()?['phoneNumber'] ?? userDoc.data()?['phone'] ?? '';
 
         if (phone.isNotEmpty) {
-          // Save to cache
           _phoneNumberCache[customerId] = phone;
 
-          // Update the service request document
           await FirebaseFirestore.instance
               .collection('service_requests')
               .doc(requestId)
@@ -141,7 +145,6 @@ class _TechnicianMyServicesScreenState
 
           print('✅ Updated phone for request $requestId: $phone');
 
-          // Refresh the UI
           if (mounted) {
             setState(() {});
           }
@@ -169,7 +172,6 @@ class _TechnicianMyServicesScreenState
 
       if (!_isActive || !mounted) return;
 
-      // Move from accepted to completed list
       var requestDoc = acceptedRequests.firstWhere(
             (doc) => doc.id == requestId,
       );
@@ -178,7 +180,6 @@ class _TechnicianMyServicesScreenState
         completedRequests.insert(0, requestDoc);
       });
 
-      // Send notification to customer
       Map<String, dynamic> data = requestDoc.data() as Map<String, dynamic>;
       await FirebaseFirestore.instance.collection('notifications').add({
         'userId': data['userId'],
@@ -208,10 +209,157 @@ class _TechnicianMyServicesScreenState
     }
   }
 
+  // ═══════════════════════════════════════════════════════
+  // ✅ NEW: OPEN MAP
+  // ═══════════════════════════════════════════════════════
+  //
+  // Priority:
+  //   1. locationModel (lat/lng) → exact map pin
+  //   2. location (address text) → Google Maps search
+  //
+  Future<void> _openMap(Map<String, dynamic> data) async {
+    try {
+      // ✅ Try locationModel first (GPS coordinates)
+      final locationData =
+          data['locationModel'] ?? data['location'] ?? data['locationModel'];
+
+      double? latitude;
+      double? longitude;
+      String? address;
+
+      // Case 1: locationModel is a Map with lat/lng
+      if (locationData is Map<String, dynamic>) {
+        final lat = locationData['latitude'];
+        final lng = locationData['longitude'];
+        address = locationData['address'];
+
+        if (lat != null && lng != null) {
+          latitude = (lat as num).toDouble();
+          longitude = (lng as num).toDouble();
+        }
+      }
+      // Case 2: locationModel is a GeoPoint
+      else if (locationData is GeoPoint) {
+        latitude = locationData.latitude;
+        longitude = locationData.longitude;
+      }
+
+      // ✅ Fallback: use address string
+      if (latitude == null || longitude == null) {
+        final addressText = data['location'] as String? ?? '';
+        if (addressText.isNotEmpty) {
+          final Uri url = Uri.parse(
+            'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(addressText)}',
+          );
+
+          if (await canLaunchUrl(url)) {
+            await launchUrl(url, mode: LaunchMode.externalApplication);
+          } else {
+            _showSnack('Cannot open Google Maps', Colors.red);
+          }
+          return;
+        } else {
+          _showSnack('No location available for this customer', Colors.orange);
+          return;
+        }
+      }
+
+      // ✅ Open exact coordinates
+      final Uri url = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
+      );
+
+      print('🗺️ Opening map: $latitude, $longitude');
+
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        _showSnack('Cannot open Google Maps', Colors.red);
+      }
+    } catch (e) {
+      print('❌ Error opening map: $e');
+      _showSnack('Error opening map: $e', Colors.red);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // ✅ NEW: OPEN MAP WITH DIRECTIONS (Optional)
+  // ═══════════════════════════════════════════════════════
+  Future<void> _openMapWithDirections(Map<String, dynamic> data) async {
+    try {
+      final locationData = data['locationModel'];
+
+      double? latitude;
+      double? longitude;
+
+      if (locationData is Map<String, dynamic>) {
+        final lat = locationData['latitude'];
+        final lng = locationData['longitude'];
+        if (lat != null && lng != null) {
+          latitude = (lat as num).toDouble();
+          longitude = (lng as num).toDouble();
+        }
+      } else if (locationData is GeoPoint) {
+        latitude = locationData.latitude;
+        longitude = locationData.longitude;
+      }
+
+      if (latitude == null || longitude == null) {
+        _showSnack('No GPS location available', Colors.orange);
+        return;
+      }
+
+      final Uri url = Uri.parse(
+        'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude&travelmode=driving',
+      );
+
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        _showSnack('Cannot open Google Maps', Colors.red);
+      }
+    } catch (e) {
+      print('❌ Error opening directions: $e');
+      _showSnack('Error: $e', Colors.red);
+    }
+  }
+
+  // ✅ Helper: Check if location is available
+  bool _hasLocation(Map<String, dynamic> data) {
+    final locationModel = data['locationModel'];
+
+    if (locationModel is Map<String, dynamic>) {
+      return locationModel['latitude'] != null &&
+          locationModel['longitude'] != null;
+    }
+
+    if (locationModel is GeoPoint) {
+      return true;
+    }
+
+    // Fallback: check address text
+    final address = data['location'] as String? ?? '';
+    return address.isNotEmpty;
+  }
+
+  void _showSnack(String msg, Color color) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   // Open Chat Screen
-  void _openChat(String requestId, String customerId, String customerName) {
+  void _openChat(String requestId, String customerId, String customerName,
+      String? customerProfileImage) {
     final currentUser = FirebaseAuth.instance.currentUser!;
-    final conversationId = '${requestId}_${customerId}_${currentUser.uid}';
+
+    final List<String> ids = [customerId, currentUser.uid]..sort();
+    final conversationId = '${ids[0]}_${ids[1]}_$requestId';
 
     Navigator.push(
       context,
@@ -222,12 +370,24 @@ class _TechnicianMyServicesScreenState
           otherUserId: customerId,
           otherUserName: customerName,
           otherUserRole: 'customer',
+          otherUserProfileImage: customerProfileImage,
         ),
       ),
     );
   }
 
-  // Make Phone Call - Opens dialer with number
+  void _viewCustomerProfile(String customerId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CustomerTechnicianDataSeen(
+          userId: customerId,
+          userRole: 'customer',
+        ),
+      ),
+    );
+  }
+
   Future<void> _makePhoneCall(String phoneNumber) async {
     if (phoneNumber.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -282,10 +442,13 @@ class _TechnicianMyServicesScreenState
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF0C1B4D)),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => TechnicianDashboard()),
+          ),
         ),
         bottom: TabBar(
-          controller: _tabController, // 🔥 Added controller
+          controller: _tabController,
           labelColor: const Color(0xFF2563EB),
           unselectedLabelColor: Colors.grey,
           indicatorColor: const Color(0xFF2563EB),
@@ -296,7 +459,7 @@ class _TechnicianMyServicesScreenState
         ),
       ),
       body: TabBarView(
-        controller: _tabController, // 🔥 Added controller
+        controller: _tabController,
         children: [
           _buildActiveRequests(),
           _buildCompletedRequests(),
@@ -379,14 +542,15 @@ class _TechnicianMyServicesScreenState
     String customerName = data['userName'] ?? 'Customer';
     String customerId = data['userId'] ?? '';
     String customerPhone = data['userPhone'] ?? '';
+    String customerProfileImage = data['profileImageUrl'] ?? '';
 
-    // If phone is empty, try to get it from cache or fetch
+    bool showVisitingCharges = _shouldShowVisitingChargesText(data);
+    bool hasLocation = _hasLocation(data);
+
     if (customerPhone.isEmpty && customerId.isNotEmpty) {
-      // Check cache
       if (_phoneNumberCache.containsKey(customerId)) {
         customerPhone = _phoneNumberCache[customerId]!;
       } else {
-        // Trigger fetch in background
         _getCustomerPhoneNumber(customerId, requestId);
       }
     }
@@ -411,17 +575,26 @@ class _TechnicianMyServicesScreenState
         children: [
           Row(
             children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  isActive ? Icons.build : Icons.check_circle,
-                  color: isActive ? const Color(0xFF2563EB) : Colors.green,
-                  size: 28,
+              GestureDetector(
+                onTap: () => _viewCustomerProfile(customerId),
+                child: CircleAvatar(
+                  radius: 24,
+                  backgroundColor: const Color(0xFF2563EB).withOpacity(0.1),
+                  backgroundImage: customerProfileImage.isNotEmpty
+                      ? NetworkImage(customerProfileImage)
+                      : null,
+                  child: customerProfileImage.isEmpty
+                      ? Text(
+                    customerName.isNotEmpty
+                        ? customerName[0].toUpperCase()
+                        : 'C',
+                    style: const TextStyle(
+                      color: Color(0xFF2563EB),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  )
+                      : null,
                 ),
               ),
               const SizedBox(width: 12),
@@ -437,13 +610,28 @@ class _TechnicianMyServicesScreenState
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      '₹${data['budget']?.toString() ?? '0'}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.green[700],
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          '₹${(data['budget'] ?? 0).toInt().toString()}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.green[700],
+                          ),
+                        ),
+                        if (showVisitingCharges) ...[
+                          const SizedBox(width: 2),
+                          Text(
+                            'Visiting Charges',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -473,16 +661,34 @@ class _TechnicianMyServicesScreenState
           const SizedBox(height: 16),
           const Divider(),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              const Icon(Icons.person_outline, size: 16, color: Colors.grey),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(customerName, style: const TextStyle(fontSize: 14)),
-              ),
-            ],
+
+          // Customer Name
+          GestureDetector(
+            onTap: () => _viewCustomerProfile(customerId),
+            child: Row(
+              children: [
+                const Icon(Icons.person_outline, size: 16, color: Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    customerName,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right,
+                  size: 16,
+                  color: Colors.grey,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 8),
+
+          // Phone
           Row(
             children: [
               const Icon(Icons.phone_outlined, size: 16, color: Colors.grey),
@@ -504,12 +710,12 @@ class _TechnicianMyServicesScreenState
                       ),
                     ),
                     if (customerPhone.isEmpty && customerId.isNotEmpty)
-                      SizedBox(
+                      const SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: const Color(0xFF2563EB),
+                          color: Color(0xFF2563EB),
                         ),
                       ),
                   ],
@@ -518,6 +724,8 @@ class _TechnicianMyServicesScreenState
             ],
           ),
           const SizedBox(height: 8),
+
+          // Location
           Row(
             children: [
               const Icon(
@@ -534,6 +742,35 @@ class _TechnicianMyServicesScreenState
               ),
             ],
           ),
+
+          // ✅ VIEW ON MAP BUTTON (NEW)
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: hasLocation ? () => _openMap(data) : null,
+              icon: const Icon(Icons.map_outlined, size: 18),
+              label: Text(
+                hasLocation
+                    ? 'Get Direction'
+                    : 'No location available',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF2563EB),
+                side: BorderSide(
+                  color: hasLocation
+                      ? const Color(0xFF2563EB)
+                      : Colors.grey.shade300,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+
           if (data['issue'] != null && data['issue'].isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
@@ -547,7 +784,8 @@ class _TechnicianMyServicesScreenState
                 children: [
                   const Text(
                     'Issue:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    style:
+                    TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                   const SizedBox(height: 4),
                   Text(data['issue'], style: const TextStyle(fontSize: 12)),
@@ -556,13 +794,18 @@ class _TechnicianMyServicesScreenState
             ),
           ],
           const SizedBox(height: 16),
+
           if (isActive)
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () =>
-                        _openChat(requestId, customerId, customerName),
+                    onPressed: () => _openChat(
+                      requestId,
+                      customerId,
+                      customerName,
+                      customerProfileImage,
+                    ),
                     icon: const Icon(Icons.chat, size: 18),
                     label: const Text('Chat'),
                     style: OutlinedButton.styleFrom(
@@ -617,6 +860,8 @@ class _TechnicianMyServicesScreenState
   }
 
   void _showCompletedDetails(Map<String, dynamic> data) {
+    bool showVisitingCharges = _shouldShowVisitingChargesText(data);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -635,6 +880,33 @@ class _TechnicianMyServicesScreenState
               _buildDetailRow('Pincode', data['pincode'] ?? 'N/A'),
               const SizedBox(height: 8),
               _buildDetailRow('Budget', '₹${data['budget'] ?? 0}'),
+              if (showVisitingCharges) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '199 Visiting Charges',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
               _buildDetailRow('Issue', data['issue'] ?? 'N/A'),
               if (data['completedAt'] != null)

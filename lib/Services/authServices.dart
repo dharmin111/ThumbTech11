@@ -19,6 +19,13 @@ class AuthService {
       throw Exception(e.message ?? "Signup failed");
     }
   }
+  Future<void> savePhoneNumber(String userId, String phoneNumber) async {
+    await _firestore.collection('users').doc(userId).set({
+      'phone': phoneNumber,
+      'phoneNumber': phoneNumber,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
 
   /// SIGN UP - Simplified version that returns User? (optional)
   Future<User?> signUpAndGetUser({
@@ -65,6 +72,21 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       throw Exception(e.message ?? "Login failed");
     }
+  }
+  Future<void> saveUserRole({
+    required String userId,
+    required String email,
+    required String role,
+  }) async {
+    await _firestore.collection('users').doc(userId).set({
+      'id': userId,
+      'email': email,
+      'role': role,
+      'isMerchant': role == 'merchant',
+      'isActive': true,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   /// FIRESTORE ACCESS

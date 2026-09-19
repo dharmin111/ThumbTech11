@@ -10,13 +10,13 @@ import 'oneSignalNotificationService.dart';
 class FirebaseMessageService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  // Send a message with proper bidirectional notifications
+  // ✅ FIXED: Send message with conversationId parameter
   Future<void> sendMessage({
+    required String conversationId, // ✅ Pass from ChatScreen
     required String requestId,
     required String receiverId,
     required String receiverName,
-    required String receiverRole, // 'customer' or 'technician'
+    required String receiverRole,
     required String message,
     String? imageUrl,
   }) async {
@@ -32,72 +32,83 @@ class FirebaseMessageService {
       final senderName = userData?['name'] ?? 'User';
       final senderRole = userData?['role'] ?? 'customer';
 
-      print('📨 Sending message:');
+      print('📨 Sending message to conversation: $conversationId');
       print('   From: $senderName ($senderRole)');
       print('   To: $receiverName ($receiverRole)');
       print('   Message: $message');
 
-      final String customerId = senderRole == 'customer'
-          ? currentUser.uid
-          : receiverId;
-      final String technicianId = senderRole == 'technician'
-          ? currentUser.uid
-          : receiverId;
-      final String customerName = senderRole == 'customer'
-          ? senderName
-          : receiverName;
-      final String technicianName = senderRole == 'technician'
-          ? senderName
-          : receiverName;
+      // ✅ Get or create conversation
+      final conversationRef = _firestore
+          .collection('conversations')
+          .doc(conversationId);
 
-      final conversationId = _getConversationId(
-        requestId: requestId,
-        customerId: customerId,
-        technicianId: technicianId,
-      );
+      final conversationDoc = await conversationRef.get();
 
-      // Create or update conversation
-      await _updateConversation(
-        conversationId: conversationId,
-        requestId: requestId,
-        customerId: customerId,
-        customerName: customerName,
-        technicianId: technicianId,
-        technicianName: technicianName,
-        lastMessage: message,
-        serviceName: await _getServiceName(requestId),
-      );
+      // ✅ If conversation doesn't exist, create it
+      if (!conversationDoc.exists) {
+        final String customerId;
+        final String customerName;
+        final String technicianId;
+        final String technicianName;
 
-      // Add message to subcollection
+        if (senderRole == 'customer') {
+          customerId = currentUser.uid;
+          customerName = senderName;
+          technicianId = receiverId;
+          technicianName = receiverName;
+        } else {
+          customerId = receiverId;
+          customerName = receiverName;
+          technicianId = currentUser.uid;
+          technicianName = senderName;
+        }
+
+        await conversationRef.set({
+          'conversationId': conversationId,
+          'requestId': requestId,
+          'customerId': customerId,
+          'customerName': customerName,
+          'technicianId': technicianId,
+          'technicianName': technicianName,
+          'lastMessage': message,
+          'lastMessageTime': FieldValue.serverTimestamp(),
+          'customerUnreadCount': 0,
+          'technicianUnreadCount': 0,
+          'serviceName': await _getServiceName(requestId),
+          'status': 'active',
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        print('✅ New conversation created in sendMessage');
+      }
+
+      // ✅ Add message to subcollection
       await _firestore
           .collection('conversations')
           .doc(conversationId)
           .collection('messages')
           .add({
-            'senderId': currentUser.uid,
-            'senderName': senderName,
-            'senderRole': senderRole,
-            'receiverId': receiverId,
-            'receiverName': receiverName,
-            'receiverRole': receiverRole,
-            'message': message,
-            'messageType': imageUrl != null ? 'image' : 'text',
-            'imageUrl': imageUrl,
-            'isRead': false,
-            'sentAt': FieldValue.serverTimestamp(),
-            'requestId': requestId,
-          });
+        'senderId': currentUser.uid,
+        'senderName': senderName,
+        'senderRole': senderRole,
+        'receiverId': receiverId,
+        'receiverName': receiverName,
+        'receiverRole': receiverRole,
+        'message': message,
+        'messageType': imageUrl != null ? 'image' : 'text',
+        'imageUrl': imageUrl,
+        'isRead': false,
+        'sentAt': FieldValue.serverTimestamp(),
+        'requestId': requestId,
+      });
 
-      // ✅ Increment ONLY the receiver's unread count
-      final conversationRef = _firestore
-          .collection('conversations')
-          .doc(conversationId);
-
+      // ✅ Increment receiver's unread count
       if (receiverRole == 'customer') {
         await conversationRef.update({
           'customerUnreadCount': FieldValue.increment(1),
           'lastMessage': message,
           'lastMessageTime': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
         });
         print('✅ Customer unread count incremented');
       } else {
@@ -105,11 +116,12 @@ class FirebaseMessageService {
           'technicianUnreadCount': FieldValue.increment(1),
           'lastMessage': message,
           'lastMessageTime': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
         });
         print('✅ Technician unread count incremented');
       }
 
-      // Send push notification
+      // ✅ Send push notification
       await _sendPushNotification(
         receiverId: receiverId,
         receiverRole: receiverRole,
@@ -129,10 +141,132 @@ class FirebaseMessageService {
 
       print('✅ Message sent and notification delivered');
     } catch (e) {
-      print('Error sending message: $e');
+      print('❌ Error sending message: $e');
       rethrow;
     }
   }
+  // // Send a message with proper bidirectional notifications
+  // Future<void> sendMessage({
+  //   required String requestId,
+  //   required String receiverId,
+  //   required String receiverName,
+  //   required String receiverRole, // 'customer' or 'technician'
+  //   required String message,
+  //   String? imageUrl,
+  // }) async {
+  //   try {
+  //     final currentUser = _auth.currentUser;
+  //     if (currentUser == null) throw Exception('User not logged in');
+  //
+  //     final userDoc = await _firestore
+  //         .collection('users')
+  //         .doc(currentUser.uid)
+  //         .get();
+  //     final userData = userDoc.data();
+  //     final senderName = userData?['name'] ?? 'User';
+  //     final senderRole = userData?['role'] ?? 'customer';
+  //
+  //     print('📨 Sending message:');
+  //     print('   From: $senderName ($senderRole)');
+  //     print('   To: $receiverName ($receiverRole)');
+  //     print('   Message: $message');
+  //
+  //     final String customerId = senderRole == 'customer'
+  //         ? currentUser.uid
+  //         : receiverId;
+  //     final String technicianId = senderRole == 'technician'
+  //         ? currentUser.uid
+  //         : receiverId;
+  //     final String customerName = senderRole == 'customer'
+  //         ? senderName
+  //         : receiverName;
+  //     final String technicianName = senderRole == 'technician'
+  //         ? senderName
+  //         : receiverName;
+  //
+  //     final conversationId = _getConversationId(
+  //       requestId: requestId,
+  //       customerId: customerId,
+  //       technicianId: technicianId,
+  //     );
+  //
+  //     // Create or update conversation
+  //     await _updateConversation(
+  //       conversationId: conversationId,
+  //       requestId: requestId,
+  //       customerId: customerId,
+  //       customerName: customerName,
+  //       technicianId: technicianId,
+  //       technicianName: technicianName,
+  //       lastMessage: message,
+  //       serviceName: await _getServiceName(requestId),
+  //     );
+  //
+  //     // Add message to subcollection
+  //     await _firestore
+  //         .collection('conversations')
+  //         .doc(conversationId)
+  //         .collection('messages')
+  //         .add({
+  //           'senderId': currentUser.uid,
+  //           'senderName': senderName,
+  //           'senderRole': senderRole,
+  //           'receiverId': receiverId,
+  //           'receiverName': receiverName,
+  //           'receiverRole': receiverRole,
+  //           'message': message,
+  //           'messageType': imageUrl != null ? 'image' : 'text',
+  //           'imageUrl': imageUrl,
+  //           'isRead': false,
+  //           'sentAt': FieldValue.serverTimestamp(),
+  //           'requestId': requestId,
+  //         });
+  //
+  //     // ✅ Increment ONLY the receiver's unread count
+  //     final conversationRef = _firestore
+  //         .collection('conversations')
+  //         .doc(conversationId);
+  //
+  //     if (receiverRole == 'customer') {
+  //       await conversationRef.update({
+  //         'customerUnreadCount': FieldValue.increment(1),
+  //         'lastMessage': message,
+  //         'lastMessageTime': FieldValue.serverTimestamp(),
+  //       });
+  //       print('✅ Customer unread count incremented');
+  //     } else {
+  //       await conversationRef.update({
+  //         'technicianUnreadCount': FieldValue.increment(1),
+  //         'lastMessage': message,
+  //         'lastMessageTime': FieldValue.serverTimestamp(),
+  //       });
+  //       print('✅ Technician unread count incremented');
+  //     }
+  //
+  //     // Send push notification
+  //     await _sendPushNotification(
+  //       receiverId: receiverId,
+  //       receiverRole: receiverRole,
+  //       senderName: senderName,
+  //       message: message,
+  //       conversationId: conversationId,
+  //       requestId: requestId,
+  //     );
+  //
+  //     await _sendInAppNotification(
+  //       receiverId: receiverId,
+  //       title: '💬 New Message from $senderName',
+  //       body: message,
+  //       conversationId: conversationId,
+  //       requestId: requestId,
+  //     );
+  //
+  //     print('✅ Message sent and notification delivered');
+  //   } catch (e) {
+  //     print('Error sending message: $e');
+  //     rethrow;
+  //   }
+  // }
 
   Future<void> _sendPushNotification({
     required String receiverId,
@@ -391,13 +525,14 @@ class FirebaseMessageService {
     });
   }
 
-  // Get or create conversation ID
+  // ✅ FIXED: Use sorted IDs for consistency with ChatScreen
   String _getConversationId({
     required String requestId,
     required String customerId,
     required String technicianId,
   }) {
-    return '${requestId}_${customerId}_$technicianId';
+    final ids = [customerId, technicianId]..sort(); // ✅ Consistent sorting
+    return '${ids[0]}_${ids[1]}_$requestId';
   }
 
   // Get service name from request ID

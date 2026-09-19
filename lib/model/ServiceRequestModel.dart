@@ -1,19 +1,24 @@
-import 'dart:ui';
+// lib/model/ServiceRequestModel.dart
 
+import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'LocationModel.dart';
 
 class ServiceRequestModel {
   String? id;
   String userId;
+  String? visitingCharges;
+  final String? technicianProfileImage;
   String userEmail;
   String userName;
   String userPhone;
   String serviceName;
   String serviceType;
   String issue;
-  final String? videoId; // YouTube video ID
+  final String? videoId;
   String location;
   String pincode;
+  final LocationModel? locationModel; // ✅ Location
   double budget;
   String additionalNote;
   List<String> imageUrls;
@@ -27,14 +32,19 @@ class ServiceRequestModel {
   DateTime? scheduledDate;
   String? preferredTime;
   String? assignedAt;
-  Timestamp? completedAt;  // FIXED: Changed from String? to Timestamp?
+  Timestamp? completedAt;
   String? cancellationReason;
+  final String? profileImageUrl;
 
   ServiceRequestModel({
     this.id,
     required this.userId,
+    this.technicianProfileImage,
     this.videoId,
+    this.visitingCharges,
     required this.userEmail,
+    this.locationModel, // ✅ Location
+    this.profileImageUrl,
     required this.userName,
     required this.userPhone,
     required this.serviceName,
@@ -55,25 +65,41 @@ class ServiceRequestModel {
     this.scheduledDate,
     this.preferredTime,
     this.assignedAt,
-    this.completedAt,  // FIXED: Now Timestamp?
+    this.completedAt,
     this.cancellationReason,
   });
 
-  // Convert from Firestore document to Model
+  // ✅ From Firestore
   factory ServiceRequestModel.fromFirestore(
       DocumentSnapshot doc,
       SnapshotOptions? options,
       ) {
     final data = doc.data() as Map<String, dynamic>;
+
+    // ✅ Parse locationModel
+    LocationModel? locationModel;
+    if (data['locationModel'] != null) {
+      try {
+        locationModel = LocationModel.fromMap(
+            data['locationModel'] as Map<String, dynamic>);
+      } catch (e) {
+        print('❌ Error parsing locationModel: $e');
+      }
+    }
+
     return ServiceRequestModel(
+      visitingCharges: data['visitingCharges'],
       id: doc.id,
       userId: data['userId'] ?? '',
       userEmail: data['userEmail'] ?? '',
       userName: data['userName'] ?? '',
       userPhone: data['userPhone'] ?? '',
+      technicianProfileImage: data['technicianProfileImage'] ?? '',
       serviceName: data['serviceName'] ?? '',
       videoId: data['videoId'],
       serviceType: data['serviceType'] ?? '',
+      locationModel: locationModel, // ✅ Location
+      profileImageUrl: data['profileImageUrl'] ?? '',
       issue: data['issue'] ?? '',
       location: data['location'] ?? '',
       pincode: data['pincode'] ?? '',
@@ -93,25 +119,42 @@ class ServiceRequestModel {
       preferredTime: data['preferredTime'],
       assignedAt: data['assignedAt'],
       completedAt: data['completedAt'] != null
-          ? data['completedAt'] as Timestamp?  // FIXED: Handle as Timestamp
+          ? data['completedAt'] as Timestamp?
           : null,
       cancellationReason: data['cancellationReason'],
     );
   }
 
-  // Convert Model to Map for Firestore
+  // ✅ To Firestore
   Map<String, dynamic> toFirestore() {
     return {
       'userId': userId,
+      'visitingCharges': visitingCharges,
       'userEmail': userEmail,
+
+      // ✅ LOCATION - Save WITHIN document
+      'locationModel': locationModel != null
+          ? {
+        'latitude': locationModel!.latitude,
+        'longitude': locationModel!.longitude,
+        'address': locationModel!.address ?? '',
+        'placeName': locationModel!.placeName ?? '',
+      }
+          : null,
+      'geoPoint': locationModel != null
+          ? GeoPoint(locationModel!.latitude, locationModel!.longitude)
+          : null,
+
       'userName': userName,
       'userPhone': userPhone,
       'serviceName': serviceName,
+      'technicianProfileImage': technicianProfileImage,
       'serviceType': serviceType,
       'issue': issue,
       'videoId': videoId,
       'location': location,
       'pincode': pincode,
+      'profileImageUrl': profileImageUrl ?? '',
       'budget': budget,
       'additionalNote': additionalNote,
       'imageUrls': imageUrls,
@@ -122,21 +165,24 @@ class ServiceRequestModel {
       'technicianName': technicianName,
       'technicianPhone': technicianPhone,
       'estimatedPrice': estimatedPrice,
-      'scheduledDate': scheduledDate != null ? Timestamp.fromDate(scheduledDate!) : null,
+      'scheduledDate':
+      scheduledDate != null ? Timestamp.fromDate(scheduledDate!) : null,
       'preferredTime': preferredTime,
       'assignedAt': assignedAt,
-      'completedAt': completedAt,  // FIXED: Now Timestamp?
+      'completedAt': completedAt,
       'cancellationReason': cancellationReason,
     };
   }
 
-  // Create a copy with updated fields
+  // ✅ Copy With - FIXED
   ServiceRequestModel copyWith({
     String? id,
+    String? visitingCharges,
     String? userId,
     String? videoId,
     String? userEmail,
     String? userName,
+    String? profileImageUrl,
     String? userPhone,
     String? serviceName,
     String? serviceType,
@@ -156,11 +202,13 @@ class ServiceRequestModel {
     DateTime? scheduledDate,
     String? preferredTime,
     String? assignedAt,
-    Timestamp? completedAt,  // FIXED: Now Timestamp?
+    Timestamp? completedAt,
     String? cancellationReason,
+    LocationModel? locationModel, // ✅ Location param
   }) {
     return ServiceRequestModel(
       id: id ?? this.id,
+      visitingCharges: visitingCharges ?? this.visitingCharges,
       userId: userId ?? this.userId,
       userEmail: userEmail ?? this.userEmail,
       userName: userName ?? this.userName,
@@ -171,6 +219,7 @@ class ServiceRequestModel {
       videoId: videoId ?? this.videoId,
       location: location ?? this.location,
       pincode: pincode ?? this.pincode,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
       budget: budget ?? this.budget,
       additionalNote: additionalNote ?? this.additionalNote,
       imageUrls: imageUrls ?? this.imageUrls,
@@ -186,10 +235,11 @@ class ServiceRequestModel {
       assignedAt: assignedAt ?? this.assignedAt,
       completedAt: completedAt ?? this.completedAt,
       cancellationReason: cancellationReason ?? this.cancellationReason,
+      locationModel: locationModel ?? this.locationModel, // ✅ FIXED - Yeh add kiya
     );
   }
 
-  // Helper method to get formatted completed date as String
+  // ✅ Formatted Date
   String getFormattedCompletedDate() {
     if (completedAt == null) return 'Date not available';
     try {
@@ -205,7 +255,7 @@ class ServiceRequestModel {
     }
   }
 
-  // Status helper methods
+  // ✅ Status helpers
   bool get isPending => status == 'pending';
   bool get isAccepted => status == 'accepted';
   bool get isInProgress => status == 'in_progress';
@@ -232,17 +282,17 @@ class ServiceRequestModel {
   Color get statusColor {
     switch (status) {
       case 'pending':
-        return const Color(0xFFFFA726); // Orange
+        return const Color(0xFFFFA726);
       case 'accepted':
-        return const Color(0xFF42A5F5); // Blue
+        return const Color(0xFF42A5F5);
       case 'in_progress':
-        return const Color(0xFFAB47BC); // Purple
+        return const Color(0xFFAB47BC);
       case 'completed':
-        return const Color(0xFF66BB6A); // Green
+        return const Color(0xFF66BB6A);
       case 'cancelled':
-        return const Color(0xFFEF5350); // Red
+        return const Color(0xFFEF5350);
       default:
-        return const Color(0xFF9E9E9E); // Grey
+        return const Color(0xFF9E9E9E);
     }
   }
 }

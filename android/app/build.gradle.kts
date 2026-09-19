@@ -1,3 +1,4 @@
+// android/app/build.gradle.kts
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
@@ -17,7 +18,10 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.baghi.thumstechs"
-    compileSdk = flutter.compileSdkVersion
+
+    // ✅ CHANGE: compileSdk from 34 to 36
+    compileSdk = 36  // or 35 if 36 is not available
+
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -27,23 +31,23 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17"
     }
 
     defaultConfig {
         applicationId = "com.baghi.thumstechs"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
+        minSdk = 24  // ✅ Increase minSdk to 24 for better compatibility
+        targetSdk = 36  // ✅ Change to 36
+        versionCode = flutter.versionCode.toInt()
         versionName = flutter.versionName
     }
 
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storePassword = keystoreProperties["storePassword"] as String
-            storeFile = file(keystoreProperties["storeFile"] as String)
+            keyAlias = keystoreProperties["keyAlias"] as String?
+            keyPassword = keystoreProperties["keyPassword"] as String?
+            storePassword = keystoreProperties["storePassword"] as String?
+            storeFile = keystoreProperties["storeFile"]?.let { file(it) }
         }
     }
 
@@ -58,6 +62,10 @@ android {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
+    // ✅ Google Play Services
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
 }
 
 flutter {

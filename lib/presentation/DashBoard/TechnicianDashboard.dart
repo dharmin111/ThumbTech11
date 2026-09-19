@@ -1,3 +1,5 @@
+// lib/presentation/DashBoard/TechnicianDashboard.dart
+
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -5,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../Services/FirebaseMessageService.dart';
 import '../../Services/oneSignalNotificationService.dart';
+import '../../Store/StoreScreen.dart';
 import '../TechnicianScreen/TechnicianHomeScreen.dart';
 import '../TechnicianScreen/TechnicianMyServicesScreen.dart';
 import '../TechnicianScreen/TechnicianProfileScreen.dart';
@@ -33,14 +36,12 @@ class _TechnicianDashboardState extends State<TechnicianDashboard> {
   void initState() {
     super.initState();
     _initializeNotifications();
-    _startPolling(); // ✅ Start polling every 2 seconds
+    _startPolling();
   }
 
   void _startPolling() {
-    // ✅ Initial fetch immediately
     _fetchUnreadCount();
 
-    // ✅ Then fetch every 2 seconds
     _pollingTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       _fetchUnreadCount();
     });
@@ -51,7 +52,6 @@ class _TechnicianDashboardState extends State<TechnicianDashboard> {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) return;
 
-      // ✅ Query conversations where user is technician
       final technicianQuery = await FirebaseFirestore.instance
           .collection('conversations')
           .where('technicianId', isEqualTo: currentUser.uid)
@@ -59,10 +59,8 @@ class _TechnicianDashboardState extends State<TechnicianDashboard> {
 
       int count = 0;
 
-      // ✅ Count technician unread
       for (var doc in technicianQuery.docs) {
         final data = doc.data();
-        // ✅ Only count active conversations
         if (data['status'] == 'active') {
           final unread = data['technicianUnreadCount'] ?? 0;
           count += unread is int ? unread : 0;
@@ -82,24 +80,19 @@ class _TechnicianDashboardState extends State<TechnicianDashboard> {
 
   @override
   void dispose() {
-    // ✅ Cancel timer to avoid memory leaks
     _pollingTimer?.cancel();
     super.dispose();
   }
 
   Future<void> _initializeNotifications() async {
-    // 🔥 If already initialized, don't do again
     if (_isInitialized) {
       print('✅ OneSignal already initialized');
       return;
     }
 
     try {
-      // Initialize OneSignal
       await OneSignalNotificationService.initialize();
       _isInitialized = true;
-
-      // Save OneSignal ID
       await _saveOneSignalId();
     } catch (e) {
       print('❌ Notification init error: $e');
@@ -111,7 +104,6 @@ class _TechnicianDashboardState extends State<TechnicianDashboard> {
     if (user == null) return;
 
     try {
-      // Check if OneSignal ID already exists
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -138,26 +130,32 @@ class _TechnicianDashboardState extends State<TechnicianDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    // Screens list with Chat tab
+    // ✅ Screens list with Store tab (5 tabs)
     final List<Widget> screens = [
-      const TechnicianHomeScreen(),
-      const TechnicianMyServicesScreen(),
-      const ChatListScreen(), // ✅ Chat tab - 3rd position
-      const TechnicianProfileScreen(), // ✅ Profile - 4th position
+      const TechnicianHomeScreen(),        // 0 - Home
+      const TechnicianMyServicesScreen(),  // 1 - My Services
+      const ChatListScreen(),              // 2 - Chat
+      const StoreScreen(),                 // 3 - Store ✅ NEW
+      const TechnicianProfileScreen(),     // 4 - Profile
     ];
 
-    // Bottom Nav Items with Chat Badge
+    // ✅ Bottom Nav Items with Chat Badge (5 tabs)
     final List<BottomNavigationBarItem> navItems = [
+      // 1. Home
       const BottomNavigationBarItem(
         icon: Icon(Icons.home_outlined),
         activeIcon: Icon(Icons.home),
         label: 'Home',
       ),
+
+      // 2. My Services
       const BottomNavigationBarItem(
         icon: Icon(Icons.build_outlined),
         activeIcon: Icon(Icons.build),
         label: 'My Services',
       ),
+
+      // 3. Chat (with badge)
       BottomNavigationBarItem(
         icon: Stack(
           children: [
@@ -221,6 +219,15 @@ class _TechnicianDashboardState extends State<TechnicianDashboard> {
         ),
         label: 'Chat',
       ),
+
+      // ✅ 4. Store (NEW - between Chat and Profile)
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.store_outlined),
+        activeIcon: Icon(Icons.store),
+        label: 'Store',
+      ),
+
+      // 5. Profile
       const BottomNavigationBarItem(
         icon: Icon(Icons.person_outline),
         activeIcon: Icon(Icons.person),
@@ -255,9 +262,9 @@ class _TechnicianDashboardState extends State<TechnicianDashboard> {
         unselectedItemColor: Colors.grey.shade600,
         selectedLabelStyle: const TextStyle(
           fontWeight: FontWeight.w600,
-          fontSize: 12,
+          fontSize: 11,
         ),
-        unselectedLabelStyle: const TextStyle(fontSize: 12),
+        unselectedLabelStyle: const TextStyle(fontSize: 10),
         elevation: 8,
         items: navItems,
       ),

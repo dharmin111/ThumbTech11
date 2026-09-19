@@ -6,9 +6,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../Services/oneSignalNotificationService.dart';
 import '../presentation/CustomerOnboardingScreens/CustReadOne.dart';
 import '../presentation/TechnicianOnboardingScreens/TechReadOne.dart';
-import 'TechnicianServiceDetailsScreen.dart';
 
 class UserInfoScreen extends StatefulWidget {
   const UserInfoScreen({super.key});
@@ -23,14 +23,13 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
 
-  String? _selectedRole; // customer or technician
+  String? _selectedRole;
   bool _isUploading = false;
 
-  // 🔥 PINCODES LIST - Main + Additional (Total 4 required for technician)
-  List<String> _pincodesList = [];
+  // 🔥 PINCODES LIST - Manual pincodes
+  List<String> _manualPincodesList = [];
   final TextEditingController _pincodeController = TextEditingController();
 
-  // Profile Image
   File? _profileImage;
   final ImagePicker _picker = ImagePicker();
 
@@ -43,96 +42,113 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     super.dispose();
   }
 
-  // ==================== PINCODE METHODS ====================
+  // ==================== DEFAULT PINCODES ====================
+
+  List<String> getDefaultPincodes() {
+    return [
+      '390025',
+      '390019',
+      '390018',
+      '390020',
+      '390002',
+      '390005',
+      '390021',
+      '390007',
+      '390015',
+      '391410',
+      '390012',
+      '390011',
+      '390014',
+      '390010',
+    ];
+  }
+
+  // ==================== MERGE PINCODES ====================
+
+  List<String> _getMergedPincodes() {
+    List<String> defaultPincodes = getDefaultPincodes();
+    List<String> allPincodes = [..._manualPincodesList, ...defaultPincodes];
+    List<String> uniquePincodes = allPincodes.toSet().toList();
+    uniquePincodes.sort();
+    return uniquePincodes;
+  }
+
+  // ==================== MANUAL PINCODE METHODS ====================
 
   void _addPincode() {
     final pincode = _pincodeController.text.trim();
+
+    // Validation
     if (pincode.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a pincode'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      _showSnackbar('Please enter a pincode', Colors.orange);
       return;
     }
-    if (pincode.length < 1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pincode must be at least 4 digits'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+    if (pincode.length < 4) {
+      _showSnackbar('Pincode must be at least 4 digits', Colors.orange);
       return;
     }
-    if (_pincodesList.contains(pincode)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pincode already added'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+    if (pincode.length > 6) {
+      _showSnackbar('Pincode must be at most 6 digits', Colors.orange);
       return;
     }
 
-    // 🔥 For technician: Max 4 pincodes total
-    if (_selectedRole == 'technician' && _pincodesList.length >= 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Maximum 4 pincodes allowed for technicians'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+    // Check if already in manual list
+    if (_manualPincodesList.contains(pincode)) {
+      _showSnackbar('Pincode already added manually', Colors.orange);
       return;
     }
 
-    // 🔥 For customer: Max 1 pincode
-    if (_selectedRole == 'customer' && _pincodesList.length >= 1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Only 1 pincode allowed for customers'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+    // Check if already in default list
+    if (getDefaultPincodes().contains(pincode)) {
+      _showSnackbar('Pincode already exists in default list', Colors.orange);
       return;
     }
 
+    // ✅ Technician: Max 4 manual pincodes
+    if (_selectedRole == 'technician' && _manualPincodesList.length >= 4) {
+      _showSnackbar('Maximum 4 manual pincodes allowed for technicians', Colors.orange);
+      return;
+    }
+
+    // ✅ Customer: Max 1 manual pincode
+    if (_selectedRole == 'customer' && _manualPincodesList.length >= 1) {
+      _showSnackbar('Only 1 pincode allowed for customers', Colors.orange);
+      return;
+    }
+
+    // ✅ Add manual pincode
     setState(() {
-      _pincodesList.add(pincode);
+      _manualPincodesList.add(pincode);
       _pincodeController.clear();
     });
+
+    _showSnackbar('✅ Pincode added successfully', Colors.green);
   }
 
   void _removePincode(String pincode) {
     setState(() {
-      _pincodesList.remove(pincode);
+      _manualPincodesList.remove(pincode);
     });
+    _showSnackbar('Pincode removed', Colors.blue);
   }
 
-  // 🔥 Check if minimum pincodes are met
+  // ✅ Check if minimum pincodes are met
   bool _hasMinimumPincodes() {
     if (_selectedRole == 'customer') {
-      return _pincodesList.length >= 1;
+      return _manualPincodesList.length >= 1;
     } else if (_selectedRole == 'technician') {
-      // 🔥 Technician needs exactly 4 pincodes
-      return _pincodesList.length >= 4;
+      // ✅ Technician needs exactly 4 manual pincodes
+      return _manualPincodesList.length >= 4;
     }
     return false;
   }
 
-  String? _getPincodeError() {
-    if (_selectedRole == 'customer') {
-      if (_pincodesList.isEmpty) {
-        return 'Please add your pincode';
-      }
-      return null;
-    } else if (_selectedRole == 'technician') {
-      if (_pincodesList.length < 4) {
-        return 'Please add ${4 - _pincodesList.length} more pincode(s) (Total 4 required)';
-      }
-      return null;
-    }
-    return null;
+  int _getRequiredPincodes() {
+    return _selectedRole == 'technician' ? 4 : 1;
+  }
+
+  int _getCurrentCount() {
+    return _manualPincodesList.length;
   }
 
   // ==================== IMAGE METHODS ====================
@@ -150,14 +166,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
         setState(() {
           _profileImage = File(image.path);
         });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile picture selected successfully'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 1),
-          ),
-        );
+        _showSnackbar('Profile picture selected successfully', Colors.green);
       }
     } catch (e) {
       _showError('Error selecting image: $e');
@@ -185,10 +194,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
             ),
             const SizedBox(height: 20),
             ListTile(
-              leading: const Icon(
-                Icons.photo_library,
-                color: Color(0xFF2563EB),
-              ),
+              leading: const Icon(Icons.photo_library, color: Color(0xFF2563EB)),
               title: const Text('Choose from Gallery'),
               onTap: () {
                 Navigator.pop(context);
@@ -214,6 +220,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     setState(() {
       _profileImage = null;
     });
+    _showSnackbar('Profile picture removed', Colors.blue);
   }
 
   Future<String?> _uploadProfileImageToStorage(String userId) async {
@@ -239,6 +246,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
   // ==================== SAVE DATA ====================
 
   Future<void> _saveUserDataAndNavigate() async {
+    // Validate form
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -248,12 +256,12 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
       return;
     }
 
-    // 🔥 Check if minimum pincodes are met
-    if (_selectedRole == 'technician' && _pincodesList.length < 4) {
-      _showError('Please add ${4 - _pincodesList.length} more pincode(s) (Total 4 required)');
+    // ✅ Validate manual pincodes
+    if (_selectedRole == 'technician' && _manualPincodesList.length < 4) {
+      _showError('Please add ${4 - _manualPincodesList.length} more pincode(s) (Total 4 required)');
       return;
     }
-    if (_selectedRole == 'customer' && _pincodesList.isEmpty) {
+    if (_selectedRole == 'customer' && _manualPincodesList.isEmpty) {
       _showError('Please add your pincode');
       return;
     }
@@ -273,7 +281,10 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
       // Upload profile image if selected
       String? profileImageUrl = await _uploadProfileImageToStorage(userId);
 
-      // 🔥 Prepare user data with pincodes list
+      // ✅ Get merged pincodes (manual + default)
+      List<String> mergedPincodes = _getMergedPincodes();
+
+      // ✅ Prepare user data
       Map<String, dynamic> userData = {
         'id': userId,
         'name': _nameController.text.trim(),
@@ -281,27 +292,27 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
         'phoneNumber': _phoneController.text.trim(),
         'phone': _phoneController.text.trim(),
         'address': _addressController.text.trim(),
-        'pincodes': _pincodesList, // 🔥 SAVING ALL PINCODES AS LIST
+        'pincodes': mergedPincodes, // ✅ Merged (Manual + Default)
+        'manualPincodes': _manualPincodesList, // ✅ Only manual
         'profileImageUrl': profileImageUrl,
         'role': _selectedRole,
         'isActive': true,
+        'notificationsEnabled': true, // ✅ Add this
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       };
+
+      print('📮 Manual Pincodes: $_manualPincodesList');
+      print('📦 Merged Pincodes: $mergedPincodes');
 
       // Save to Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
-          .set(userData);
+          .set(userData,SetOptions(merge: true));
 
-      print('✅ User data saved successfully! Role: $_selectedRole');
-      print('📱 User ID: $userId');
-      print('👤 Name: ${_nameController.text.trim()}');
-      print('📞 Phone: ${_phoneController.text.trim()}');
-      print('📍 Address: ${_addressController.text.trim()}');
-      print('📮 Pincodes: $_pincodesList');
-
+      print('✅ User data saved successfully!');
+      await OneSignalNotificationService.saveCurrentUserOneSignalId();
       if (!mounted) return;
 
       // Navigate based on role
@@ -318,8 +329,10 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
           'phoneNumber': _phoneController.text.trim(),
           'phone': _phoneController.text.trim(),
           'address': _addressController.text.trim(),
-          'pincodes': _pincodesList, // 🔥 PASS PINCODES LIST
+          'pincodes': mergedPincodes,
+          'manualPincodes': _manualPincodesList,
         };
+
 
         Navigator.pushReplacement(
           context,
@@ -343,9 +356,25 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     }
   }
 
+  // ==================== HELPER METHODS ====================
+
+  void _showSnackbar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 
@@ -378,8 +407,8 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        const Color(0xFF2563EB).withAlpha(25),
-                        const Color(0xFF2563EB).withAlpha(12),
+                        const Color(0xFF2563EB).withOpacity(0.1),
+                        const Color(0xFF2563EB).withOpacity(0.05),
                       ],
                     ),
                   ),
@@ -402,7 +431,6 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                     ],
                   ),
                 ),
-
                 Padding(
                   padding: const EdgeInsets.all(20),
                   child: Form(
@@ -410,24 +438,21 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Profile Picture Section
+                        // Profile Picture
                         _buildSectionTitle('Profile Picture', Icons.camera_alt),
                         const SizedBox(height: 16),
                         _buildProfileImageSection(),
                         const SizedBox(height: 24),
 
-                        // Personal Information Section
-                        _buildSectionTitle(
-                          'Personal Information',
-                          Icons.person_outline,
-                        ),
+                        // Personal Information
+                        _buildSectionTitle('Personal Information', Icons.person_outline),
                         const SizedBox(height: 16),
 
-                        // Role Selection Field
+                        // Role Selection
                         _buildRoleSelectionField(),
                         const SizedBox(height: 16),
 
-                        // Name Field
+                        // Name
                         _buildTextField(
                           controller: _nameController,
                           label: 'Full Name',
@@ -442,7 +467,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Phone Field
+                        // Phone
                         _buildTextField(
                           controller: _phoneController,
                           label: 'Phone Number',
@@ -461,7 +486,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Address Field
+                        // Address
                         _buildTextField(
                           controller: _addressController,
                           label: 'Address',
@@ -477,28 +502,38 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // 🔥 PINCODE SECTION - List based
+                        // 🔥 PINCODE SECTION
                         _buildPincodeSection(),
 
                         const SizedBox(height: 32),
 
-                        // 🔥 Continue Button
+                        // 🔥 Continue Button - Disabled until 4 pincodes added
                         Container(
                           width: double.infinity,
                           height: 55,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(15),
-                            gradient: LinearGradient(
+                            gradient: _hasMinimumPincodes()
+                                ? LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: _hasMinimumPincodes()
-                                  ? [const Color(0xFF2563EB), const Color(0xFF1D4ED8)]
-                                  : [Colors.grey.shade400, Colors.grey.shade500],
+                              colors: [
+                                const Color(0xFF2563EB),
+                                const Color(0xFF1D4ED8),
+                              ],
+                            )
+                                : LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.grey.shade400,
+                                Colors.grey.shade500,
+                              ],
                             ),
                             boxShadow: _hasMinimumPincodes()
                                 ? [
                               BoxShadow(
-                                color: const Color(0xFF2563EB).withAlpha(77),
+                                color: const Color(0xFF2563EB).withOpacity(0.3),
                                 blurRadius: 10,
                                 offset: const Offset(0, 5),
                               ),
@@ -530,9 +565,9 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                                 : Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
+                                const Text(
                                   'Continue',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
@@ -541,10 +576,10 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                                 if (!_hasMinimumPincodes() &&
                                     _selectedRole == 'technician')
                                   Text(
-                                    '${4 - _pincodesList.length} more pincodes required',
+                                    '${_getRequiredPincodes() - _getCurrentCount()} more pincodes required',
                                     style: TextStyle(
                                       fontSize: 10,
-                                      color: Colors.white.withAlpha(180),
+                                      color: Colors.white.withOpacity(0.8),
                                     ),
                                   ),
                                 if (!_hasMinimumPincodes() &&
@@ -571,7 +606,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
           ),
           if (_isUploading)
             Container(
-              color: Colors.black.withAlpha(128),
+              color: Colors.black.withOpacity(0.5),
               child: const Center(
                 child: Card(
                   child: Padding(
@@ -598,7 +633,8 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
   Widget _buildPincodeSection() {
     bool isTechnician = _selectedRole == 'technician';
     int requiredPincodes = isTechnician ? 4 : 1;
-    int currentCount = _pincodesList.length;
+    int currentCount = _manualPincodesList.length;
+    bool isComplete = currentCount >= requiredPincodes;
 
     return Container(
       decoration: BoxDecoration(
@@ -607,7 +643,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withAlpha(12),
+            color: Colors.grey.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -620,7 +656,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withAlpha(12),
+              color: const Color(0xFF2563EB).withOpacity(0.08),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -631,7 +667,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withAlpha(25),
+                    color: const Color(0xFF2563EB).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -671,9 +707,9 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: currentCount >= requiredPincodes
-                        ? Colors.green.withAlpha(20)
-                        : const Color(0xFF2563EB).withAlpha(20),
+                    color: isComplete
+                        ? Colors.green.withOpacity(0.15)
+                        : const Color(0xFF2563EB).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -681,9 +717,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: currentCount >= requiredPincodes
-                          ? Colors.green
-                          : const Color(0xFF2563EB),
+                      color: isComplete ? Colors.green : const Color(0xFF2563EB),
                     ),
                   ),
                 ),
@@ -695,7 +729,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // 🔥 Add Pincode Input
+                // Add Pincode Input
                 Row(
                   children: [
                     Expanded(
@@ -738,7 +772,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                 const Divider(),
                 const SizedBox(height: 12),
 
-                // 🔥 Progress Indicator
+                // Progress Indicator
                 if (isTechnician)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -757,7 +791,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                             child: LinearProgressIndicator(
                               value: currentCount / requiredPincodes,
                               backgroundColor: Colors.grey.shade200,
-                              color: currentCount >= requiredPincodes
+                              color: isComplete
                                   ? Colors.green
                                   : const Color(0xFF2563EB),
                               minHeight: 6,
@@ -770,29 +804,8 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                     ],
                   ),
 
-                // 🔥 Display Pincodes List
-                if (_pincodesList.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        Icon(Icons.location_off, size: 40, color: Colors.grey),
-                        SizedBox(height: 8),
-                        Text(
-                          'No pincodes added',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                        Text(
-                          'Add your pincode(s) above',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
+                // Display Pincodes List (Manual Only)
+                if (_manualPincodesList.isNotEmpty)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -807,16 +820,14 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                       Wrap(
                         spacing: 12,
                         runSpacing: 12,
-                        children: _pincodesList.asMap().entries.map((entry) {
+                        children: _manualPincodesList.asMap().entries.map((entry) {
                           int index = entry.key;
                           String pincode = entry.value;
                           return Chip(
                             label: Text(pincode),
                             deleteIcon: const Icon(Icons.close, size: 16),
                             onDeleted: () => _removePincode(pincode),
-                            backgroundColor: const Color(
-                              0xFF2563EB,
-                            ).withAlpha(25),
+                            backgroundColor: const Color(0xFF2563EB).withOpacity(0.1),
                             labelStyle: const TextStyle(
                               color: Color(0xFF2563EB),
                               fontWeight: FontWeight.w500,
@@ -846,7 +857,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${_pincodesList.length} pincode(s) added',
+                            '${_manualPincodesList.length} pincode(s) added',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],
@@ -866,7 +877,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                             ),
                         ],
                       ),
-                      if (isTechnician && currentCount >= requiredPincodes)
+                      if (isTechnician && isComplete)
                         const Padding(
                           padding: EdgeInsets.only(top: 8),
                           child: Row(
@@ -889,6 +900,29 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                           ),
                         ),
                     ],
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.location_off, size: 40, color: Colors.grey),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'No pincodes added',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        Text(
+                          isTechnician
+                              ? 'Add 4 pincodes to continue'
+                              : 'Add your pincode to continue',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
               ],
             ),
@@ -907,7 +941,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withAlpha(12),
+            color: Colors.grey.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -938,7 +972,8 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                   onChanged: (value) {
                     setState(() {
                       _selectedRole = value;
-                      _pincodesList.clear(); // Reset pincodes
+                      _manualPincodesList.clear();
+                      _pincodeController.clear();
                     });
                   },
                 ),
@@ -956,7 +991,8 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                   onChanged: (value) {
                     setState(() {
                       _selectedRole = value;
-                      _pincodesList.clear(); // Reset pincodes
+                      _manualPincodesList.clear();
+                      _pincodeController.clear();
                     });
                   },
                 ),
@@ -1042,7 +1078,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                     height: 130,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.black.withAlpha(102),
+                      color: Colors.black.withOpacity(0.4),
                     ),
                     child: const Center(
                       child: Icon(
@@ -1116,7 +1152,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withAlpha(12),
+            color: Colors.grey.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

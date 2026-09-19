@@ -3,6 +3,9 @@ import 'app_user_model.dart';
 class CustomerModel extends AppUserModel {
 
   CustomerModel({
+    required super.lan,
+    required super.lat,
+    required super.placeName,
     required super.id,
     required super.name,
     required super.email,
@@ -21,6 +24,9 @@ class CustomerModel extends AppUserModel {
     return CustomerModel(
       id: map['id'] ?? '',
       name: map['name'] ?? '',
+      lan: map['longitude'],
+      lat: map['latitude'],
+      placeName: map['placeName'],
       email: map['email'] ?? '',
       phoneNumber: map['phoneNumber'] ?? '',
       isActive: map['isActive'] ?? false,

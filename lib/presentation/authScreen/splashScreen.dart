@@ -5,9 +5,16 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:thumstechs/presentation/Marchant_screens/StepSevenScreen.dart';
+import 'package:thumstechs/presentation/Marchant_screens/StepSixScreen.dart';
 import '../../Admin/AdminScreens/AdminDashboard.dart';
 import '../../Admin/AdminScreens/AdminLoginScreen.dart';
 import '../../Admin/AdminScreens/AdminPendingScreen.dart';
+import '../Marchant_screens/Merchant_Detail_Screen.dart';
+import '../Marchant_screens/StepTwoScreen.dart';
+import '../Marchant_screens/StepThreeScreen.dart';
+import '../Marchant_screens/StepFourScreen.dart';
+import '../Marchant_screens/StepFiveScreen.dart';
 import '../authScreen/LoginScreen.dart';
 import '../DashBoard/CustomerDashboard.dart';
 import '../DashBoard/TechnicianDashboard.dart';
@@ -29,14 +36,15 @@ class _SplashScreenState extends State<SplashScreen> {
       _redirectToAdmin();
       return;
     }
-    //
-    // // ✅ Mobile: OneSignal Permission
-    // try {
-    //   OneSignal.Notifications.requestPermission(true);
-    //   print('✅ OneSignal permission requested');
-    // } catch (e) {
-    //   print('❌ OneSignal permission error: $e');
-    // }
+
+    // ✅ Mobile: OneSignal Permission
+    try {
+      OneSignal.Notifications.requestPermission(true);
+      print('✅ OneSignal permission requested');
+    } catch (e) {
+      print('❌ OneSignal permission error: $e');
+    }
+
     // ✅ Mobile: Check user status
     _navigateToScreen();
   }
@@ -51,10 +59,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (user != null) {
       try {
-        // final doc = await FirebaseFirestore.instance
-        //     .collection('users')
-        //     .doc(user.uid)
-        //     .get();
         final doc = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
@@ -65,12 +69,9 @@ class _SplashScreenState extends State<SplashScreen> {
           final data = doc.data() as Map<String, dynamic>;
           final role = data['role'] ?? 'customer';
           final isApproved = data['isApproved'] ?? false;
-
-          // ✅ CHECK: Is user active?
           final isActive = data['isActive'] ?? true;
 
           if (!isActive) {
-            // User is deactivated - sign out
             await FirebaseAuth.instance.signOut();
             Navigator.pushReplacement(
               context,
@@ -79,7 +80,6 @@ class _SplashScreenState extends State<SplashScreen> {
             return;
           }
 
-          // ✅ Admin approved → Dashboard
           if (role == 'admin' && isApproved) {
             Navigator.pushReplacement(
               context,
@@ -88,7 +88,6 @@ class _SplashScreenState extends State<SplashScreen> {
             return;
           }
 
-          // ✅ Admin pending
           if (role == 'admin' && !isApproved) {
             Navigator.pushReplacement(
               context,
@@ -111,7 +110,7 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 
-  // ✅ Mobile Navigation
+  // ✅ Mobile Navigation - COMPLETE FIXED
   Future<void> _navigateToScreen() async {
     await Future.delayed(const Duration(seconds: 3));
 
@@ -119,7 +118,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
     final user = FirebaseAuth.instance.currentUser;
 
+    // ✅ If no user, go to Login
     if (user == null) {
+      print('❌ No user logged in, going to LoginScreen');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -127,13 +128,24 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
 
+    // ✅ Debug: Print user info
+    print('═══════════════════════════════════════════');
+    print('🔑 SplashScreen - User found');
+    print('📌 User UID: ${user.uid}');
+    print('📌 User Email: ${user.email}');
+    print('📌 User Display Name: ${user.displayName}');
+    print('═══════════════════════════════════════════');
+
     try {
+      // ✅ Get user data from Firestore
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
 
+      // ✅ If user document doesn't exist, sign out
       if (!doc.exists) {
+        print('❌ User document does not exist in Firestore!');
         await FirebaseAuth.instance.signOut();
         Navigator.pushReplacement(
           context,
@@ -144,11 +156,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
       final data = doc.data() as Map<String, dynamic>;
 
-      // ✅ CHECK: Is user active?
+      // ✅ Check if user is active
       final isActive = data['isActive'] ?? true;
-
       if (!isActive) {
-        // ✅ User is deactivated - Sign out and go to login
+        print('❌ User is deactivated!');
         await FirebaseAuth.instance.signOut();
         Navigator.pushReplacement(
           context,
@@ -157,10 +168,14 @@ class _SplashScreenState extends State<SplashScreen> {
         return;
       }
 
+      // ✅ Get user role
       final role = data['role'] ?? 'customer';
+      print('👤 User Role: $role');
 
+      // ✅ Navigate based on role
       switch (role) {
         case 'technician':
+          print('✅ Navigating to TechnicianDashboard');
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -168,8 +183,146 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
           );
           break;
+
+        case 'merchant':
+        // ✅ MERCHANT LOGIC WITH STATUS
+          print('✅ Navigating to Merchant Flow');
+          print('🔑 userId: ${user.uid}');
+          print('📧 userEmail: ${user.email}');
+
+          // ✅ Get merchant status from Firestore
+          final merchantDoc = await FirebaseFirestore.instance
+              .collection('merchants')
+              .doc(user.uid)
+              .get();
+
+          // ✅ Check if merchant document exists
+          if (!merchantDoc.exists) {
+            // ❌ No merchant data → Go to MerchantDetailScreen
+            print('❌ No merchant data found, going to MerchantDetailScreen');
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MerchantDetailScreen(
+                  userId: user.uid,
+                  userEmail: user.email ?? '',
+                ),
+              ),
+            );
+            return;
+          }
+
+          // ✅ Get merchant status
+          final merchantData = merchantDoc.data() as Map<String, dynamic>;
+          final status = merchantData['status'] ?? 'pending';
+          print('📌 Merchant Status: $status');
+
+          // ✅ Navigate based on status
+          switch (status) {
+            case 'pending':
+              print('➡️ Status: pending → StepTwoScreen');
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StepTwoScreen(
+                    userId: user.uid,
+                    userEmail: user.email ?? '',
+                  ),
+                ),
+              );
+              break;
+
+            case 'received':
+              print('➡️ Status: received → StepThreeScreen');
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StepThreeScreen(
+                    userId: user.uid,
+                    userEmail: user.email ?? '',
+                  ),
+                ),
+              );
+              break;
+            case 'display':
+              print('➡️ Status: display → StepThreeScreen');
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StepSixScreen(
+                    userId: user.uid,
+                    userEmail: user.email ?? '',
+                  ),
+                ),
+              );
+              break;
+
+            case 'uploaded':
+              print('➡️ Status: uploaded → StepFourScreen');
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StepFourScreen(
+                    userId: user.uid,
+                    userEmail: user.email ?? '',
+                  ),
+                ),
+              );
+              break;
+
+            case 'waiting':
+              print('➡️ Status: $status → StepFiveScreen');
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StepFiveScreen(
+                    userId: user.uid,
+                    userEmail: user.email ?? '',
+                  ),
+                ),
+              );
+            case 'pending_approval':
+              print('➡️ Status: $status → StepFiveScreen');
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StepFiveScreen(
+                    userId: user.uid,
+                    userEmail: user.email ?? '',
+                  ),
+                ),
+              );
+              break;
+
+            case 'active':
+            case 'verified':
+              print('➡️ Status: $status → Merchant Dashboard');
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>StepSevenScreen(userId: user.uid, userEmail: user.email ?? '')
+                ),
+              );
+              break;
+
+            default:
+            // ✅ Default: Go to StepTwoScreen
+              print('➡️ Default: going to StepTwoScreen');
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StepTwoScreen(
+                    userId: user.uid,
+                    userEmail: user.email ?? '',
+                  ),
+                ),
+              );
+          }
+          break;
+
         case 'admin':
           final isApproved = data['isApproved'] ?? false;
+          print('✅ Navigating to Admin - isApproved: $isApproved');
           if (isApproved) {
             Navigator.pushReplacement(
               context,
@@ -184,7 +337,9 @@ class _SplashScreenState extends State<SplashScreen> {
             );
           }
           break;
+
         default:
+          print('✅ Navigating to CustomerDashboard');
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const CustomerDashboard()),
@@ -192,6 +347,7 @@ class _SplashScreenState extends State<SplashScreen> {
       }
     } catch (e) {
       print('❌ Error checking user role: $e');
+      // ✅ On error, go to Login
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const LoginScreen()),

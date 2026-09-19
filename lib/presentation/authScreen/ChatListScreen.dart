@@ -1,4 +1,5 @@
 // screens/ChatListScreen.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,6 +17,10 @@ class ChatListScreen extends StatefulWidget {
 class _ChatListScreenState extends State<ChatListScreen> {
   final FirebaseMessageService _messageService = FirebaseMessageService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Cache for user profiles
+  final Map<String, Map<String, dynamic>> _userProfileCache = {};
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +132,19 @@ class _ChatListScreenState extends State<ChatListScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             itemBuilder: (context, index) {
               final conversation = conversations[index];
-              return _buildConversationTile(conversation);
+              return FutureBuilder<Map<String, dynamic>>(
+                future: _getUserProfile(conversation, currentUser.uid),
+                builder: (context, userSnapshot) {
+                  if (userSnapshot.connectionState == ConnectionState.waiting) {
+                    return _buildShimmerTile();
+                  }
+                  return _buildConversationTile(
+                    conversation,
+                    userSnapshot.data ?? {},
+                    currentUser.uid,
+                  );
+                },
+              );
             },
           );
         },
@@ -135,29 +152,80 @@ class _ChatListScreenState extends State<ChatListScreen> {
     );
   }
 
-  Widget _buildConversationTile(ConversationModel conversation) {
-    final currentUser = _auth.currentUser;
-    if (currentUser == null) return const SizedBox.shrink();
-
-    // Determine other user info
-    final bool isCustomer = conversation.customerId == currentUser.uid;
+  // ✅ Fetch user profile with caching
+  Future<Map<String, dynamic>> _getUserProfile(
+      ConversationModel conversation,
+      String currentUserId,
+      ) async {
+    // Determine other user ID
+    final bool isCustomer = conversation.customerId == currentUserId;
     final String otherUserId = isCustomer
         ? conversation.technicianId
         : conversation.customerId;
-    final String otherUserName = isCustomer
-        ? conversation.technicianName
-        : conversation.customerName;
-    final String otherUserRole = isCustomer ? 'technician' : 'customer';
 
-    // ✅ Get unread count for current user using the method
-    final int unreadCount = conversation.getUnreadCount(currentUser.uid);
+    // Check cache
+    if (_userProfileCache.containsKey(otherUserId)) {
+      return _userProfileCache[otherUserId]!;
+    }
+
+    try {
+      final doc = await _firestore.collection('users').doc(otherUserId).get();
+      if (doc.exists) {
+        final data = doc.data() ?? {};
+        final profileData = {
+          'name': data['name'] ?? 'Unknown',
+          'role': data['role'] ?? 'user',
+          'profileImageUrl': data['profileImageUrl'] ?? '',
+          'phone': data['phone'] ?? data['phoneNumber'] ?? '',
+          'email': data['email'] ?? '',
+          'pincodes': data['pincodes'] ?? [],
+          'address': data['address'] ?? '',
+          'isActive': data['isActive'] ?? false,
+          'isVerified': data['isVerified'] ?? false,
+        };
+        _userProfileCache[otherUserId] = profileData;
+        return profileData;
+      }
+    } catch (e) {
+      print('Error fetching user profile: $e');
+    }
+
+    return {
+      'name': isCustomer ? conversation.technicianName : conversation.customerName,
+      'role': isCustomer ? 'technician' : 'customer',
+      'profileImageUrl': '',
+      'phone': '',
+      'email': '',
+      'pincodes': [],
+      'address': '',
+      'isActive': false,
+      'isVerified': false,
+    };
+  }
+
+  // ✅ Build Conversation Tile
+  Widget _buildConversationTile(
+      ConversationModel conversation,
+      Map<String, dynamic> userData,
+      String currentUserId,
+      ) {
+    final bool isCustomer = conversation.customerId == currentUserId;
+    final String otherUserId = isCustomer
+        ? conversation.technicianId
+        : conversation.customerId;
+    final String otherUserName = userData['name'] ?? 'Unknown';
+    final String otherUserRole = userData['role'] ?? 'user';
+    final String otherUserProfileImage = userData['profileImageUrl'] ?? '';
+    final bool isOnline = userData['isActive'] ?? false;
+
+    // ✅ Get unread count
+    final int unreadCount = conversation.getUnreadCount(currentUserId);
 
     // Get last message time
     String timeString = _formatTime(conversation.lastMessageTime);
 
     return GestureDetector(
       onTap: () {
-        // Navigate to chat screen with existing ChatScreen
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -167,6 +235,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               otherUserId: otherUserId,
               otherUserName: otherUserName,
               otherUserRole: otherUserRole,
+              otherUserProfileImage: otherUserProfileImage, // ✅ Pass profile image
             ),
           ),
         );
@@ -178,7 +247,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.05),
+              color: Colors.grey.withOpacity(0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -191,11 +260,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
           ),
           leading: Stack(
             children: [
+              // ✅ Avatar with Profile Image or First Letter
               CircleAvatar(
+                radius: 26,
                 backgroundColor: otherUserRole == 'technician'
                     ? Colors.blue.shade100
                     : Colors.green.shade100,
-                child: Text(
+                backgroundImage: otherUserProfileImage.isNotEmpty
+                    ? NetworkImage(otherUserProfileImage)
+                    : null,
+                child: otherUserProfileImage.isEmpty
+                    ? Text(
                   otherUserName.isNotEmpty
                       ? otherUserName[0].toUpperCase()
                       : '?',
@@ -204,9 +279,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         ? Colors.blue.shade700
                         : Colors.green.shade700,
                     fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    fontSize: 20,
                   ),
-                ),
+                )
+                    : null,
               ),
               // Online status indicator
               Positioned(
@@ -216,7 +292,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   width: 14,
                   height: 14,
                   decoration: BoxDecoration(
-                    color: Colors.green,
+                    color: isOnline ? Colors.green : Colors.grey,
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                   ),
@@ -245,14 +321,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
           ),
           subtitle: Row(
             children: [
-              // ✅ CORRECTED: Double tick logic
-              // Show double tick only if there are messages and current user is the SENDER
-              // Blue = read, Grey = delivered but not read
+              // ✅ Last message status
               if (conversation.lastMessage.isNotEmpty) ...[
-                // 🔥 Check if current user sent the last message
-                // For this we need to check the last message sender
-                // We'll use a StreamBuilder for last message status
-                _buildLastMessageStatus(conversation, currentUser.uid),
+                _buildLastMessageStatus(conversation, currentUserId),
                 const SizedBox(width: 4),
               ],
               Expanded(
@@ -301,14 +372,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
     );
   }
 
-  // ✅ New method to show last message status with correct double tick logic
+  // ✅ Last message status with double tick
   Widget _buildLastMessageStatus(
-    ConversationModel conversation,
-    String currentUserId,
-  ) {
-    // Check if current user is the sender of the last message
-    // We need to fetch the last message to check its sender
-
+      ConversationModel conversation,
+      String currentUserId,
+      ) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('conversations')
@@ -323,7 +391,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
         }
 
         final lastMessageData =
-            snapshot.data!.docs.first.data() as Map<String, dynamic>;
+        snapshot.data!.docs.first.data() as Map<String, dynamic>;
         final String senderId = lastMessageData['senderId'] ?? '';
         final bool isRead = lastMessageData['isRead'] ?? false;
 
@@ -331,7 +399,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
         final bool isCurrentUserSender = senderId == currentUserId;
 
         if (!isCurrentUserSender) {
-          return const SizedBox.shrink(); // Don't show for received messages
+          return const SizedBox.shrink();
         }
 
         // ✅ Blue tick = read, Grey tick = not read yet
@@ -344,6 +412,50 @@ class _ChatListScreenState extends State<ChatListScreen> {
     );
   }
 
+  // ✅ Shimmer effect while loading
+  Widget _buildShimmerTile() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: const BoxDecoration(
+              color: Colors.grey,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 120,
+                  height: 14,
+                  color: Colors.grey.shade300,
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: 200,
+                  height: 12,
+                  color: Colors.grey.shade300,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ Format time
   String _formatTime(DateTime dateTime) {
     final DateTime now = DateTime.now();
 

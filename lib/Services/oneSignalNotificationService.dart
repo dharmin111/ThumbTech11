@@ -153,12 +153,12 @@ class OneSignalNotificationService {
         return false;
       }
 
-      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
         'oneSignalId': oneSignalId,
-        'userRole': userRole,
+        // 'userRole': userRole,
         'notificationsEnabled': true,
         'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      },);
 
       print('✅ OneSignal ID saved: $oneSignalId');
       return true;
@@ -245,6 +245,7 @@ class OneSignalNotificationService {
         'priority': 10,
         'android_channel_id': 'cbfb12cf-b86d-4007-95e6-8e6afc888a5b',
         'android_sound': 'notification_sound',
+        'ios_sound': 'notification_sound.wav',
       };
 
       print('📤 Sending payload: ${jsonEncode(payload)}');

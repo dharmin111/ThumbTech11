@@ -13,6 +13,9 @@ class AppUserModel {
   final String? profileImageUrl;
   final String? address;
   final String? city;
+  final String? lan;
+  final String? lat;
+  final String? placeName;
   final String? state;
   final String? oneSignalId;
 
@@ -24,6 +27,9 @@ class AppUserModel {
     required this.id,
     required this.name,
     this.oneSignalId,
+    this.lan,
+    this.lat,
+    this.placeName,
     required this.email,
     required this.phoneNumber,
     required this.isActive,
@@ -42,7 +48,10 @@ class AppUserModel {
     return {
       'id': id,
       'name': name,
+      'latitude':lat,
+      'longitude':lan,
       'email': email,
+      'placeName':placeName,
       'phoneNumber': phoneNumber,
       'isActive': isActive,
       'role': role,
@@ -62,6 +71,9 @@ class AppUserModel {
     return AppUserModel(
       id: map['id'] ?? '',
       name: map['name'] ?? '',
+      lat:map['latitude']??'',
+      lan:map['longitude']??'',
+      placeName: map['placeName']??'',
       email: map['email'] ?? '',
       phoneNumber: map['phoneNumber'] ?? '',
       isActive: map['isActive'] ?? false,

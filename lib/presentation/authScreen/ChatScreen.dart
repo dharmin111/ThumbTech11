@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../Services/FirebaseMessageService.dart';
 import '../../Services/ReportService.dart';
 import '../../model/MessageModel.dart';
+import '../../profile/customer_technician_data_seen.dart';
 import '../widgets/ReportDialog.dart';
 import '../widgets/BlockDialog.dart';
 
@@ -70,6 +71,7 @@ class ChatScreen extends StatefulWidget {
   final String otherUserId;
   final String otherUserName;
   final String otherUserRole;
+  final String? otherUserProfileImage;
 
   const ChatScreen({
     super.key,
@@ -78,6 +80,7 @@ class ChatScreen extends StatefulWidget {
     required this.otherUserId,
     required this.otherUserName,
     required this.otherUserRole,
+    this.otherUserProfileImage,
   });
 
   @override
@@ -96,7 +99,10 @@ class _ChatScreenState extends State<ChatScreen> {
   DateTime? _otherUserLastSeen;
   Timer? _typingTimer;
   bool _isOtherUserTyping = false;
-  bool _isBlocked = false; // 🔥 Track block status
+  bool _isBlocked = false;
+
+  // ✅ Profile image cache
+  String _cachedProfileImage = '';
 
   final List<_PendingMessage> _pendingMessages = [];
   _ReplyPreview? _replyingTo;
@@ -108,6 +114,9 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+
+    // ✅ Use cached profile image or fetch from widget
+    _cachedProfileImage = widget.otherUserProfileImage ?? '';
 
     if (widget.otherUserId.isEmpty) {
       debugPrint('❌ ERROR: otherUserId is empty in ChatScreen!');
@@ -128,7 +137,8 @@ class _ChatScreenState extends State<ChatScreen> {
     _initializeChat();
     _listenToUserPresence();
     _listenToTypingStatus();
-    _checkBlockStatus(); // 🔥 Check if blocked on init
+    _checkBlockStatus();
+    _fetchUserProfileImage(); // ✅ Fetch updated profile image
 
     _focusNode.addListener(_onFocusChange);
     _scrollController.addListener(_handleScroll);
@@ -146,15 +156,35 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
+  // ==================== FETCH PROFILE IMAGE ====================
+
+  Future<void> _fetchUserProfileImage() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.otherUserId)
+          .get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final imageUrl = data['profileImageUrl'] ?? '';
+        if (imageUrl.isNotEmpty && mounted) {
+          setState(() {
+            _cachedProfileImage = imageUrl;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching profile image: $e');
+    }
+  }
+
   // ==================== BLOCK CHECK ====================
 
-  /// 🔥 Check if user is blocked
   Future<void> _checkBlockStatus() async {
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) return;
 
-      // Check if current user blocked other user
       final doc = await FirebaseFirestore.instance
           .collection('blocked_users')
           .doc('${currentUser.uid}_${widget.otherUserId}')
@@ -163,40 +193,31 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         _isBlocked = doc.exists;
       });
-
-      if (_isBlocked) {
-        print('⚠️ ${widget.otherUserName} is blocked');
-      }
     } catch (e) {
       print('Error checking block status: $e');
     }
   }
 
-  /// 🔥 Check if user can send messages
   Future<bool> _canSendMessage() async {
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) return false;
 
-      // Check if other user blocked current user
       final doc1 = await FirebaseFirestore.instance
           .collection('blocked_users')
           .doc('${widget.otherUserId}_${currentUser.uid}')
           .get();
 
       if (doc1.exists) {
-        print('❌ You are blocked by ${widget.otherUserName}');
         return false;
       }
 
-      // Check if current user blocked other user
       final doc2 = await FirebaseFirestore.instance
           .collection('blocked_users')
           .doc('${currentUser.uid}_${widget.otherUserId}')
           .get();
 
       if (doc2.exists) {
-        print('❌ You have blocked ${widget.otherUserName}');
         return false;
       }
 
@@ -205,6 +226,21 @@ class _ChatScreenState extends State<ChatScreen> {
       print('Error checking send permission: $e');
       return false;
     }
+  }
+
+  // ==================== NAVIGATE TO PROFILE ====================
+
+  void _navigateToUserProfile() {
+    // ✅ Navigate to profile view screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CustomerTechnicianDataSeen(
+          userId: widget.otherUserId,
+          userRole: widget.otherUserRole,
+        ),
+      ),
+    );
   }
 
   void _onFocusChange() {
@@ -262,6 +298,11 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           _isOtherUserOnline = data['isOnline'] ?? false;
           _otherUserLastSeen = (data['lastSeen'] as Timestamp?)?.toDate();
+          // ✅ Update profile image if changed
+          final imageUrl = data['profileImageUrl'] ?? '';
+          if (imageUrl.isNotEmpty && imageUrl != _cachedProfileImage) {
+            _cachedProfileImage = imageUrl;
+          }
         });
       }
     });
@@ -370,7 +411,6 @@ class _ChatScreenState extends State<ChatScreen> {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
 
-    // 🔥 Check if blocked BEFORE sending
     final canSend = await _canSendMessage();
     if (!canSend) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -424,6 +464,7 @@ class _ChatScreenState extends State<ChatScreen> {
         receiverName: widget.otherUserName,
         receiverRole: widget.otherUserRole,
         message: pending.text,
+        conversationId:widget.conversationId,
       );
       Future.delayed(const Duration(seconds: 4), () {
         if (mounted) {
@@ -452,7 +493,6 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _pickAndSendImage() async {
-    // 🔥 Check if blocked BEFORE sending image
     final canSend = await _canSendMessage();
     if (!canSend) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -511,7 +551,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      // 🔥 Check if blocked BEFORE sending image
       final canSend = await _canSendMessage();
       if (!canSend) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -575,6 +614,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
       if (imageUrl != null) {
         await _messageService.sendMessage(
+          conversationId: widget.conversationId,
           requestId: widget.requestId,
           receiverId: widget.otherUserId,
           receiverName: widget.otherUserName,
@@ -686,7 +726,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  // ==================== 🔥 REPORT + BLOCK ====================
+  // ==================== REPORT + BLOCK ====================
 
   void _showChatActions(MessageModel message) {
     final isImage = message.messageType == 'image' && message.imageUrl != null;
@@ -712,8 +752,6 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Reply
             ListTile(
               leading: const Icon(Icons.reply, color: Color(0xFF2563EB)),
               title: const Text('Reply', style: TextStyle(fontSize: 16)),
@@ -726,8 +764,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 );
               },
             ),
-
-            // Copy
             if (!isImage)
               ListTile(
                 leading: const Icon(Icons.copy, color: Color(0xFF2563EB)),
@@ -747,8 +783,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                 },
               ),
-
-            // 🔥 Report Message (only for others' messages)
             if (!isMe)
               ListTile(
                 leading: Icon(Icons.flag, color: Colors.red.shade700),
@@ -763,8 +797,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                 },
               ),
-
-            // 🔥 Block User
             if (!isMe)
               ListTile(
                 leading: Icon(Icons.block, color: Colors.red.shade700),
@@ -777,7 +809,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   _blockUser(widget.otherUserId, widget.otherUserName);
                 },
               ),
-
             const SizedBox(height: 12),
           ],
         ),
@@ -809,20 +840,13 @@ class _ChatScreenState extends State<ChatScreen> {
         userId: userId,
         userName: userName,
         onBlocked: () {
-          // 🔥 Update block status
           setState(() {
             _isBlocked = true;
           });
-
-          // 🔥 Clear message input
           _messageController.clear();
-
-          // 🔥 Remove pending messages
           setState(() {
             _pendingMessages.clear();
           });
-
-          // 🔥 Show blocked message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('✅ $userName has been blocked'),
@@ -830,6 +854,54 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _showUnblockDialog(String userId, String userName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unblock User'),
+        content: Text('Are you sure you want to unblock $userName?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await ReportService.unblockUser(
+                  blockedUserId: userId,
+                );
+                setState(() {
+                  _isBlocked = false;
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('✅ $userName has been unblocked'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('❌ Error: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Unblock'),
+          ),
+        ],
       ),
     );
   }
@@ -847,7 +919,7 @@ class _ChatScreenState extends State<ChatScreen> {
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.15),
+                color: Colors.grey.withOpacity(0.15),
                 blurRadius: 4,
                 offset: const Offset(0, 1),
               ),
@@ -930,7 +1002,7 @@ class _ChatScreenState extends State<ChatScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: isMe
-            ? Colors.white.withValues(alpha: 0.15)
+            ? Colors.white.withOpacity(0.15)
             : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(8),
         border: Border(
@@ -1024,7 +1096,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withValues(alpha: 0.1),
+                        color: Colors.grey.withOpacity(0.1),
                         blurRadius: 5,
                         offset: const Offset(0, 1),
                       ),
@@ -1195,7 +1267,6 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageInput() {
-    // 🔥 Show blocked message if blocked
     if (_isBlocked) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1237,7 +1308,7 @@ class _ChatScreenState extends State<ChatScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: Colors.grey.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -1393,59 +1464,110 @@ class _ChatScreenState extends State<ChatScreen> {
       resizeToAvoidBottomInset: true,
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  widget.otherUserName,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        title: GestureDetector(
+          onTap: _navigateToUserProfile, // ✅ Tap on title to view profile
+          child: Row(
+            children: [
+              // ✅ Profile Image with click
+              GestureDetector(
+                onTap: _navigateToUserProfile,
+                child: CircleAvatar(
+                  radius: 20,
+                  backgroundColor: widget.otherUserRole == 'technician'
+                      ? Colors.blue.shade100
+                      : Colors.green.shade100,
+                  backgroundImage: _cachedProfileImage.isNotEmpty
+                      ? NetworkImage(_cachedProfileImage)
+                      : null,
+                  child: _cachedProfileImage.isEmpty
+                      ? Text(
+                    widget.otherUserName.isNotEmpty
+                        ? widget.otherUserName[0].toUpperCase()
+                        : '?',
+                    style: TextStyle(
+                      color: widget.otherUserRole == 'technician'
+                          ? Colors.blue.shade700
+                          : Colors.green.shade700,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  )
+                      : null,
                 ),
-                // 🔥 Show blocked icon if blocked
-                if (_isBlocked) ...[
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.block,
-                    color: Colors.red,
-                    size: 16,
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 2),
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _isOtherUserOnline ? Colors.green : Colors.grey,
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          widget.otherUserName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (_isBlocked) ...[
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.block,
+                            color: Colors.red,
+                            size: 16,
+                          ),
+                        ],
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 16,
+                          color: Colors.white70,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _isOtherUserOnline ? Colors.green : Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _getLastSeenText(),
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                        if (_isOtherUserTyping) ...[
+                          const SizedBox(width: 8),
+                          const Text(
+                            'typing...',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 6),
-                Text(_getLastSeenText(), style: const TextStyle(fontSize: 10)),
-                if (_isOtherUserTyping) ...[
-                  const SizedBox(width: 8),
-                  const Text(
-                    'typing...',
-                    style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic),
-                  ),
-                ],
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
         backgroundColor: const Color(0xFF2563EB),
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+
           IconButton(
             onPressed: () => _showRequestDetails(),
             icon: const Icon(Icons.info_outline),
           ),
-          // 🔥 Block from AppBar
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {
@@ -1461,9 +1583,21 @@ class _ChatScreenState extends State<ChatScreen> {
                   targetType: 'user',
                   targetName: widget.otherUserName,
                 );
+              } else if (value == 'profile') {
+                _navigateToUserProfile();
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.person, color: Color(0xFF2563EB)),
+                    SizedBox(width: 8),
+                    Text('View Profile'),
+                  ],
+                ),
+              ),
               PopupMenuItem(
                 value: 'report',
                 child: Row(
@@ -1498,7 +1632,6 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: Stack(
               children: [
-                // 🔥 Show blocked message in chat if blocked
                 if (_isBlocked)
                   Center(
                     child: Column(
@@ -1693,56 +1826,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           if (_replyingTo != null) _buildReplyPreviewBar(),
           _buildMessageInput(),
-        ],
-      ),
-    );
-  }
-
-  // ==================== UNBLOCK USER ====================
-
-  void _showUnblockDialog(String userId, String userName) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Unblock User'),
-        content: Text('Are you sure you want to unblock $userName?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await ReportService.unblockUser(
-                  blockedUserId: userId,
-                );
-                setState(() {
-                  _isBlocked = false;
-                });
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('✅ $userName has been unblocked'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              } catch (e) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('❌ Error: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Unblock'),
-          ),
         ],
       ),
     );
