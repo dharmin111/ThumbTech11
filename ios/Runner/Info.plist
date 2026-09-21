@@ -30,13 +30,6 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>This app requires camera access to capture photos and videos.</string>
-
-	<key>NSLocationWhenInUseUsageDescription</key>
-    <string>ThumbTech uses your location to help find nearby service providers.</string>
-
-    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>ThumbTech uses your location only when necessary to provide nearby services.</string>
-
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>ThumbTech uses your location only when necessary to provide nearby services.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
@@ -75,7 +68,7 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
-
+	
 		<string>fetch</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
@@ -97,3 +90,4 @@
 	</array>
 </dict>
 </plist>
+

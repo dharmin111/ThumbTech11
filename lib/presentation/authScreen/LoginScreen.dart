@@ -189,10 +189,8 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => StepTwoScreen(
-                userId: user.uid,
-                userEmail: user.email ?? '',
-              ),
+              builder: (_) =>
+                  StepTwoScreen(userId: user.uid, userEmail: user.email ?? ''),
             ),
           );
           break;
@@ -213,10 +211,8 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => StepFourScreen(
-                userId: user.uid,
-                userEmail: user.email ?? '',
-              ),
+              builder: (_) =>
+                  StepFourScreen(userId: user.uid, userEmail: user.email ?? ''),
             ),
           );
           break;
@@ -227,10 +223,8 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => StepFiveScreen(
-                userId: user.uid,
-                userEmail: user.email ?? '',
-              ),
+              builder: (_) =>
+                  StepFiveScreen(userId: user.uid, userEmail: user.email ?? ''),
             ),
           );
           break;
@@ -239,10 +233,8 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => StepSixScreen(
-                userId: user.uid,
-                userEmail: user.email ?? '',
-              ),
+              builder: (_) =>
+                  StepSixScreen(userId: user.uid, userEmail: user.email ?? ''),
             ),
           );
           break;
@@ -370,8 +362,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.broken_image,
-                              size: 100, color: Colors.grey),
+                          Icon(
+                            Icons.broken_image,
+                            size: 100,
+                            color: Colors.grey,
+                          ),
                           SizedBox(height: 8),
                           Text(
                             'Image not found',
@@ -395,10 +390,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.transparent,                      // top clear
-                      Colors.black.withOpacity(0.15),          // thoda
-                      Colors.black.withOpacity(0.45),          // middle
-                      Colors.black.withOpacity(0.65),          // bottom dark
+                      Colors.transparent, // top clear
+                      Colors.black.withOpacity(0.15), // thoda
+                      Colors.black.withOpacity(0.45), // middle
+                      Colors.black.withOpacity(0.65), // bottom dark
                     ],
                     stops: const [0.0, 0.35, 0.55, 1.0],
                   ),
@@ -413,18 +408,21 @@ class _LoginScreenState extends State<LoginScreen> {
               child: SingleChildScrollView(
                 physics: const NeverScrollableScrollPhysics(),
                 child: Padding(
-                        padding: EdgeInsets.only(
-                        left: 25,
-                        right: 25,
-                          bottom: MediaQuery.of(context).viewInsets.bottom + 40,
-                        ),
+                  padding: EdgeInsets.only(
+                    left: 25,
+                    right: 25,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 40,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const SizedBox(height: 300), // ✅ top space (image ke text ke liye)
+                      const SizedBox(
+                        height: 300,
+                      ), // ✅ top space (image ke text ke liye)
                       const SizedBox(height: 8),
 
-                      const SizedBox(height: 40),
+
+                      const SizedBox(height: 115),
 
                       // ═══ EMAIL ═══
                       _buildTextField(
@@ -501,26 +499,23 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(18),
                               gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xff009999),
-                                  Color(0xff008976),
-                                ],
+                                colors: [Color(0xff009999), Color(0xff008976)],
                               ),
                             ),
                             child: Center(
                               child: isLoading
                                   ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
+                                      color: Colors.white,
+                                    )
                                   : const Text(
-                                "Login",
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1,
-                                ),
-                              ),
+                                      "Login",
+                                      style: TextStyle(
+                                        fontSize: 22,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
                             ),
                           ),
                         ),
@@ -532,9 +527,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextButton(
                         onPressed: _guestNavigating ? null : _continueAsGuest,
                         child: Text(
-                          _guestNavigating
-                              ? 'Opening...'
-                              : 'Visit as a Guest',
+                          _guestNavigating ? 'Opening...' : 'Visit as a Guest',
                           style: const TextStyle(
                             fontSize: 14,
                             color: Colors.white,
@@ -555,7 +548,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               value: _isTermsAccepted,
                               onChanged: (value) {
                                 setState(
-                                        () => _isTermsAccepted = value ?? false);
+                                  () => _isTermsAccepted = value ?? false,
+                                );
                               },
                               activeColor: const Color(0xff009999),
                               checkColor: Colors.white,
@@ -576,7 +570,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                    const TermsAndConditionsScreen(),
+                                        const TermsAndConditionsScreen(),
                                   ),
                                 );
                               },
@@ -690,10 +684,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
-            borderSide: const BorderSide(
-              color: Color(0xff42D7D7),
-              width: 2,
-            ),
+            borderSide: const BorderSide(color: Color(0xff42D7D7), width: 2),
           ),
         ),
       ),

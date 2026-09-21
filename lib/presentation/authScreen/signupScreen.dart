@@ -228,6 +228,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     children: [
                       // ✅ Top space — text fields neeche shift
                       const SizedBox(height: 310),
+                      const SizedBox(height: 90 ,),
 
                       // ═══ EMAIL ═══
                       _buildTextField(

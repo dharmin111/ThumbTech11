@@ -1,4 +1,3 @@
-```swift
 import UIKit
 import Flutter
 import FirebaseCore
@@ -24,4 +23,3 @@ import GoogleMaps
     )
   }
 }
-```

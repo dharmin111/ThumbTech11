@@ -16,16 +16,17 @@ class PlacesService {
     try {
       final apiKey = EnvConfig.googleMapsApiKey;
 
-      // ✅ Naya Places API (New) endpoint
-      final url = Uri.parse('https://places.googleapis.com/v1/places:searchText');
+      print('🔑 Places API Key: $apiKey');
 
-      final headers = {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': apiKey,
-        // ✅ Field mask zaroori hai — iske bagair 400 error aata hai
-        'X-Goog-FieldMask':
-        'places.displayName,places.formattedAddress,places.location',
-      };
+
+      // ✅ Naya Places API (New) endpoint
+              final url = Uri.parse('https://places.googleapis.com/v1/places:searchText');
+        final headers = {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': apiKey,
+          'X-Goog-FieldMask':
+              'places.displayName,places.formattedAddress,places.location',
+        };
 
       final body = jsonEncode({'textQuery': query});
 
