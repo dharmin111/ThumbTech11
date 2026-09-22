@@ -1,4 +1,5 @@
 // lib/services/location_service.dart
+
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -6,13 +7,19 @@ import '../model/LocationModel.dart';
 
 class LocationService {
   static final LocationService _instance = LocationService._internal();
+
   factory LocationService() => _instance;
+
   LocationService._internal();
+
+  // Geocoding v5+ instance
+  final Geocoding _geocoding = Geocoding();
 
   // ✅ Check and request location permission
   Future<bool> checkAndRequestPermission() async {
     try {
       PermissionStatus status = await Permission.location.request();
+
       return status == PermissionStatus.granted;
     } catch (e) {
       print('❌ Error requesting permission: $e');
@@ -31,10 +38,13 @@ class LocationService {
   }
 
   // ✅ Get current location with timeout
-  Future<LocationModel?> getCurrentLocation({Duration timeout = const Duration(seconds: 30)}) async {
+  Future<LocationModel?> getCurrentLocation({
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
     try {
       // Check permissions
       bool hasPermission = await checkAndRequestPermission();
+
       if (!hasPermission) {
         print('❌ Location permission denied');
         return null;
@@ -42,12 +52,13 @@ class LocationService {
 
       // Check if location services are enabled
       bool isEnabled = await isLocationServicesEnabled();
+
       if (!isEnabled) {
         print('❌ Location services are disabled');
         return null;
       }
 
-      // Get current position with timeout
+      // Get current position
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: timeout,
@@ -72,42 +83,60 @@ class LocationService {
     }
   }
 
-  Future<String> getAddressFromCoordinates(double lat, double lng) async {
+  // ✅ Get address from coordinates
+  // Compatible with geocoding 5.0.0+
+  Future<String> getAddressFromCoordinates(
+      double lat,
+      double lng,
+      ) async {
     try {
       // Validate coordinates
-      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      if (lat < -90 ||
+          lat > 90 ||
+          lng < -180 ||
+          lng > 180) {
         print('❌ Invalid coordinates: $lat, $lng');
         return 'Unknown location';
       }
 
       print('📍 Reverse geocoding: lat=$lat, lng=$lng');
 
-      final placemarks = await placemarkFromCoordinates(
+      final List<Placemark> placemarks =
+      await _geocoding.placemarkFromCoordinates(
         lat,
         lng,
       );
 
       if (placemarks.isEmpty) {
-        print('⚠️ No placemark found for: $lat, $lng');
+        print(
+          '⚠️ No placemark found for: $lat, $lng',
+        );
         return 'Unknown location';
       }
 
-      final place = placemarks.first;
+      final Placemark place = placemarks.first;
 
-      final parts = <String>[
-        if (place.street != null && place.street!.trim().isNotEmpty)
+      final List<String> parts = [
+        if (place.street != null &&
+            place.street!.trim().isNotEmpty)
           place.street!.trim(),
-        if (place.locality != null && place.locality!.trim().isNotEmpty)
+
+        if (place.locality != null &&
+            place.locality!.trim().isNotEmpty)
           place.locality!.trim(),
+
         if (place.administrativeArea != null &&
             place.administrativeArea!.trim().isNotEmpty)
           place.administrativeArea!.trim(),
-        if (place.country != null && place.country!.trim().isNotEmpty)
+
+        if (place.country != null &&
+            place.country!.trim().isNotEmpty)
           place.country!.trim(),
       ];
 
-      final address =
-      parts.isNotEmpty ? parts.join(', ') : 'Unknown location';
+      final String address = parts.isNotEmpty
+          ? parts.join(', ')
+          : 'Unknown location';
 
       print('✅ Address found: $address');
 
@@ -119,67 +148,108 @@ class LocationService {
   }
 
   // ✅ Get detailed address
-  Future<Map<String, String>> getDetailedAddress(double lat, double lng) async {
+  Future<Map<String, String>> getDetailedAddress(
+      double lat,
+      double lng,
+      ) async {
     try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
+      final List<Placemark> placemarks =
+      await _geocoding.placemarkFromCoordinates(
+        lat,
+        lng,
+      );
+
       if (placemarks.isNotEmpty) {
-        Placemark place = placemarks.first;
+        final Placemark place = placemarks.first;
+
         return {
           'street': place.street ?? '',
           'locality': place.locality ?? '',
-          'administrativeArea': place.administrativeArea ?? '',
+          'administrativeArea':
+          place.administrativeArea ?? '',
           'country': place.country ?? '',
           'postalCode': place.postalCode ?? '',
           'fullAddress': [
             place.street ?? '',
             place.locality ?? '',
             place.administrativeArea ?? '',
-            place.country ?? ''
+            place.country ?? '',
           ].where((s) => s.isNotEmpty).join(', '),
         };
       }
-      return {'fullAddress': 'Unknown location'};
+
+      return {
+        'fullAddress': 'Unknown location',
+      };
     } catch (e) {
       print('❌ Error getting detailed address: $e');
-      return {'fullAddress': 'Unknown location'};
+
+      return {
+        'fullAddress': 'Unknown location',
+      };
     }
   }
 
   // ✅ Extract place name from address
   String _extractPlaceName(String address) {
-    if (address.isEmpty) return 'Unknown';
-    List<String> parts = address.split(',');
-    return parts.isNotEmpty ? parts[0].trim() : 'Unknown';
+    if (address.isEmpty) {
+      return 'Unknown';
+    }
+
+    final List<String> parts = address.split(',');
+
+    return parts.isNotEmpty
+        ? parts[0].trim()
+        : 'Unknown';
   }
 
-  // ✅ Get location updates (stream)
+  // ✅ Get location updates stream
   Stream<LocationModel> getLocationUpdates() async* {
     try {
+      // Check permission
       bool hasPermission = await checkAndRequestPermission();
+
       if (!hasPermission) {
         print('❌ Location permission denied');
         return;
       }
 
+      // Check location services
+      bool isEnabled = await isLocationServicesEnabled();
+
+      if (!isEnabled) {
+        print('❌ Location services are disabled');
+        return;
+      }
+
       // Listen to position changes
-      await for (Position position in Geolocator.getPositionStream(
+      await for (Position position
+      in Geolocator.getPositionStream(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
-          distanceFilter: 10, // Update every 10 meters
+          distanceFilter: 10,
         ),
       )) {
-        String address = await getAddressFromCoordinates(
-          position.latitude,
-          position.longitude,
-        );
+        try {
+          // Reverse geocode
+          String address =
+          await getAddressFromCoordinates(
+            position.latitude,
+            position.longitude,
+          );
 
-        yield LocationModel(
-          latitude: position.latitude,
-          longitude: position.longitude,
-          address: address,
-          placeName: _extractPlaceName(address),
-          timestamp: DateTime.now(),
-        );
+          yield LocationModel(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            address: address,
+            placeName: _extractPlaceName(address),
+            timestamp: DateTime.now(),
+          );
+        } catch (e) {
+          print(
+            '❌ Error processing location update: $e',
+          );
+        }
       }
     } catch (e) {
       print('❌ Error in location stream: $e');
@@ -187,7 +257,10 @@ class LocationService {
   }
 
   // ✅ Calculate distance between two locations
-  double calculateDistance(LocationModel loc1, LocationModel loc2) {
+  double calculateDistance(
+      LocationModel loc1,
+      LocationModel loc2,
+      ) {
     return Geolocator.distanceBetween(
       loc1.latitude,
       loc1.longitude,
@@ -200,8 +273,8 @@ class LocationService {
   String formatDistance(double distanceInMeters) {
     if (distanceInMeters < 1000) {
       return '${distanceInMeters.toStringAsFixed(0)} m';
-    } else {
-      return '${(distanceInMeters / 1000).toStringAsFixed(1)} km';
     }
+
+    return '${(distanceInMeters / 1000).toStringAsFixed(1)} km';
   }
 }

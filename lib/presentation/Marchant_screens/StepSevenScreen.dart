@@ -78,9 +78,34 @@ class _StepSevenScreenState extends State<StepSevenScreen> {
     return Scaffold(
       appBar: AppBar(
         actions: [
-          OutlinedButton(onPressed: (){
-            logout();
-          }, child: Text('Logout',style: TextStyle(color: darkTeal),))
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: ElevatedButton.icon(
+              onPressed: logout,
+              icon: const Icon(
+                Icons.logout_rounded,
+                size: 18,
+              ),
+              label: const Text(
+                'Logout',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00695C),
+                foregroundColor: Colors.white,
+                elevation: 2,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
       backgroundColor: Colors.white,

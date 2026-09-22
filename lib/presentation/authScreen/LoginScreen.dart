@@ -12,9 +12,7 @@ import 'package:thumstechs/presentation/Marchant_screens/StepThreeScreen.dart';
 import 'package:thumstechs/presentation/Marchant_screens/StepFourScreen.dart';
 import 'package:thumstechs/presentation/Marchant_screens/StepFiveScreen.dart';
 import 'package:thumstechs/presentation/Marchant_screens/StepSixScreen.dart';
-import 'package:thumstechs/presentation/TechnicianScreen/TechnicianHomeScreen.dart';
 import 'package:thumstechs/presentation/authScreen/signupScreen.dart';
-import '../../Admin/AdminScreens/AdminLoginScreen.dart';
 import '../../Admin/AdminScreens/AdminPendingScreen.dart';
 import '../../Admin/AdminScreens/AdminDashboard.dart';
 import '../../Services/authServices.dart';
@@ -47,6 +45,10 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // ============================================================
+  // LOGIN
+  // ============================================================
+
   Future<void> loginUser() async {
     if (!_isTermsAccepted) {
       _showSnack(
@@ -65,6 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       final user = result.user;
+
       if (user == null) return;
 
       final doc = await FirebaseFirestore.instance
@@ -76,72 +79,119 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!doc.exists || doc.data() == null) {
         await FirebaseAuth.instance.signOut();
+
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          MaterialPageRoute(
+            builder: (_) => const LoginScreen(),
+          ),
         );
+
         return;
       }
 
       final data = doc.data()!;
+
       final isActive = data['isActive'] ?? true;
 
       if (!isActive) {
         await FirebaseAuth.instance.signOut();
+
         _showSnack(
           'Your account has been deactivated. Please contact admin +917087234563',
           Colors.red,
         );
+
         return;
       }
 
       final role = data['role'] ?? 'customer';
-      await _saveOneSignalId(user.uid, role);
 
-      _showSnack("Login Successful", Colors.green);
+      await _saveOneSignalId(
+        user.uid,
+        role,
+      );
 
-      // ✅ MERCHANT
+      _showSnack(
+        "Login Successful",
+        Colors.green,
+      );
+
+      // ============================================================
+      // MERCHANT
+      // ============================================================
+
       if (role == "merchant") {
         await _handleMerchantNavigation(user);
       }
-      // ✅ CUSTOMER
+
+      // ============================================================
+      // CUSTOMER
+      // ============================================================
+
       else if (role == "customer") {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const CustomerDashboard()),
+          MaterialPageRoute(
+            builder: (_) => const CustomerDashboard(),
+          ),
         );
       }
-      // ✅ TECHNICIAN
+
+      // ============================================================
+      // TECHNICIAN
+      // ============================================================
+
       else if (role == "technician") {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const TechnicianDashboard()),
+          MaterialPageRoute(
+            builder: (_) => const TechnicianDashboard(),
+          ),
         );
       }
-      // ✅ ADMIN
+
+      // ============================================================
+      // ADMIN
+      // ============================================================
+
       else if (role == "admin") {
         final isApproved = data['isApproved'] ?? false;
+
         if (isApproved) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const AdminDashboard()),
+            MaterialPageRoute(
+              builder: (_) => const AdminDashboard(),
+            ),
           );
         } else {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const AdminPendingScreen()),
+            MaterialPageRoute(
+              builder: (_) => const AdminPendingScreen(),
+            ),
           );
         }
       }
-      // ✅ DEFAULT
+
+      // ============================================================
+      // DEFAULT
+      // ============================================================
+
       else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          MaterialPageRoute(
+            builder: (_) => const LoginScreen(),
+          ),
         );
       }
     } catch (e) {
-      _showSnack(e.toString(), Colors.red);
+      _showSnack(
+        e.toString(),
+        Colors.red,
+      );
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -149,7 +199,10 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // ✅ MERCHANT NAVIGATION LOGIC (UNCHANGED)
+  // ============================================================
+  // MERCHANT NAVIGATION
+  // ============================================================
+
   Future<void> _handleMerchantNavigation(User user) async {
     try {
       print('═══════════════════════════════════════════');
@@ -164,8 +217,12 @@ class _LoginScreenState extends State<LoginScreen> {
           .get();
 
       if (!merchantDoc.exists) {
-        print('❌ No merchant data found → MerchantDetailScreen');
+        print(
+          '❌ No merchant data found → MerchantDetailScreen',
+        );
+
         if (!mounted) return;
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -175,11 +232,16 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         );
+
         return;
       }
 
-      final merchantData = merchantDoc.data() as Map<String, dynamic>;
-      final status = merchantData['status'] ?? 'pending';
+      final merchantData =
+      merchantDoc.data() as Map<String, dynamic>;
+
+      final status =
+          merchantData['status'] ?? 'pending';
+
       print('📌 Merchant Status: $status');
 
       if (!mounted) return;
@@ -189,8 +251,10 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  StepTwoScreen(userId: user.uid, userEmail: user.email ?? ''),
+              builder: (_) => StepTwoScreen(
+                userId: user.uid,
+                userEmail: user.email ?? '',
+              ),
             ),
           );
           break;
@@ -211,8 +275,10 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  StepFourScreen(userId: user.uid, userEmail: user.email ?? ''),
+              builder: (_) => StepFourScreen(
+                userId: user.uid,
+                userEmail: user.email ?? '',
+              ),
             ),
           );
           break;
@@ -223,8 +289,10 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  StepFiveScreen(userId: user.uid, userEmail: user.email ?? ''),
+              builder: (_) => StepFiveScreen(
+                userId: user.uid,
+                userEmail: user.email ?? '',
+              ),
             ),
           );
           break;
@@ -233,15 +301,20 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  StepSixScreen(userId: user.uid, userEmail: user.email ?? ''),
+              builder: (_) => StepSixScreen(
+                userId: user.uid,
+                userEmail: user.email ?? '',
+              ),
             ),
           );
           break;
 
         case 'active':
         case 'approved':
-          print('➡️ Status: $status → Merchant Dashboard');
+          print(
+            '➡️ Status: $status → Merchant Dashboard',
+          );
+
           // TODO: Merchant Dashboard
           break;
 
@@ -257,8 +330,12 @@ class _LoginScreenState extends State<LoginScreen> {
           );
       }
     } catch (e) {
-      print('❌ Error in merchant navigation: $e');
+      print(
+        '❌ Error in merchant navigation: $e',
+      );
+
       if (!mounted) return;
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -271,55 +348,107 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _saveOneSignalId(String userId, String role) async {
+  // ============================================================
+  // ONESIGNAL
+  // ============================================================
+
+  Future<void> _saveOneSignalId(
+      String userId,
+      String role,
+      ) async {
     try {
       await OneSignalNotificationService.initialize();
 
       String? oneSignalId;
+
       for (int i = 0; i < 10; i++) {
-        oneSignalId = OneSignal.User.pushSubscription.id;
-        if (oneSignalId != null && oneSignalId.isNotEmpty) break;
-        await Future.delayed(const Duration(milliseconds: 500));
+        oneSignalId =
+            OneSignal.User.pushSubscription.id;
+
+        if (oneSignalId != null &&
+            oneSignalId.isNotEmpty) {
+          break;
+        }
+
+        await Future.delayed(
+          const Duration(milliseconds: 500),
+        );
       }
 
-      if (oneSignalId == null || oneSignalId.isEmpty) {
-        print("❌ OneSignal ID not available yet");
+      if (oneSignalId == null ||
+          oneSignalId.isEmpty) {
+        print(
+          "❌ OneSignal ID not available yet",
+        );
+
         return;
       }
 
-      await FirebaseFirestore.instance.collection("users").doc(userId).set({
-        'oneSignalId': oneSignalId,
-        'role': role,
-        'lastTokenUpdate': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(userId)
+          .set(
+        {
+          'oneSignalId': oneSignalId,
+          'role': role,
+          'lastTokenUpdate':
+          FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
 
-      print('✅ OneSignal ID saved: $oneSignalId');
+      print(
+        '✅ OneSignal ID saved: $oneSignalId',
+      );
     } catch (e) {
-      print('❌ Error saving OneSignal ID: $e');
+      print(
+        '❌ Error saving OneSignal ID: $e',
+      );
     }
   }
 
-  // ✅ GUEST LOGIN
+  // ============================================================
+  // GUEST LOGIN
+  // ============================================================
+
   Future<void> _continueAsGuest() async {
     if (_guestNavigating) return;
+
     setState(() => _guestNavigating = true);
 
     try {
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => const CustomerDashboard(isGuest: true),
+          builder: (_) => const CustomerDashboard(
+            isGuest: true,
+          ),
         ),
       );
     } catch (e) {
-      _showSnack('Error: $e', Colors.red);
+      _showSnack(
+        'Error: $e',
+        Colors.red,
+      );
     } finally {
-      if (mounted) setState(() => _guestNavigating = false);
+      if (mounted) {
+        setState(
+              () => _guestNavigating = false,
+        );
+      }
     }
   }
 
-  void _showSnack(String msg, Color color) {
+  // ============================================================
+  // SNACKBAR
+  // ============================================================
+
+  void _showSnack(
+      String msg,
+      Color color,
+      ) {
     if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
@@ -329,38 +458,47 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // BUILD — Image poori screen par, Stack mein content
-  // ═══════════════════════════════════════════════════════
+  // ============================================================
+  // BUILD
+  // ============================================================
+
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
+
     return Scaffold(
-      // ✅ Image ka base color — taake black area na dikhe
       backgroundColor: const Color(0xFF4A6B7C),
 
-      // ✅ resizeToAvoidBottomInset — keyboard khulne par layout adjust ho
+      // Keyboard opens → screen remains stable
       resizeToAvoidBottomInset: false,
 
       body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
         child: Stack(
+          fit: StackFit.expand,
           children: [
-            // ═══════════════════════════════════════════════
-            // ✅ LAYER 1: IMAGE — POORI SCREEN PAR (Stretch)
-            // ═══════════════════════════════════════════════
+
+            // ======================================================
+            // BACKGROUND IMAGE
+            // ======================================================
+
             Positioned.fill(
               child: Image.asset(
                 'assets/images/signUpUI.PNG',
-                // ✅ fill = poori screen par stretch (koi black area nahi)
                 fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                errorBuilder: (context, error, stackTrace) {
+                errorBuilder:
+                    (context, error, stackTrace) {
                   return Container(
                     color: const Color(0xFF4A6B7C),
                     child: const Center(
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisAlignment:
+                        MainAxisAlignment.center,
                         children: [
                           Icon(
                             Icons.broken_image,
@@ -370,7 +508,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           SizedBox(height: 8),
                           Text(
                             'Image not found',
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(
+                              color: Colors.grey,
+                            ),
                           ),
                         ],
                       ),
@@ -380,9 +520,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
 
-            // ═══════════════════════════════════════════════
-            // ✅ LAYER 2: DARK OVERLAY (sirf neeche, fields ke liye)
-            // ═══════════════════════════════════════════════
+            // ======================================================
+            // DARK GRADIENT
+            // ======================================================
+
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -390,251 +531,475 @@ class _LoginScreenState extends State<LoginScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.transparent, // top clear
-                      Colors.black.withOpacity(0.15), // thoda
-                      Colors.black.withOpacity(0.45), // middle
-                      Colors.black.withOpacity(0.65), // bottom dark
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.15),
+                      Colors.black.withOpacity(0.45),
+                      Colors.black.withOpacity(0.65),
                     ],
-                    stops: const [0.0, 0.35, 0.55, 1.0],
+                    stops: const [
+                      0.0,
+                      0.35,
+                      0.55,
+                      1.0,
+                    ],
                   ),
                 ),
               ),
             ),
 
-            // ═══════════════════════════════════════════════
-            // ✅ LAYER 3: SCROLLABLE CONTENT
-            // ═══════════════════════════════════════════════
+            // ======================================================
+            // RESPONSIVE CONTENT
+            // ======================================================
+
             SafeArea(
-              child: SingleChildScrollView(
-                physics: const NeverScrollableScrollPhysics(),
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    left: 25,
-                    right: 25,
-                    bottom: MediaQuery.of(context).viewInsets.bottom + 40,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(
-                        height: 300,
-                      ), // ✅ top space (image ke text ke liye)
-                      const SizedBox(height: 8),
+              child: LayoutBuilder(
+                builder: (
+                    context,
+                    constraints,
+                    ) {
+                  final height =
+                      constraints.maxHeight;
 
+                  /*
+                   * Responsive top space.
+                   *
+                   * Small phone:
+                   * around 250-270
+                   *
+                   * Normal phone:
+                   * around 290-320
+                   *
+                   * Large phone:
+                   * around 330+
+                   */
 
-                      const SizedBox(height: 115),
+                  double topSpace =
+                      height * 0.40;
 
-                      // ═══ EMAIL ═══
-                      _buildTextField(
-                        controller: emailController,
-                        hint: "Email",
-                        icon: Icons.email,
-                        keyboardType: TextInputType.emailAddress,
+                  // Prevent it becoming too small
+                  if (topSpace < 250) {
+                    topSpace = 250;
+                  }
+
+                  // Prevent it becoming excessively large
+                  if (topSpace > 360) {
+                    topSpace = 360;
+                  }
+
+                  /*
+                   * Responsive horizontal padding.
+                   */
+
+                  double horizontalPadding =
+                      screenWidth * 0.065;
+
+                  if (horizontalPadding < 20) {
+                    horizontalPadding = 20;
+                  }
+
+                  if (horizontalPadding > 30) {
+                    horizontalPadding = 30;
+                  }
+
+                  return SingleChildScrollView(
+                    physics:
+                    const BouncingScrollPhysics(),
+
+                    keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior
+                        .onDrag,
+
+                    padding: EdgeInsets.only(
+                      left: horizontalPadding,
+                      right: horizontalPadding,
+                      top: topSpace,
+                      bottom:
+                      // mediaQuery.viewInsets.bottom +
+                          30,
+                    ),
+
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight:
+                        height -
+                            topSpace -
+                            30,
                       ),
 
-                      const SizedBox(height: 18),
+                      child: Column(
+                        crossAxisAlignment:
+                        CrossAxisAlignment.stretch,
 
-                      // ═══ PASSWORD ═══
-                      _buildTextField(
-                        controller: passwordController,
-                        hint: "Password",
-                        icon: Icons.lock,
-                        obscureText: _obscurePassword,
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 4),
-
-                      // ═══ FORGOT PASSWORD ═══
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ForgotPasswordScreen(),
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            "Forgot Password?",
-                            style: TextStyle(
-                              color: Color(0xff42D7D7),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // ═══ LOGIN BUTTON ═══
-                      SizedBox(
-                        height: 50,
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: isLoading ? null : loginUser,
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            backgroundColor: Colors.transparent,
-                            padding: EdgeInsets.zero,
-                            elevation: 0,
-                          ),
-                          child: Ink(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(18),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xff009999), Color(0xff008976)],
-                              ),
-                            ),
-                            child: Center(
-                              child: isLoading
-                                  ? const CircularProgressIndicator(
-                                      color: Colors.white,
-                                    )
-                                  : const Text(
-                                      "Login",
-                                      style: TextStyle(
-                                        fontSize: 22,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 1,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // ═══ GUEST LOGIN ═══
-                      TextButton(
-                        onPressed: _guestNavigating ? null : _continueAsGuest,
-                        child: Text(
-                          _guestNavigating ? 'Opening...' : 'Visit as a Guest',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // ═══ TERMS ═══
-                      Row(
                         children: [
-                          SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: Checkbox(
-                              value: _isTermsAccepted,
-                              onChanged: (value) {
-                                setState(
-                                  () => _isTermsAccepted = value ?? false,
-                                );
+
+                          // ==================================================
+                          // EMAIL
+                          // ==================================================
+
+                          _buildTextField(
+                            controller:
+                            emailController,
+                            hint: "Email",
+                            icon: Icons.email,
+                            keyboardType:
+                            TextInputType.emailAddress,
+                          ),
+
+                          const SizedBox(
+                            height: 18,
+                          ),
+
+                          // ==================================================
+                          // PASSWORD
+                          // ==================================================
+
+                          _buildTextField(
+                            controller:
+                            passwordController,
+                            hint: "Password",
+                            icon: Icons.lock,
+                            obscureText:
+                            _obscurePassword,
+
+                            suffixIcon:
+                            IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword =
+                                  !_obscurePassword;
+                                });
                               },
-                              activeColor: const Color(0xff009999),
-                              checkColor: Colors.white,
-                              side: const BorderSide(
-                                color: Colors.white70,
-                                width: 1.5,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(5),
+
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons
+                                    .visibility_off
+                                    : Icons.visibility,
+                                color:
+                                Colors.white70,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () {
+
+                          const SizedBox(
+                            height: 4,
+                          ),
+
+                          // ==================================================
+                          // FORGOT PASSWORD
+                          // ==================================================
+
+                          Align(
+                            alignment:
+                            Alignment.centerRight,
+
+                            child: TextButton(
+                              onPressed: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        const TermsAndConditionsScreen(),
+                                    builder: (_) =>
+                                    const ForgotPasswordScreen(),
                                   ),
                                 );
                               },
-                              child: RichText(
-                                text: TextSpan(
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white.withOpacity(0.9),
+
+                              child: const Text(
+                                "Forgot Password?",
+                                style: TextStyle(
+                                  color:
+                                  Color(0xff42D7D7),
+                                  fontWeight:
+                                  FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(
+                            height: 8,
+                          ),
+
+                          // ==================================================
+                          // LOGIN BUTTON
+                          // ==================================================
+
+                          SizedBox(
+                            height: 50,
+                            width: double.infinity,
+
+                            child: ElevatedButton(
+                              onPressed:
+                              isLoading
+                                  ? null
+                                  : loginUser,
+
+                              style:
+                              ElevatedButton.styleFrom(
+                                shape:
+                                RoundedRectangleBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                    18,
                                   ),
-                                  children: const [
-                                    TextSpan(text: 'I agree to the '),
-                                    TextSpan(
-                                      text: 'Terms & Conditions',
-                                      style: TextStyle(
-                                        color: Color(0xff42D7D7),
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                ),
+
+                                backgroundColor:
+                                Colors.transparent,
+
+                                padding:
+                                EdgeInsets.zero,
+
+                                elevation: 0,
+                              ),
+
+                              child: Ink(
+                                decoration:
+                                BoxDecoration(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                    18,
+                                  ),
+
+                                  gradient:
+                                  const LinearGradient(
+                                    colors: [
+                                      Color(0xff009999),
+                                      Color(0xff008976),
+                                    ],
+                                  ),
+                                ),
+
+                                child: Center(
+                                  child: isLoading
+                                      ? const CircularProgressIndicator(
+                                    color:
+                                    Colors.white,
+                                  )
+                                      : const Text(
+                                    "Login",
+                                    style:
+                                    TextStyle(
+                                      fontSize: 22,
+                                      color:
+                                      Colors.white,
+                                      fontWeight:
+                                      FontWeight.bold,
+                                      letterSpacing:
+                                      1,
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ],
-                      ),
 
-                      const SizedBox(height: 12),
-
-                      // ═══ SIGNUP LINK ═══
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Don't have an account?",
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 14,
-                            ),
+                          const SizedBox(
+                            height: 8,
                           ),
+
+                          // ==================================================
+                          // GUEST LOGIN
+                          // ==================================================
+
                           TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SignupScreen(),
-                                ),
-                              );
-                            },
-                            child: const Text(
-                              "Signup",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xff42D7D7),
+                            onPressed:
+                            _guestNavigating
+                                ? null
+                                : _continueAsGuest,
+
+                            child: Text(
+                              _guestNavigating
+                                  ? 'Opening...'
+                                  : 'Visit as a Guest',
+
+                              style:
+                              const TextStyle(
+                                fontSize: 14,
+                                color: Colors.white,
+                                fontWeight:
+                                FontWeight.w600,
                               ),
                             ),
                           ),
+
+                          const SizedBox(
+                            height: 8,
+                          ),
+
+                          // ==================================================
+                          // TERMS
+                          // ==================================================
+
+                          Row(
+                            crossAxisAlignment:
+                            CrossAxisAlignment.center,
+
+                            children: [
+
+                              SizedBox(
+                                width: 24,
+                                height: 24,
+
+                                child: Checkbox(
+                                  value:
+                                  _isTermsAccepted,
+
+                                  onChanged: (value) {
+                                    setState(
+                                          () =>
+                                      _isTermsAccepted =
+                                          value ??
+                                              false,
+                                    );
+                                  },
+
+                                  activeColor:
+                                  const Color(
+                                    0xff009999,
+                                  ),
+
+                                  checkColor:
+                                  Colors.white,
+
+                                  side:
+                                  const BorderSide(
+                                    color:
+                                    Colors.white70,
+                                    width: 1.5,
+                                  ),
+
+                                  shape:
+                                  RoundedRectangleBorder(
+                                    borderRadius:
+                                    BorderRadius
+                                        .circular(
+                                      5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(
+                                width: 8,
+                              ),
+
+                              Expanded(
+                                child:
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                        const TermsAndConditionsScreen(),
+                                      ),
+                                    );
+                                  },
+
+                                  child: RichText(
+                                    text: TextSpan(
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors
+                                            .white
+                                            .withOpacity(
+                                          0.9,
+                                        ),
+                                      ),
+
+                                      children:
+                                      const [
+                                        TextSpan(
+                                          text:
+                                          'I agree to the ',
+                                        ),
+
+                                        TextSpan(
+                                          text:
+                                          'Terms & Conditions',
+                                          style:
+                                          TextStyle(
+                                            color:
+                                            Color(
+                                              0xff42D7D7,
+                                            ),
+                                            fontWeight:
+                                            FontWeight
+                                                .bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(
+                            height: 12,
+                          ),
+
+                          // ==================================================
+                          // SIGNUP
+                          // ==================================================
+
+                          Row(
+                            mainAxisAlignment:
+                            MainAxisAlignment.center,
+
+                            children: [
+
+                              Flexible(
+                                child: Text(
+                                  "Don't have an account?",
+                                  style: TextStyle(
+                                    color: Colors.white
+                                        .withOpacity(
+                                      0.9,
+                                    ),
+                                    fontSize: 14,
+                                  ),
+                                  overflow:
+                                  TextOverflow
+                                      .ellipsis,
+                                ),
+                              ),
+
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                      const SignupScreen(),
+                                    ),
+                                  );
+                                },
+
+                                child: const Text(
+                                  "Signup",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight:
+                                    FontWeight.bold,
+                                    color:
+                                    Color(0xff42D7D7),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(
+                            height: 20,
+                          ),
                         ],
                       ),
-
-                      const SizedBox(height: 40),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -643,9 +1008,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // HELPER: Glassy TextField
-  // ═══════════════════════════════════════════════════════
+  // ============================================================
+  // TEXT FIELD
+  // ============================================================
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
@@ -656,35 +1022,67 @@ class _LoginScreenState extends State<LoginScreen> {
   }) {
     return SizedBox(
       height: 50,
+
       child: TextField(
         controller: controller,
+
         keyboardType: keyboardType,
+
         obscureText: obscureText,
-        style: const TextStyle(color: Colors.white),
+
+        style: const TextStyle(
+          color: Colors.white,
+        ),
+
         decoration: InputDecoration(
           filled: true,
-          fillColor: Colors.white.withOpacity(0.15),
+
+          fillColor:
+          Colors.white.withOpacity(0.15),
+
           hintText: hint,
-          hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-          prefixIcon: Icon(icon, color: Colors.white70),
+
+          hintStyle: TextStyle(
+            color: Colors.white.withOpacity(0.7),
+          ),
+
+          prefixIcon: Icon(
+            icon,
+            color: Colors.white70,
+          ),
+
           suffixIcon: suffixIcon,
+
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius:
+            BorderRadius.circular(18),
+
             borderSide: BorderSide(
-              color: Colors.white.withOpacity(0.4),
+              color:
+              Colors.white.withOpacity(0.4),
               width: 1.5,
             ),
           ),
+
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius:
+            BorderRadius.circular(18),
+
             borderSide: BorderSide(
-              color: Colors.white.withOpacity(0.4),
+              color:
+              Colors.white.withOpacity(0.4),
               width: 1.5,
             ),
           ),
+
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: const BorderSide(color: Color(0xff42D7D7), width: 2),
+            borderRadius:
+            BorderRadius.circular(18),
+
+            borderSide: const BorderSide(
+              color: Color(0xff42D7D7),
+              width: 2,
+            ),
           ),
         ),
       ),

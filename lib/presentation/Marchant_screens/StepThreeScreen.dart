@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:thumstechs/presentation/Marchant_screens/StepSixScreen.dart';
+import '../../Services/authServices.dart';
+import '../authScreen/LoginScreen.dart';
 import 'StepFourScreen.dart';
 
 class StepThreeScreen extends StatefulWidget {
@@ -70,8 +72,64 @@ class _StepThreeScreenState extends State<StepThreeScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        FocusScope.of(context).unfocus();
+      }
+    });
+  }
+  Future<void> logout() async {
+    AuthService authService = AuthService();
+
+    await authService.logout();
+
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+            (route) => false,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: ElevatedButton.icon(
+              onPressed: logout,
+              icon: const Icon(
+                Icons.logout_rounded,
+                size: 18,
+              ),
+              label: const Text(
+                'Logout',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00695C), // Dark Teal
+                foregroundColor: Colors.white,
+                elevation: 2,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(

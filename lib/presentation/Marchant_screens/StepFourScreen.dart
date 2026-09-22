@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../../Services/authServices.dart';
+import '../authScreen/LoginScreen.dart';
 import 'StepFiveScreen.dart';
 
 class StepFourScreen extends StatefulWidget {
@@ -22,9 +24,11 @@ class StepFourScreen extends StatefulWidget {
 
 class _StepFourScreenState extends State<StepFourScreen> {
   final ImagePicker _picker = ImagePicker();
+
+  // ✅ Sirf naye images (jo isi screen par add honge)
   List<File> _images = [];
-  List<String> _existingImageUrls = [];
-  bool _isLoading = true;
+
+  bool _isLoading = false;
   bool _isUploading = false;
 
   final tealColor = const Color(0xFF006B6B);
@@ -32,47 +36,13 @@ class _StepFourScreenState extends State<StepFourScreen> {
   @override
   void initState() {
     super.initState();
-    // ✅ Load images AFTER first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadExistingImages();
-    });
+    // ✅ Koi existing images load nahi karni
+    // Sirf naye images jo user add karega
   }
 
-  // ✅ Load existing images from Firestore
-  Future<void> _loadExistingImages() async {
-    setState(() => _isLoading = true);
-
-    try {
-      print('📥 Loading images for userId: ${widget.userId}');
-
-      final doc = await FirebaseFirestore.instance
-          .collection('merchants')
-          .doc(widget.userId)
-          .get();
-
-      if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>;
-        final urls = data['storePhotoUrls'] as List<dynamic>?;
-
-        print('📥 Found ${urls?.length ?? 0} images in Firestore');
-
-        if (urls != null && urls.isNotEmpty) {
-          setState(() {
-            _existingImageUrls = urls.map((e) => e.toString()).toList();
-          });
-          print('✅ Loaded ${_existingImageUrls.length} existing images');
-        }
-      } else {
-        print('❌ Merchant document does not exist');
-      }
-    } catch (e) {
-      print('❌ Error loading images: $e');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  // ✅ Show Bottom Sheet for Image Source Selection
+  // ═══════════════════════════════════════════════════════
+  // SHOW IMAGE SOURCE DIALOG
+  // ═══════════════════════════════════════════════════════
   Future<void> _showImageSourceDialog() async {
     final totalImages = getTotalImagesCount();
     if (totalImages >= 5) {
@@ -173,14 +143,19 @@ class _StepFourScreenState extends State<StepFourScreen> {
     );
   }
 
+  // ═══════════════════════════════════════════════════════
+  // PICK SINGLE IMAGE (Camera)
+  // ═══════════════════════════════════════════════════════
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
         imageQuality: 80,
       );
+
       if (image != null) {
         final totalImages = getTotalImagesCount();
+
         if (totalImages >= 5) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -190,6 +165,7 @@ class _StepFourScreenState extends State<StepFourScreen> {
           );
           return;
         }
+
         setState(() {
           _images.add(File(image.path));
         });
@@ -199,6 +175,9 @@ class _StepFourScreenState extends State<StepFourScreen> {
     }
   }
 
+  // ═══════════════════════════════════════════════════════
+  // PICK MULTIPLE IMAGES (Gallery)
+  // ═══════════════════════════════════════════════════════
   Future<void> _pickMultipleImages() async {
     try {
       final totalImages = getTotalImagesCount();
@@ -220,9 +199,11 @@ class _StepFourScreenState extends State<StepFourScreen> {
 
       if (images.isNotEmpty) {
         int addedCount = 0;
+
         for (var image in images) {
           final currentTotal = getTotalImagesCount();
           if (currentTotal >= 5) break;
+
           setState(() {
             _images.add(File(image.path));
             addedCount++;
@@ -241,56 +222,34 @@ class _StepFourScreenState extends State<StepFourScreen> {
     }
   }
 
+  // ═══════════════════════════════════════════════════════
+  // REMOVE IMAGE
+  // ═══════════════════════════════════════════════════════
   void _removeImage(int index) {
     setState(() {
       _images.removeAt(index);
     });
   }
 
+  // ═══════════════════════════════════════════════════════
+  // TOTAL IMAGES COUNT — SIRF NAYE
+  // ═══════════════════════════════════════════════════════
   int getTotalImagesCount() {
-    return _existingImageUrls.length + _images.length;
+    return _images.length;
   }
 
+  // ═══════════════════════════════════════════════════════
+  // UPLOAD IMAGES & PROCEED
+  // ═══════════════════════════════════════════════════════
   Future<void> _uploadImagesAndProceed() async {
     if (getTotalImagesCount() < 5) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please upload ${5 - getTotalImagesCount()} more photo(s)'),
+          content:
+          Text('Please upload ${5 - getTotalImagesCount()} more photo(s)'),
           backgroundColor: Colors.orange,
         ),
       );
-      return;
-    }
-
-    // ✅ If no new images, just proceed
-    if (_images.isEmpty) {
-      await FirebaseFirestore.instance
-          .collection('merchants')
-          .doc(widget.userId)
-          .update({
-        'status': 'waiting',
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userId)
-          .update({
-        'merchantStatus': 'waiting',
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => StepFiveScreen(
-              userId: widget.userId,
-              userEmail: widget.userEmail,
-            ),
-          ),
-        );
-      }
       return;
     }
 
@@ -300,24 +259,26 @@ class _StepFourScreenState extends State<StepFourScreen> {
     });
 
     try {
+      // ✅ Upload naye images
       List<String> imageUrls = [];
+
       for (int i = 0; i < _images.length; i++) {
         final file = _images[i];
-        final ref = FirebaseStorage.instance
-            .ref()
-            .child('merchants/${widget.userId}/store_photos/${DateTime.now().millisecondsSinceEpoch}_$i.jpg');
+        final ref = FirebaseStorage.instance.ref().child(
+          'merchants/${widget.userId}/store_photos/'
+              '${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
+        );
         await ref.putFile(file);
         final url = await ref.getDownloadURL();
         imageUrls.add(url);
       }
 
-      final allUrls = [..._existingImageUrls, ...imageUrls];
-
+      // ✅ Purane storePhotoUrls REPLACE karein naye URLs se
       await FirebaseFirestore.instance
           .collection('merchants')
           .doc(widget.userId)
           .update({
-        'storePhotoUrls': allUrls,
+        'storePhotoUrls': imageUrls,
         'status': 'verified',
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -359,9 +320,27 @@ class _StepFourScreenState extends State<StepFourScreen> {
     }
   }
 
+  // ═══════════════════════════════════════════════════════
+  // LOGOUT
+  // ═══════════════════════════════════════════════════════
+  Future<void> logout() async {
+    AuthService authService = AuthService();
+    await authService.logout();
+
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+            (route) => false,
+      );
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // BUILD
+  // ═══════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    // ✅ Loading Screen
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Colors.white,
@@ -374,14 +353,49 @@ class _StepFourScreenState extends State<StepFourScreen> {
     final totalImages = getTotalImagesCount();
 
     return Scaffold(
+      appBar: AppBar(
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: ElevatedButton.icon(
+              onPressed: logout,
+              icon: const Icon(
+                Icons.logout_rounded,
+                size: 18,
+              ),
+              label: const Text(
+                'Logout',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00695C),
+                foregroundColor: Colors.white,
+                elevation: 2,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24.0,
+            vertical: 16.0,
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // ✅ Top Image
+              // ═══ TOP IMAGE ═══
               Expanded(
                 flex: 2,
                 child: Container(
@@ -437,7 +451,7 @@ class _StepFourScreenState extends State<StepFourScreen> {
 
               const SizedBox(height: 12),
 
-              // ✅ Upload Area - Photos Grid
+              // ═══ UPLOAD AREA ═══
               GestureDetector(
                 onTap: _showImageSourceDialog,
                 child: Container(
@@ -447,11 +461,14 @@ class _StepFourScreenState extends State<StepFourScreen> {
                     color: Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: totalImages >= 5 ? Colors.green.shade300 : Colors.grey.shade300,
+                      color: totalImages >= 5
+                          ? Colors.green.shade300
+                          : Colors.grey.shade300,
                       width: totalImages >= 5 ? 2 : 1,
                     ),
                   ),
-                  child: _images.isEmpty && _existingImageUrls.isEmpty
+                  child: _images.isEmpty
+                  // ═══ EMPTY STATE ═══
                       ? Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -477,70 +494,48 @@ class _StepFourScreenState extends State<StepFourScreen> {
                       ),
                     ],
                   )
+                  // ═══ GRID WITH NAYE IMAGES ═══
                       : GridView.builder(
                     padding: const EdgeInsets.all(8),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       crossAxisSpacing: 4,
                       mainAxisSpacing: 4,
                     ),
                     itemCount: totalImages > 5 ? 5 : totalImages,
                     itemBuilder: (context, index) {
-                      final isExisting = index < _existingImageUrls.length;
-                      final imageIndex = isExisting ? index : index - _existingImageUrls.length;
-
                       return Stack(
                         children: [
                           Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(8),
                               image: DecorationImage(
-                                image: isExisting
-                                    ? NetworkImage(_existingImageUrls[imageIndex])
-                                    : FileImage(_images[imageIndex]) as ImageProvider,
+                                image: FileImage(_images[index]),
                                 fit: BoxFit.cover,
                               ),
                             ),
                           ),
-                          // ✅ Checkmark for existing images
-                          if (isExisting)
-                            Positioned(
-                              left: 2,
-                              top: 2,
+                          // ✅ Remove button
+                          Positioned(
+                            right: 2,
+                            top: 2,
+                            child: GestureDetector(
+                              onTap: () => _removeImage(index),
                               child: Container(
-                                padding: const EdgeInsets.all(2),
+                                padding: const EdgeInsets.all(4),
                                 decoration: const BoxDecoration(
-                                  color: Colors.green,
+                                  color: Colors.black54,
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
-                                  Icons.check,
-                                  size: 12,
+                                  Icons.close,
+                                  size: 14,
                                   color: Colors.white,
                                 ),
                               ),
                             ),
-                          // ✅ Remove button for new images
-                          if (!isExisting)
-                            Positioned(
-                              right: 2,
-                              top: 2,
-                              child: GestureDetector(
-                                onTap: () => _removeImage(imageIndex),
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black54,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.close,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
+                          ),
                         ],
                       );
                     },
@@ -550,7 +545,7 @@ class _StepFourScreenState extends State<StepFourScreen> {
 
               const SizedBox(height: 8),
 
-              // ✅ Photo Count with Progress
+              // ═══ PHOTO COUNT + PROGRESS ═══
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -561,7 +556,9 @@ class _StepFourScreenState extends State<StepFourScreen> {
                         '$totalImages / 5 photos uploaded',
                         style: TextStyle(
                           fontSize: 12,
-                          color: totalImages >= 5 ? Colors.green.shade700 : tealColor,
+                          color: totalImages >= 5
+                              ? Colors.green.shade700
+                              : tealColor,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -577,7 +574,9 @@ class _StepFourScreenState extends State<StepFourScreen> {
                           widthFactor: totalImages / 5,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: totalImages >= 5 ? Colors.green : tealColor,
+                              color: totalImages >= 5
+                                  ? Colors.green
+                                  : tealColor,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -589,7 +588,10 @@ class _StepFourScreenState extends State<StepFourScreen> {
                     GestureDetector(
                       onTap: _showImageSourceDialog,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: tealColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
@@ -614,7 +616,7 @@ class _StepFourScreenState extends State<StepFourScreen> {
 
               const SizedBox(height: 12),
 
-              // ✅ Step Indicator + Button
+              // ═══ STEP INDICATOR + BUTTON ═══
               Column(
                 children: [
                   Row(
@@ -633,9 +635,13 @@ class _StepFourScreenState extends State<StepFourScreen> {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: (totalImages < 5 || _isUploading) ? null : _uploadImagesAndProceed,
+                      onPressed: (totalImages < 5 || _isUploading)
+                          ? null
+                          : _uploadImagesAndProceed,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: totalImages >= 5 ? tealColor : Colors.grey.shade400,
+                        backgroundColor: totalImages >= 5
+                            ? tealColor
+                            : Colors.grey.shade400,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -665,7 +671,9 @@ class _StepFourScreenState extends State<StepFourScreen> {
                                         ? 'Upload & Continue'
                                         : '${5 - totalImages} more photos needed',
                                     style: TextStyle(
-                                      fontSize: totalImages >= 5 ? 18 : 14,
+                                      fontSize: totalImages >= 5
+                                          ? 18
+                                          : 14,
                                       fontWeight: FontWeight.bold,
                                       letterSpacing: 0.5,
                                       color: Colors.white,
@@ -673,9 +681,9 @@ class _StepFourScreenState extends State<StepFourScreen> {
                                   ),
                                 ),
                                 if (totalImages >= 5)
-                                  Positioned(
+                                  const Positioned(
                                     right: 0,
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.arrow_forward,
                                       size: 20,
                                       color: Colors.white,
@@ -698,6 +706,9 @@ class _StepFourScreenState extends State<StepFourScreen> {
     );
   }
 
+  // ═══════════════════════════════════════════════════════
+  // STEP INDICATOR WIDGET
+  // ═══════════════════════════════════════════════════════
   Widget _buildStepIndicator(int step, bool isActive, Color tealColor) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),

@@ -1,10 +1,13 @@
 // lib/screens/location_picker_screen.dart
+
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+
 import '../../Services/firestore_location_service.dart';
 import '../../Services/location_service.dart';
 import '../../Services/places_service.dart';
@@ -34,6 +37,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   final LocationService _locationService = LocationService();
   final PlacesService _placesService = PlacesService();
 
+  // ✅ Geocoding 5.x uses an instance
+  final Geocoding _geocoding = Geocoding();
+
   // ═══════════════════════════════════════════════════════
   // CONTROLLERS
   // ═══════════════════════════════════════════════════════
@@ -46,20 +52,26 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   // ═══════════════════════════════════════════════════════
   // STATE
   // ═══════════════════════════════════════════════════════
-  LatLng? _selectedLatLng;          // null jab tak user select na kare
+  LatLng? _selectedLatLng;
   LatLng _cameraCenter = const LatLng(30.3753, 69.3451);
+
   String _address = 'Tap on map to select location';
   String _placeName = '';
+
   bool _isLoadingLocation = true;
   bool _isSaving = false;
   bool _isSearching = false;
   bool _isGeocodingAddress = false;
   bool _showSearchResults = false;
   bool _hasInternet = true;
+
   List<LocationModel> _searchResults = [];
 
-  // ✅ Sirf ek marker
+  // ═══════════════════════════════════════════════════════
+  // MARKERS
+  // ═══════════════════════════════════════════════════════
   final Set<Marker> _markers = {};
+
   Timer? _debounce;
 
   // ═══════════════════════════════════════════════════════
@@ -97,54 +109,70 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   }
 
   // ═══════════════════════════════════════════════════════
-  // INIT
+  // INIT LOCATION
   // ═══════════════════════════════════════════════════════
   Future<void> _initLocation() async {
     await _checkInternet();
 
     if (!_hasInternet) {
+      if (!mounted) return;
       setState(() => _isLoadingLocation = false);
       _showSnack('No internet connection', Colors.red);
       return;
     }
 
     try {
-      // Initial location provided
+      // ═══════════════════════════════════════════════════
+      // INITIAL LOCATION PROVIDED
+      // ═══════════════════════════════════════════════════
       if (widget.initialLocation != null) {
         final pos = LatLng(
           widget.initialLocation!.latitude,
           widget.initialLocation!.longitude,
         );
+
         _selectedLatLng = pos;
         _cameraCenter = pos;
         _address = widget.initialLocation!.address ?? 'Selected location';
         _placeName = widget.initialLocation!.placeName ?? '';
+
         _addMarker(pos);
+
+        if (!mounted) return;
         setState(() => _isLoadingLocation = false);
         return;
       }
 
-      // Get current location
+      // ═══════════════════════════════════════════════════
+      // GET CURRENT LOCATION
+      // ═══════════════════════════════════════════════════
       final currentLoc = await _locationService.getCurrentLocation();
+
       if (currentLoc != null) {
         final pos = LatLng(currentLoc.latitude, currentLoc.longitude);
         _cameraCenter = pos;
-        // ⚠️ Note: Marker nahi lagayenge — user ko tap karke select karna hoga
-        // Agar aap chahte hain ke current location by default selected ho:
+
+        // Marker intentionally not added.
+        // User must tap on map to select location.
+        //
+        // If you want current location selected by default,
+        // uncomment these:
+        //
         // _selectedLatLng = pos;
         // _address = currentLoc.address ?? 'Current location';
         // _placeName = currentLoc.placeName ?? '';
         // _addMarker(pos);
       }
     } catch (e) {
-      print('❌ init error: $e');
+      debugPrint('❌ init error: $e');
     }
 
+    if (!mounted) return;
     setState(() => _isLoadingLocation = false);
   }
 
   // ═══════════════════════════════════════════════════════
-  // ✅ ADD MARKER — Sirf ek marker, blue color
+  // ADD MARKER
   // ═══════════════════════════════════════════════════════
   void _addMarker(LatLng position) {
     _markers.clear();
@@ -152,7 +180,6 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       Marker(
         markerId: const MarkerId('selected'),
         position: position,
-        // ✅ Blue marker (hueAzure ya hueBlue)
         icon: BitmapDescriptor.defaultMarkerWithHue(
           BitmapDescriptor.hueAzure,
         ),
@@ -162,80 +189,116 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         ),
       ),
     );
-    setState(() {});
+
+    if (mounted) setState(() {});
   }
 
   // ═══════════════════════════════════════════════════════
-  // ✅ MAP TAP — Jahan tap karein, wahin marker chala jaye
+  // MAP TAP
   // ═══════════════════════════════════════════════════════
   Future<void> _onMapTap(LatLng position) async {
     HapticFeedback.selectionClick();
+
+    if (!mounted) return;
 
     setState(() {
       _selectedLatLng = position;
       _address = 'Finding address...';
       _placeName = '';
+      _isGeocodingAddress = true;
     });
 
-    // Marker turant move karein (loading state ke saath)
+    // Marker immediately moves
     _addMarker(position);
 
-    // Address fetch karein
+    // Reverse geocode
     await _reverseGeocode(position);
   }
 
   // ═══════════════════════════════════════════════════════
-  // REVERSE GEOCODE
+  // REVERSE GEOCODING
   // ═══════════════════════════════════════════════════════
   Future<void> _reverseGeocode(LatLng pos) async {
+    if (!mounted) return;
+
     setState(() => _isGeocodingAddress = true);
 
     try {
-      final placemarks = await placemarkFromCoordinates(
+      // ✅ Geocoding 5.x API
+      final placemarks = await _geocoding.placemarkFromCoordinates(
         pos.latitude,
         pos.longitude,
       );
 
       if (placemarks.isNotEmpty) {
         final p = placemarks.first;
+
         final parts = <String>[
-          if (p.street != null && p.street!.isNotEmpty) p.street!,
-          if (p.subLocality != null && p.subLocality!.isNotEmpty) p.subLocality!,
-          if (p.locality != null && p.locality!.isNotEmpty) p.locality!,
+          if (p.street != null && p.street!.trim().isNotEmpty)
+            p.street!.trim(),
+          if (p.subLocality != null && p.subLocality!.trim().isNotEmpty)
+            p.subLocality!.trim(),
+          if (p.locality != null && p.locality!.trim().isNotEmpty)
+            p.locality!.trim(),
           if (p.administrativeArea != null &&
-              p.administrativeArea!.isNotEmpty)
-            p.administrativeArea!,
-          if (p.country != null && p.country!.isNotEmpty) p.country!,
+              p.administrativeArea!.trim().isNotEmpty)
+            p.administrativeArea!.trim(),
+          if (p.country != null && p.country!.trim().isNotEmpty)
+            p.country!.trim(),
         ];
-        _address = parts.isNotEmpty ? parts.join(', ') : 'Selected location';
-        _placeName =
-            p.locality ?? p.subLocality ?? _address.split(',').first.trim();
+
+        _address =
+        parts.isNotEmpty ? parts.join(', ') : 'Selected location';
+
+        _placeName = (p.locality != null && p.locality!.trim().isNotEmpty)
+            ? p.locality!.trim()
+            : (p.subLocality != null && p.subLocality!.trim().isNotEmpty)
+            ? p.subLocality!.trim()
+            : (_address.split(',').first.trim());
       } else {
         _address = 'Selected location';
         _placeName = '';
       }
     } catch (e) {
-      print('❌ reverse geocode error: $e');
+      debugPrint('❌ reverse geocode error: $e');
       _address = 'Selected location';
       _placeName = '';
     }
 
-    // Marker ka info window update karein
-    _addMarker(pos);
+    if (!mounted) return;
+
+    // Update marker info window
+    _markers.clear();
+    _markers.add(
+      Marker(
+        markerId: const MarkerId('selected'),
+        position: pos,
+        icon: BitmapDescriptor.defaultMarkerWithHue(
+          BitmapDescriptor.hueAzure,
+        ),
+        infoWindow: InfoWindow(
+          title: _placeName.isNotEmpty ? _placeName : 'Selected',
+          snippet: _address,
+        ),
+      ),
+    );
 
     setState(() => _isGeocodingAddress = false);
   }
 
   // ═══════════════════════════════════════════════════════
-  // SEARCH (Places API New)
+  // SEARCH LISTENER
   // ═══════════════════════════════════════════════════════
   void _onSearchChanged() {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
+
     _debounce = Timer(const Duration(milliseconds: 500), () {
       final q = _searchController.text.trim();
+
       if (q.length >= 2) {
         _searchLocation(q);
       } else {
+        if (!mounted) return;
         setState(() {
           _searchResults = [];
           _showSearchResults = false;
@@ -244,11 +307,16 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     });
   }
 
+  // ═══════════════════════════════════════════════════════
+  // SEARCH LOCATION
+  // ═══════════════════════════════════════════════════════
   Future<void> _searchLocation(String query) async {
     if (!await _checkInternet()) {
       _showSnack('No internet connection', Colors.red);
       return;
     }
+
+    if (!mounted) return;
 
     setState(() {
       _isSearching = true;
@@ -265,18 +333,25 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         _isSearching = false;
       });
     } catch (e) {
-      print('❌ search error: $e');
+      debugPrint('❌ search error: $e');
+
       if (!mounted) return;
+
       setState(() {
         _searchResults = [];
         _isSearching = false;
       });
+
       _showSnack('Search failed. Try again.', Colors.red);
     }
   }
 
+  // ═══════════════════════════════════════════════════════
+  // SELECT SEARCH RESULT
+  // ═══════════════════════════════════════════════════════
   void _selectSearchResult(LocationModel loc) {
     _searchFocusNode.unfocus();
+
     final pos = LatLng(loc.latitude, loc.longitude);
 
     setState(() {
@@ -292,6 +367,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     _moveCamera(pos);
   }
 
+  // ═══════════════════════════════════════════════════════
+  // MOVE CAMERA
+  // ═══════════════════════════════════════════════════════
   void _moveCamera(LatLng pos) {
     _mapController?.animateCamera(
       CameraUpdate.newCameraPosition(
@@ -301,7 +379,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   }
 
   // ═══════════════════════════════════════════════════════
-  // CURRENT LOCATION BUTTON
+  // CURRENT LOCATION
   // ═══════════════════════════════════════════════════════
   Future<void> _goToCurrentLocation() async {
     if (!await _checkInternet()) {
@@ -311,28 +389,33 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
     try {
       HapticFeedback.mediumImpact();
+
       final loc = await _locationService.getCurrentLocation();
 
       if (loc != null) {
         final pos = LatLng(loc.latitude, loc.longitude);
+
+        if (!mounted) return;
+
         setState(() {
           _selectedLatLng = pos;
           _address = loc.address ?? 'Current location';
           _placeName = loc.placeName ?? '';
         });
+
         _addMarker(pos);
         _moveCamera(pos);
       } else {
         _showSnack('Could not get current location', Colors.orange);
       }
     } catch (e) {
-      print('❌ current loc error: $e');
+      debugPrint('❌ current loc error: $e');
       _showSnack('Error: $e', Colors.red);
     }
   }
 
   // ═══════════════════════════════════════════════════════
-  // SAVE
+  // SAVE LOCATION
   // ═══════════════════════════════════════════════════════
   Future<void> _confirmLocation() async {
     if (_selectedLatLng == null) {
@@ -381,7 +464,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   }
 
   // ═══════════════════════════════════════════════════════
-  // HELPERS
+  // SNACKBAR
   // ═══════════════════════════════════════════════════════
   void _showSnack(String msg, Color color) {
     if (!mounted) return;
@@ -413,7 +496,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       backgroundColor: Colors.grey.shade100,
       body: Stack(
         children: [
-          // ═══ MAP ═══
+          // ═══════════════════════════════════════════════
+          // MAP
+          // ═══════════════════════════════════════════════
           _isLoadingLocation
               ? const Center(child: CircularProgressIndicator())
               : GoogleMap(
@@ -421,24 +506,20 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               target: _cameraCenter,
               zoom: 16,
             ),
-            onMapCreated: (c) => _mapController = c,
-
-            // ✅ YAHAN TAP HANDLE HOGA
+            onMapCreated: (controller) => _mapController = controller,
             onTap: _onMapTap,
-
             markers: _markers,
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
             compassEnabled: false,
             mapToolbarEnabled: false,
-            padding: const EdgeInsets.only(
-              top: 140,
-              bottom: 320,
-            ),
+            padding: const EdgeInsets.only(top: 140, bottom: 320),
           ),
 
-          // ═══ TOP: SEARCH BAR ═══
+          // ═══════════════════════════════════════════════
+          // TOP SEARCH BAR
+          // ═══════════════════════════════════════════════
           Positioned(
             top: MediaQuery.of(context).padding.top + 8,
             left: 12,
@@ -446,7 +527,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             child: _buildSearchBar(title),
           ),
 
-          // ═══ SEARCH RESULTS ═══
+          // ═══════════════════════════════════════════════
+          // SEARCH RESULTS
+          // ═══════════════════════════════════════════════
           if (_showSearchResults)
             Positioned(
               top: MediaQuery.of(context).padding.top + 72,
@@ -455,7 +538,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               child: _buildSearchResults(),
             ),
 
-          // ═══ CURRENT LOCATION FAB ═══
+          // ═══════════════════════════════════════════════
+          // CURRENT LOCATION BUTTON
+          // ═══════════════════════════════════════════════
           Positioned(
             right: 16,
             bottom: 340,
@@ -469,7 +554,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             ),
           ),
 
-          // ═══ BOTTOM SHEET ═══
+          // ═══════════════════════════════════════════════
+          // BOTTOM SHEET
+          // ═══════════════════════════════════════════════
           DraggableScrollableSheet(
             controller: _sheetController,
             initialChildSize: 0.32,
@@ -481,9 +568,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               return Container(
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(24),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black12,
@@ -650,7 +735,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   }
 
   // ═══════════════════════════════════════════════════════
-  // BOTTOM SHEET PARTS
+  // DRAG HANDLE
   // ═══════════════════════════════════════════════════════
   Widget _buildDragHandle() {
     return Padding(
@@ -668,6 +753,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     );
   }
 
+  // ═══════════════════════════════════════════════════════
+  // ADDRESS CARD
+  // ═══════════════════════════════════════════════════════
   Widget _buildAddressCard() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -780,6 +868,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     );
   }
 
+  // ═══════════════════════════════════════════════════════
+  // ACTION BUTTONS
+  // ═══════════════════════════════════════════════════════
   Widget _buildActionButtons() {
     final enabled = _selectedLatLng != null;
 
