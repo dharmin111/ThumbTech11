@@ -1,0 +1,44 @@
+workflows:
+  ios-release:
+    name: ThumbTechs iOS Release
+    instance_type: mac_mini_m2
+
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+
+      vars:
+        ONESIGNAL_APP_ID: $ONESIGNAL_APP_ID
+        ONESIGNAL_API_KEY: $ONESIGNAL_API_KEY
+        Android_Google_Map_Api: $Android_Google_Map_Api
+        IOS_Google_Map_Api: $IOS_Google_Map_Api
+
+    scripts:
+      - name: Create .env file
+        script: |
+          cat > .env <<EOF
+          ONESIGNAL_APP_ID=$ONESIGNAL_APP_ID
+          ONESIGNAL_API_KEY=$ONESIGNAL_API_KEY
+          Android_Google_Map_Api=$Android_Google_Map_Api
+          IOS_Google_Map_Api=$IOS_Google_Map_Api
+          EOF
+
+          echo ".env created successfully"
+          echo "Checking .env variable names:"
+          sed 's/=.*/=***HIDDEN***/' .env
+
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+
+      - name: Build iOS IPA
+        script: |
+          flutter build ipa --release
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+
+    publishing:
+      app_store_connect:
+        submit_to_testflight: true
