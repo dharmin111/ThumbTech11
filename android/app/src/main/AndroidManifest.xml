@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ================= Permissions ================= -->
+
+    <!-- Camera -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Internet -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <!-- Location (Required for Google Maps) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Notifications -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <application
+        android:name="${applicationName}"
+        android:label="Thumb Tech"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
+        android:requestLegacyExternalStorage="true">
+
+        <!-- ================= GOOGLE MAPS API KEY ================= -->
+        <!-- ✅ ADD THIS - Replace with your actual API key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyA8_T5dXsYWow-ZoTMsWNrUlVoydq_prZc" />
+
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
+        <!-- ================= Main Activity ================= -->
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+
+            <!-- Normal Theme -->
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
+
+            <!-- Launcher -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+        <!-- ================= OneSignal Configuration ================= -->
+
+        <!-- OneSignal App ID -->
+        <meta-data
+            android:name="onesignal_app_id"
+            android:value="36709973-f516-4746-a694-c58ad52a532d" />
+
+        <!-- Notification Channel -->
+        <meta-data
+            android:name="com.onesignal.NotificationChannel"
+            android:value="cbfb12cf-b86d-4007-95e6-8e6afc888a5b" />
+        <meta-data
+            android:name="com.onesignal.NotificationChannelName"
+            android:value="ThumbTech Notifications" />
+        <meta-data
+            android:name="com.onesignal.NotificationChannelDescription"
+            android:value="Service requests and messages" />
+
+        <!-- Notification Icon (using launcher icon instead of custom drawable) -->
+        <meta-data
+            android:name="com.onesignal.NotificationIcon"
+            android:resource="@mipmap/ic_launcher" />
+
+        <!-- Notification Accent Color -->
+        <meta-data
+            android:name="com.onesignal.NotificationAccentColor"
+            android:value="FF2563EB" />
+
+        <!-- ================= Flutter Local Notifications ================= -->
+
+        <service
+            android:name="com.dexterous.flutterlocalnotifications.ForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- ================= Firebase Notification Meta Data ================= -->
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+
+        <!-- Flutter Embedding -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+
+        <!-- ================= File Provider ================= -->
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+
+        </provider>
+
+    </application>
+
+    <!-- ================= Queries ================= -->
+
+    <queries>
+
+        <!-- Process Text -->
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
+        </intent>
+
+        <!-- Camera -->
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+
+        <!-- Gallery -->
+        <intent>
+            <action android:name="android.intent.action.PICK" />
+            <data android:mimeType="image/*" />
+        </intent>
+
+        <!-- Phone -->
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+        </intent>
+
+        <intent>
+            <action android:name="android.intent.action.CALL" />
+        </intent>
+
+        <!-- SMS -->
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="smsto" />
+        </intent>
+
+    </queries>
+
+</manifest>

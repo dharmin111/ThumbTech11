@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "988985361848",
+    "project_id": "thumbtech-521ae",
+    "storage_bucket": "thumbtech-521ae.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:988985361848:android:84ede6bad6d742ffc3fb4d",
+        "android_client_info": {
+          "package_name": "com.baghi.thumstechs"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8_T5dXsYWow-ZoTMsWNrUlVoydq_prZc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
