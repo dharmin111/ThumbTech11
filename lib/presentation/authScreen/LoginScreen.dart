@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:thumstechs/TechnicianCustomertermAndCondition/TermsAndConditionsScreen.dart';
+import 'package:thumstechs/Userform/UserInfoScreen.dart';
 import 'package:thumstechs/presentation/DashBoard/CustomerDashboard.dart';
 import 'package:thumstechs/presentation/DashBoard/TechnicianDashboard.dart';
 import 'package:thumstechs/presentation/Marchant_screens/Merchant_Detail_Screen.dart';
@@ -19,6 +20,7 @@ import '../../Services/authServices.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import '../../Services/oneSignalNotificationService.dart';
 import 'forgetPassword.dart';
+import 'PhoneLoginScreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -68,134 +70,206 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final user = result.user;
 
-      if (user == null) return;
-
-      final doc = await FirebaseFirestore.instance
-          .collection("users")
-          .doc(user.uid)
-          .get();
-
-      if (!mounted) return;
-
-      if (!doc.exists || doc.data() == null) {
-        await FirebaseAuth.instance.signOut();
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const LoginScreen(),
-          ),
-        );
-
-        return;
-      }
-
-      final data = doc.data()!;
-
-      final isActive = data['isActive'] ?? true;
-
-      if (!isActive) {
-        await FirebaseAuth.instance.signOut();
-
-        _showSnack(
-          'Your account has been deactivated. Please contact admin +917087234563',
-          Colors.red,
-        );
-
-        return;
-      }
-
-      final role = data['role'] ?? 'customer';
-
-      await _saveOneSignalId(
-        user.uid,
-        role,
-      );
-
-      _showSnack(
-        "Login Successful",
-        Colors.green,
-      );
-
-      // ============================================================
-      // MERCHANT
-      // ============================================================
-
-      if (role == "merchant") {
-        await _handleMerchantNavigation(user);
-      }
-
-      // ============================================================
-      // CUSTOMER
-      // ============================================================
-
-      else if (role == "customer") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const CustomerDashboard(),
-          ),
-        );
-      }
-
-      // ============================================================
-      // TECHNICIAN
-      // ============================================================
-
-      else if (role == "technician") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const TechnicianDashboard(),
-          ),
-        );
-      }
-
-      // ============================================================
-      // ADMIN
-      // ============================================================
-
-      else if (role == "admin") {
-        final isApproved = data['isApproved'] ?? false;
-
-        if (isApproved) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const AdminDashboard(),
-            ),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const AdminPendingScreen(),
-            ),
-          );
-        }
-      }
-
-      // ============================================================
-      // DEFAULT
-      // ============================================================
-
-      else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const LoginScreen(),
-          ),
-        );
+      if (user != null && mounted) {
+        _showSnack("Login Successful", Colors.green);
+        await _handlePostAuthNavigation(user);
       }
     } catch (e) {
-      _showSnack(
-        e.toString(),
-        Colors.red,
-      );
+      _showSnack(e.toString(), Colors.red);
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
       }
+    }
+  }
+
+  // ============================================================
+  // GOOGLE LOGIN
+  // ============================================================
+
+  Future<void> _loginWithGoogle() async {
+    if (!_isTermsAccepted) {
+      _showSnack('Please accept the Terms & Conditions to continue', Colors.orange);
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final userCredential = await auth.signInWithGoogle();
+      final user = userCredential.user;
+
+      if (user != null && mounted) {
+        _showSnack("Google Sign-In Successful", Colors.green);
+        await _handlePostAuthNavigation(user);
+      }
+    } catch (e) {
+      debugPrint('Error Google Login: $e');
+      _showSnack("Google Sign-In failed: $e", Colors.red);
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
+  // ============================================================
+  // APPLE LOGIN
+  // ============================================================
+
+  Future<void> _loginWithApple() async {
+    if (!_isTermsAccepted) {
+      _showSnack('Please accept the Terms & Conditions to continue', Colors.orange);
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final userCredential = await auth.signInWithApple();
+      final user = userCredential.user;
+
+      if (user != null && mounted) {
+        _showSnack("Apple Sign-In Successful", Colors.green);
+        await _handlePostAuthNavigation(user);
+      }
+    } catch (e) {
+      debugPrint('Error Apple Login: $e');
+      _showSnack("Apple Sign-In failed: $e", Colors.red);
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
+  // ============================================================
+  // POST AUTHENTICATION ROUTING (CHOOSE SCREEN BASED ON ROLE & PROFILE DATA)
+  // ============================================================
+
+  Future<void> _handlePostAuthNavigation(User user) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
+
+      // CASE 1: No user document in Firestore -> Send to UserInfoScreen to choose role & fill profile
+      if (!doc.exists || doc.data() == null) {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const UserInfoScreen()),
+        );
+        return;
+      }
+
+      final data = doc.data()!;
+      final isActive = data['isActive'] ?? true;
+
+      if (!isActive) {
+        await FirebaseAuth.instance.signOut();
+        _showSnack('Your account has been deactivated. Please contact admin +917087234563', Colors.red);
+        return;
+      }
+
+      final role = (data['role'] ?? '').toString().trim().toLowerCase();
+      await _saveOneSignalId(user.uid, role);
+
+      // CASE 2: No role set -> Go to UserInfoScreen
+      if (role.isEmpty) {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const UserInfoScreen()),
+        );
+        return;
+      }
+
+      // CASE 3: MERCHANT
+      if (role == "merchant") {
+        await _handleMerchantNavigation(user);
+        return;
+      }
+
+      // CASE 4: CUSTOMER
+      if (role == "customer") {
+        final hasName = (data['name'] != null && data['name'].toString().trim().isNotEmpty);
+        final hasPhone = ((data['phoneNumber'] != null && data['phoneNumber'].toString().trim().isNotEmpty) ||
+                          (data['phone'] != null && data['phone'].toString().trim().isNotEmpty));
+
+        if (!mounted) return;
+
+        if (hasName && hasPhone) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const CustomerDashboard()),
+          );
+        } else {
+          // Customer profile incomplete -> Go to UserInfoScreen to complete profile
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const UserInfoScreen()),
+          );
+        }
+        return;
+      }
+
+      // CASE 5: TECHNICIAN
+      if (role == "technician") {
+        final hasName = (data['name'] != null && data['name'].toString().trim().isNotEmpty);
+        final hasPhone = ((data['phoneNumber'] != null && data['phoneNumber'].toString().trim().isNotEmpty) ||
+                          (data['phone'] != null && data['phone'].toString().trim().isNotEmpty));
+        final hasAddress = (data['address'] != null && data['address'].toString().trim().isNotEmpty);
+        final hasProfilePic = (data['profileImageUrl'] != null && data['profileImageUrl'].toString().trim().isNotEmpty);
+        final hasIdCard = ((data['idCardImage'] != null && data['idCardImage'].toString().trim().isNotEmpty) ||
+                           (data['idCardImageUrl'] != null && data['idCardImageUrl'].toString().trim().isNotEmpty));
+        final hasStorePhotos = ((data['workImages'] != null && (data['workImages'] as List).isNotEmpty) ||
+                                (data['previousWorkImageUrls'] != null && (data['previousWorkImageUrls'] as List).isNotEmpty) ||
+                                (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty));
+
+        final bool isComplete = hasName && hasPhone && hasAddress && hasProfilePic && hasIdCard && hasStorePhotos;
+
+        if (!mounted) return;
+
+        if (isComplete) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const TechnicianDashboard()),
+          );
+        } else {
+          // Technician profile incomplete -> Go to UserInfoScreen / Technician Details to complete profile
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const UserInfoScreen()),
+          );
+        }
+        return;
+      }
+
+      // CASE 6: ADMIN
+      if (role == "admin") {
+        final isApproved = data['isApproved'] ?? false;
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => isApproved ? const AdminDashboard() : const AdminPendingScreen(),
+          ),
+        );
+        return;
+      }
+
+      // DEFAULT FALLBACK -> UserInfoScreen
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const UserInfoScreen()),
+      );
+    } catch (e) {
+      debugPrint('Error in post auth navigation: $e');
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const UserInfoScreen()),
+      );
     }
   }
 
@@ -792,6 +866,105 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // ==================================================
+                          // SOCIAL LOGIN: GOOGLE & APPLE
+                          // ==================================================
+                          Row(
+                            children: [
+                              const Expanded(child: Divider(color: Colors.white38)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                child: Text(
+                                  "OR CONTINUE WITH",
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const Expanded(child: Divider(color: Colors.white38)),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              // ==========================================
+                              // ✅ GOOGLE BUTTON
+                              // ==========================================
+                              Expanded(
+                                child: InkWell(
+                                  onTap: isLoading ? null : _loginWithGoogle,
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    height: 50,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.15),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Center(
+                                      child: Image.asset(
+                                        'assets/GA/Google.png',
+                                        width: 105,
+                                        height: 34,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            const Icon(Icons.g_mobiledata, size: 28, color: Colors.red),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(width: 12),
+
+                              // ==========================================
+                              // ✅ APPLE BUTTON
+                              // ==========================================
+                              Expanded(
+                                child: InkWell(
+                                  onTap: isLoading ? null : _loginWithApple,
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    height: 52,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.15),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Center(
+                                      child: Image.asset(
+                                        'assets/GA/Apple.png',
+                                        width: 105,
+                                        height: 34,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            const Icon(Icons.apple, size: 24, color: Colors.black),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
 
                           const SizedBox(

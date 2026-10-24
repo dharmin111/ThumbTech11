@@ -123,12 +123,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
       _isEditMode = true;
       _loadExistingData();
     }
-    final user = FirebaseAuth.instance.currentUser;
-    if (user?.phoneNumber != null) {
-      phoneNumber = user!.phoneNumber!;
-      _phoneController.text = phoneNumber;
-    }
-
+    // ✅ Field is left empty by default so user inputs their 10-digit number
   }
 
   @override
@@ -995,7 +990,9 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                     return;
                   }
 
-                  if (phoneNumber.isEmpty) {
+                  final String currentPhone = _phoneController.text.trim();
+
+                  if (currentPhone.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Please enter your phone number'),
@@ -1005,7 +1002,9 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                     return;
                   }
 
-                  if (phoneNumber.length != 10) {
+                  final String cleanDigits = currentPhone.replaceAll(RegExp(r'[^0-9]'), '');
+
+                  if (cleanDigits.length != 10) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Please enter a valid 10-digit phone number'),
@@ -1014,6 +1013,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                     );
                     return;
                   }
+
+                  phoneNumber = cleanDigits;
 
                   if (address.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(

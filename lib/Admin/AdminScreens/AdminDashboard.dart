@@ -17,6 +17,7 @@ import 'AdminReportedUsersScreen.dart';
 import 'AdminSupportMessagesScreen.dart';
 import 'Admin_Blocked_Users_Screen.dart';
 import 'AdminMerchantsScreen.dart';
+import '../widget/AdminTechnicianAcceptedTasksWidget.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -459,6 +460,13 @@ class _AdminDashboardState extends State<AdminDashboard>
               ),
               const SizedBox(height: 24),
 
+              // ✅ TECHNICIAN TASK ASSIGNMENTS CARD
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: _buildTechnicianAssignmentsCard(),
+              ),
+              const SizedBox(height: 24),
+
               FadeTransition(
                 opacity: _fadeAnimation,
                 child: _buildRecentUsers(),
@@ -567,6 +575,138 @@ class _AdminDashboardState extends State<AdminDashboard>
           ),
         ],
       ),
+    );
+  }
+
+  // ==================== TECHNICIAN ASSIGNMENTS CARD ====================
+  Widget _buildTechnicianAssignmentsCard() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('service_requests')
+          .snapshots(),
+      builder: (context, snapshot) {
+        int acceptedCount = 0;
+
+        if (snapshot.hasData) {
+          final docs = snapshot.data!.docs;
+          acceptedCount = docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final status = data['status'] ?? '';
+            final hasTech = (data['technicianId'] != null &&
+                    data['technicianId'].toString().isNotEmpty) ||
+                (data['technicianName'] != null &&
+                    data['technicianName'].toString().isNotEmpty);
+            return (status == 'accepted' || status == 'in_progress' || hasTech);
+          }).length;
+        }
+
+        return HoverScale(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AdminTechnicianAcceptedTasksWidget(
+                  isEmbedded: false,
+                ),
+              ),
+            );
+          },
+          builder: (context, isHovering, isPressed) {
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isHovering
+                      ? const Color(0xFF2563EB).withValues(alpha: 0.4)
+                      : Colors.grey.shade200,
+                  width: isHovering ? 1.5 : 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isHovering
+                        ? const Color(0xFF2563EB).withValues(alpha: 0.15)
+                        : Colors.black.withValues(alpha: 0.04),
+                    blurRadius: isHovering ? 16 : 8,
+                    offset: Offset(0, isHovering ? 6 : 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.engineering,
+                      color: Color(0xFF2563EB),
+                      size: 30,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Technician Task Assignments',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E293B),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2563EB).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '$acceptedCount Active',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2563EB),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'View which technician accepted customer tasks & contact details',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 18,
+                    color: Color(0xFF2563EB),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

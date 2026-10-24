@@ -208,6 +208,18 @@ class _AdminRequestsScreenState extends State<AdminRequestsScreen> {
                         color: Colors.grey.shade600,
                       ),
                     ),
+                    if (data['technicianName'] != null &&
+                        data['technicianName'].toString().isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '🛠️ Tech: ${data['technicianName']} (${data['technicianPhone'] ?? ''})',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue.shade800,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 2),
                     Row(
                       children: [

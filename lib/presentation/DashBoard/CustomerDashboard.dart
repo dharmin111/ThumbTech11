@@ -72,7 +72,10 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   Future<void> _fetchTaskCounts() async {
     try {
       final currentUser = auth.currentUser;
-      if (currentUser == null) return;
+      if (currentUser == null) {
+        _taskTimer?.cancel();
+        return;
+      }
 
       // Fetch pending requests
       final pendingQuery = await firestore
@@ -484,70 +487,213 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     return Scaffold(
       backgroundColor: background,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header Section
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
+        top: false, // ✅ Allows image to extend behind top status bar, eliminating white top area!
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            children: [
+              if (searchQuery.isEmpty) _buildUpperCustSection(),
+              _buildCategorySection(),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==================== UPPER CUSTOMER BANNER SECTION ====================
+
+  Widget _buildUpperCustSection() {
+    final String userName = getUserName();
+    final String userAddress = (userData?['address'] != null && userData!['address'].toString().trim().isNotEmpty)
+        ? userData!['address']
+        : 'Shiv Shakti Nagar, Akota, Vadodara';
+
+    final double topStatusPadding = MediaQuery.of(context).padding.top;
+
+    return SizedBox(
+      width: double.infinity,
+      child: Stack(
+        children: [
+          // LAYER 1: Background Image (Full Width & extending to top edge behind status bar)
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(24),
+              bottomRight: Radius.circular(24),
+            ),
+            child: Image.asset(
+              'assets/images/uppercust.png',
+              width: double.infinity,
+              fit: BoxFit.fill,
+
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: double.infinity,
+                  height: 380,
+                  color: darkBlue,
+                );
+              },
+            ),
+          ),
+
+          // LAYER 2: TOP HEADER OVERLAY (Name, Location, Notification)
+          Positioned(
+            top: 12 + topStatusPadding,
+            left: 16,
+            right: 16,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+
+                      const SizedBox(height: 30),
                       Text(
-                        "ThumbTech",
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: darkBlue,
-                          letterSpacing: 0.5,
+                        "  Hi, $userName",
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white70,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Hi, ${getUserName()}",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: darkBlue.withOpacity(0.7),
-                        ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              "        $userAddress",
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const Icon(Icons.keyboard_arrow_down, color: Colors.white70, size: 16),
+                        ],
                       ),
                     ],
                   ),
-                  GestureDetector(
-                    onTap: _showNotifications,
+                ),
+
+                // Notification Bell
+                GestureDetector(
+                  onTap: _showNotifications,
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.notifications_none,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // LAYER 3: WASHING SPECIAL & WATER SPECIAL IMAGE WIDGETS AT BOTTOM
+          Positioned(
+            bottom: 10,
+            left: 12,
+            right: 12,
+            height: 85,
+            child: Row(
+              children: [
+                // Washing Special Banner Image
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      _onBannerTap(
+                        serviceName: 'Washing Machine Repair',
+                        imagePath: 'assets/AppLogoo/washingspecial.PNG',
+                        isVideo: true,
+                      );
+                    },
                     child: Container(
-                      padding: const EdgeInsets.all(10),
+                      margin: const EdgeInsets.only(right: 5),
+                      padding: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.12),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      child: Icon(
-                        Icons.notifications_none,
-                        color: darkBlue,
-                        size: 24,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        clipBehavior: Clip.antiAlias,
+                        child: Image.asset(
+                          'assets/AppLogoo/washingspecial.PNG',
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(color: Colors.transparent),
+                        ),
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 13),
-
-            // Categories Section
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: [
-                    _buildCategorySection(),
-                    const SizedBox(height: 20),
-                  ],
                 ),
-              ),
+
+                // Water Purifier Special Banner Image
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      _onBannerTap(
+                        serviceName: 'Water Purifier / RO Service',
+                        imagePath: 'assets/AppLogoo/waterspecial.PNG',
+                        isVideo: false,
+                      );
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 5),
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.12),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        clipBehavior: Clip.antiAlias,
+                        child: Image.asset(
+                          'assets/AppLogoo/waterspecial.PNG',
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(color: Colors.transparent),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -607,35 +753,15 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Promo Images
-        if (searchQuery.isEmpty)
-          SizedBox(
-            height: 180,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: 3,
-              itemBuilder: (context, index) {
-                List<String> imagePaths = [
-                  'assets/AppLogoo/newimg.PNG',
-                  'assets/AppLogoo/secondstart.PNG',
-                  'assets/AppLogoo/firststart.PNG',
-                ];
-                return _buildPromoImage(imagePaths[index % imagePaths.length]);
-              },
-            ),
-          ),
-        if (searchQuery.isEmpty) const SizedBox(height: 9),
-
-        // Special Offer Banner
-        if (searchQuery.isEmpty) _buildSpecialOfferBanner(),
-        if (searchQuery.isEmpty) const SizedBox(height: 14),
-
-        // Appliance Repair & Service
+        // Appliance Repair & Service Title
         if (applianceServices.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.only(
+              left: 14,
+              right: 14,
+              top: 14,
+              bottom: 1,
+            ),
             child: Text(
               "Appliance Repair & Service",
               style: TextStyle(
@@ -645,17 +771,19 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
               ),
             ),
           ),
-        if (applianceServices.isNotEmpty) const SizedBox(height: 16),
         if (applianceServices.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 16
+
+            ),
             child: GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+                crossAxisSpacing: 14,
+                mainAxisSpacing: 12,
                 childAspectRatio: 2,
               ),
               itemCount: applianceServices.length,
@@ -668,7 +796,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
             ),
           ),
         if (applianceServices.isNotEmpty && homeServices.isNotEmpty)
-          const SizedBox(height: 20),
+          const SizedBox(height: 15),
 
         // Home Repair & Installation
         if (homeServices.isNotEmpty)
@@ -1038,6 +1166,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     ];
 
     return Scaffold(
+
       body: Column(
         children: [
           // Main content

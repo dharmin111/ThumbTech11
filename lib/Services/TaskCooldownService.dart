@@ -1,3 +1,8 @@
+// lib/Services/TaskCooldownService.dart
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TaskCooldownService {
@@ -8,6 +13,18 @@ class TaskCooldownService {
   static Future<void> recordTaskAcceptance() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_lastAcceptedKey, DateTime.now().millisecondsSinceEpoch);
+
+    // Save to Firestore so server-side notification matching skips this technician during cooldown
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+          'lastTaskAcceptedTime': FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        debugPrint('Error updating lastTaskAcceptedTime in Firestore: $e');
+      }
+    }
   }
 
   /// Returns true if the technician is currently in the 10-minute cooldown period
@@ -32,7 +49,7 @@ class TaskCooldownService {
 
     final lastAcceptedTime = DateTime.fromMillisecondsSinceEpoch(lastAccepted);
     final difference = DateTime.now().difference(lastAcceptedTime);
-    
+
     final remaining = (cooldownMinutes * 60) - difference.inSeconds;
     return remaining > 0 ? remaining : 0;
   }

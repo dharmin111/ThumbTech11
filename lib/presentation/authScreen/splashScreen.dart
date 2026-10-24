@@ -1,10 +1,12 @@
 // presentation/authScreen/splashScreen.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import '../../Userform/UserInfoScreen.dart';
 import 'package:thumstechs/presentation/Marchant_screens/StepSevenScreen.dart';
 import 'package:thumstechs/presentation/Marchant_screens/StepSixScreen.dart';
 import '../../Admin/AdminScreens/AdminDashboard.dart';
@@ -40,9 +42,9 @@ class _SplashScreenState extends State<SplashScreen> {
     // ✅ Mobile: OneSignal Permission
     try {
       OneSignal.Notifications.requestPermission(true);
-      print('✅ OneSignal permission requested');
+      debugPrint('✅ OneSignal permission requested');
     } catch (e) {
-      print('❌ OneSignal permission error: $e');
+      debugPrint('❌ OneSignal permission error: $e');
     }
 
     // ✅ Mobile: Check user status
@@ -73,44 +75,52 @@ class _SplashScreenState extends State<SplashScreen> {
 
           if (!isActive) {
             await FirebaseAuth.instance.signOut();
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-            );
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+              );
+            }
             return;
           }
 
           if (role == 'admin' && isApproved) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const AdminDashboard()),
-            );
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const AdminDashboard()),
+              );
+            }
             return;
           }
 
           if (role == 'admin' && !isApproved) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const AdminPendingScreen(),
-              ),
-            );
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminPendingScreen(),
+                ),
+              );
+            }
             return;
           }
         }
       } catch (e) {
-        print('❌ Error checking admin status: $e');
+        debugPrint('❌ Error checking admin status: $e');
       }
     }
 
     // ✅ Default: Admin Login
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-    );
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+      );
+    }
   }
 
-  // ✅ Mobile Navigation - COMPLETE FIXED
+  // ✅ Mobile Navigation - COMPLETE FIXED WITH ROLE & PROFILE VALIDATION
   Future<void> _navigateToScreen() async {
     await Future.delayed(const Duration(seconds: 3));
 
@@ -118,9 +128,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
     final user = FirebaseAuth.instance.currentUser;
 
-    // ✅ If no user, go to Login
+    // ✅ If no user, go to LoginScreen
     if (user == null) {
-      print('❌ No user logged in, going to LoginScreen');
+      debugPrint('❌ No user logged in, going to LoginScreen');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -128,28 +138,25 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
 
-    // ✅ Debug: Print user info
-    print('═══════════════════════════════════════════');
-    print('🔑 SplashScreen - User found');
-    print('📌 User UID: ${user.uid}');
-    print('📌 User Email: ${user.email}');
-    print('📌 User Display Name: ${user.displayName}');
-    print('═══════════════════════════════════════════');
+    debugPrint('═══════════════════════════════════════════');
+    debugPrint('🔑 SplashScreen - User found');
+    debugPrint('📌 User UID: ${user.uid}');
+    debugPrint('📌 User Email: ${user.email}');
+    debugPrint('═══════════════════════════════════════════');
 
     try {
-      // ✅ Get user data from Firestore
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
 
-      // ✅ If user document doesn't exist, sign out
-      if (!doc.exists) {
-        print('❌ User document does not exist in Firestore!');
-        await FirebaseAuth.instance.signOut();
+      // ✅ If user document does not exist, go to UserInfoScreen to select role & complete profile
+      if (!doc.exists || doc.data() == null) {
+        debugPrint('⚠️ User document does not exist in Firestore → UserInfoScreen');
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          MaterialPageRoute(builder: (context) => const UserInfoScreen()),
         );
         return;
       }
@@ -159,8 +166,9 @@ class _SplashScreenState extends State<SplashScreen> {
       // ✅ Check if user is active
       final isActive = data['isActive'] ?? true;
       if (!isActive) {
-        print('❌ User is deactivated!');
+        debugPrint('❌ User is deactivated!');
         await FirebaseAuth.instance.signOut();
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -169,185 +177,221 @@ class _SplashScreenState extends State<SplashScreen> {
       }
 
       // ✅ Get user role
-      final role = data['role'] ?? 'customer';
-      print('👤 User Role: $role');
+      final role = (data['role'] ?? '').toString().trim().toLowerCase();
+      debugPrint('👤 User Role: $role');
 
-      // ✅ Navigate based on role
-      switch (role) {
-        case 'technician':
-          print('✅ Navigating to TechnicianDashboard');
+      if (role.isEmpty) {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const UserInfoScreen()),
+        );
+        return;
+      }
+
+      // ✅ CUSTOMER
+      if (role == 'customer') {
+        final hasName = (data['name'] != null && data['name'].toString().trim().isNotEmpty);
+        final hasPhone = ((data['phoneNumber'] != null && data['phoneNumber'].toString().trim().isNotEmpty) ||
+                          (data['phone'] != null && data['phone'].toString().trim().isNotEmpty));
+
+        if (!mounted) return;
+
+        if (hasName && hasPhone) {
+          debugPrint('✅ Customer profile complete → CustomerDashboard');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const CustomerDashboard()),
+          );
+        } else {
+          debugPrint('⚠️ Customer profile incomplete → UserInfoScreen');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const UserInfoScreen()),
+          );
+        }
+        return;
+      }
+
+      // ✅ TECHNICIAN
+      if (role == 'technician') {
+        final hasName = (data['name'] != null && data['name'].toString().trim().isNotEmpty);
+        final hasPhone = ((data['phoneNumber'] != null && data['phoneNumber'].toString().trim().isNotEmpty) ||
+                          (data['phone'] != null && data['phone'].toString().trim().isNotEmpty));
+        final hasAddress = (data['address'] != null && data['address'].toString().trim().isNotEmpty);
+        final hasProfilePic = (data['profileImageUrl'] != null && data['profileImageUrl'].toString().trim().isNotEmpty);
+        final hasIdCard = ((data['idCardImage'] != null && data['idCardImage'].toString().trim().isNotEmpty) ||
+                           (data['idCardImageUrl'] != null && data['idCardImageUrl'].toString().trim().isNotEmpty));
+        final hasStorePhotos = ((data['workImages'] != null && (data['workImages'] as List).isNotEmpty) ||
+                                (data['previousWorkImageUrls'] != null && (data['previousWorkImageUrls'] as List).isNotEmpty) ||
+                                (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty));
+
+        final bool isComplete = hasName && hasPhone && hasAddress && hasProfilePic && hasIdCard && hasStorePhotos;
+
+        if (!mounted) return;
+
+        if (isComplete) {
+          debugPrint('✅ Technician profile complete → TechnicianDashboard');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const TechnicianDashboard()),
+          );
+        } else {
+          debugPrint('⚠️ Technician profile incomplete → UserInfoScreen');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const UserInfoScreen()),
+          );
+        }
+        return;
+      }
+
+      // ✅ MERCHANT
+      if (role == 'merchant') {
+        debugPrint('✅ Navigating to Merchant Flow');
+
+        final merchantDoc = await FirebaseFirestore.instance
+            .collection('merchants')
+            .doc(user.uid)
+            .get();
+
+        if (!mounted) return;
+
+        if (!merchantDoc.exists) {
+          debugPrint('❌ No merchant data found → MerchantDetailScreen');
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => const TechnicianDashboard(),
+              builder: (context) => MerchantDetailScreen(
+                userId: user.uid,
+                userEmail: user.email ?? '',
+              ),
             ),
           );
-          break;
+          return;
+        }
 
-        case 'merchant':
-        // ✅ MERCHANT LOGIC WITH STATUS
-          print('✅ Navigating to Merchant Flow');
-          print('🔑 userId: ${user.uid}');
-          print('📧 userEmail: ${user.email}');
+        final merchantData = merchantDoc.data() as Map<String, dynamic>;
+        final status = merchantData['status'] ?? 'pending';
 
-          // ✅ Get merchant status from Firestore
-          final merchantDoc = await FirebaseFirestore.instance
-              .collection('merchants')
-              .doc(user.uid)
-              .get();
-
-          // ✅ Check if merchant document exists
-          if (!merchantDoc.exists) {
-            // ❌ No merchant data → Go to MerchantDetailScreen
-            print('❌ No merchant data found, going to MerchantDetailScreen');
+        switch (status) {
+          case 'pending':
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => MerchantDetailScreen(
+                builder: (context) => StepTwoScreen(
                   userId: user.uid,
                   userEmail: user.email ?? '',
                 ),
               ),
             );
-            return;
-          }
+            break;
 
-          // ✅ Get merchant status
-          final merchantData = merchantDoc.data() as Map<String, dynamic>;
-          final status = merchantData['status'] ?? 'pending';
-          print('📌 Merchant Status: $status');
-
-          // ✅ Navigate based on status
-          switch (status) {
-            case 'pending':
-              print('➡️ Status: pending → StepTwoScreen');
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => StepTwoScreen(
-                    userId: user.uid,
-                    userEmail: user.email ?? '',
-                  ),
-                ),
-              );
-              break;
-
-            case 'received':
-              print('➡️ Status: received → StepThreeScreen');
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => StepThreeScreen(
-                    userId: user.uid,
-                    userEmail: user.email ?? '',
-                  ),
-                ),
-              );
-              break;
-            case 'display':
-              print('➡️ Status: display → StepThreeScreen');
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => StepSixScreen(
-                    userId: user.uid,
-                    userEmail: user.email ?? '',
-                  ),
-                ),
-              );
-              break;
-
-            case 'uploaded':
-              print('➡️ Status: uploaded → StepFourScreen');
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => StepFourScreen(
-                    userId: user.uid,
-                    userEmail: user.email ?? '',
-                  ),
-                ),
-              );
-              break;
-
-            case 'waiting':
-              print('➡️ Status: $status → StepFiveScreen');
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => StepFiveScreen(
-                    userId: user.uid,
-                    userEmail: user.email ?? '',
-                  ),
-                ),
-              );
-            case 'pending_approval':
-              print('➡️ Status: $status → StepFiveScreen');
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => StepFiveScreen(
-                    userId: user.uid,
-                    userEmail: user.email ?? '',
-                  ),
-                ),
-              );
-              break;
-
-            case 'active':
-            case 'verified':
-              print('➡️ Status: $status → Merchant Dashboard');
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>StepSevenScreen(userId: user.uid, userEmail: user.email ?? '')
-                ),
-              );
-              break;
-
-            default:
-            // ✅ Default: Go to StepTwoScreen
-              print('➡️ Default: going to StepTwoScreen');
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => StepTwoScreen(
-                    userId: user.uid,
-                    userEmail: user.email ?? '',
-                  ),
-                ),
-              );
-          }
-          break;
-
-        case 'admin':
-          final isApproved = data['isApproved'] ?? false;
-          print('✅ Navigating to Admin - isApproved: $isApproved');
-          if (isApproved) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const AdminDashboard()),
-            );
-          } else {
+          case 'received':
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => const AdminPendingScreen(),
+                builder: (context) => StepThreeScreen(
+                  userId: user.uid,
+                  userEmail: user.email ?? '',
+                ),
               ),
             );
-          }
-          break;
+            break;
 
-        default:
-          print('✅ Navigating to CustomerDashboard');
+          case 'display':
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StepSixScreen(
+                  userId: user.uid,
+                  userEmail: user.email ?? '',
+                ),
+              ),
+            );
+            break;
+
+          case 'uploaded':
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StepFourScreen(
+                  userId: user.uid,
+                  userEmail: user.email ?? '',
+                ),
+              ),
+            );
+            break;
+
+          case 'waiting':
+          case 'pending_approval':
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StepFiveScreen(
+                  userId: user.uid,
+                  userEmail: user.email ?? '',
+                ),
+              ),
+            );
+            break;
+
+          case 'active':
+          case 'verified':
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StepSevenScreen(
+                  userId: user.uid,
+                  userEmail: user.email ?? '',
+                ),
+              ),
+            );
+            break;
+
+          default:
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StepTwoScreen(
+                  userId: user.uid,
+                  userEmail: user.email ?? '',
+                ),
+              ),
+            );
+        }
+        return;
+      }
+
+      // ✅ ADMIN
+      if (role == 'admin') {
+        final isApproved = data['isApproved'] ?? false;
+        if (!mounted) return;
+        if (isApproved) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const CustomerDashboard()),
+            MaterialPageRoute(builder: (context) => const AdminDashboard()),
           );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AdminPendingScreen(),
+            ),
+          );
+        }
+        return;
       }
+
+      // DEFAULT FALLBACK -> UserInfoScreen
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const UserInfoScreen()),
+      );
     } catch (e) {
-      print('❌ Error checking user role: $e');
-      // ✅ On error, go to Login
+      debugPrint('❌ Error checking user role: $e');
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -366,7 +410,6 @@ class _SplashScreenState extends State<SplashScreen> {
           height: double.infinity,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
-            // 🔥 Fallback if image not found
             return Container(
               width: 180,
               height: 180,

@@ -118,19 +118,20 @@ class AppRouter {
     final data = doc.data() as Map<String, dynamic>?;
     if (data == null) return false;
 
-    // Check required fields for technician
-    // You can add more fields as needed
-    return data.containsKey('name') &&
-        data.containsKey('phoneNumber') &&
-        data.containsKey('address') &&
-        data.containsKey('pincode') &&
-        data['name'] != null &&
-        data['name'].toString().isNotEmpty &&
-        data['phoneNumber'] != null &&
-        data['phoneNumber'].toString().isNotEmpty &&
-        data['address'] != null &&
-        data['address'].toString().isNotEmpty &&
-        data['pincode'] != null &&
-        data['pincode'].toString().isNotEmpty;
+    // Must have Name, Phone, Address
+    final hasName = (data['name'] != null && data['name'].toString().trim().isNotEmpty);
+    final hasPhone = ((data['phoneNumber'] != null && data['phoneNumber'].toString().trim().isNotEmpty) ||
+                      (data['phone'] != null && data['phone'].toString().trim().isNotEmpty));
+    final hasAddress = (data['address'] != null && data['address'].toString().trim().isNotEmpty);
+
+    // Must have Profile Picture, ID Card/Proof, and Store/Work Photos
+    final hasProfilePic = (data['profileImageUrl'] != null && data['profileImageUrl'].toString().trim().isNotEmpty);
+    final hasIdCard = ((data['idCardImage'] != null && data['idCardImage'].toString().trim().isNotEmpty) ||
+                       (data['idCardImageUrl'] != null && data['idCardImageUrl'].toString().trim().isNotEmpty));
+    final hasStorePhotos = ((data['workImages'] != null && (data['workImages'] as List).isNotEmpty) ||
+                            (data['previousWorkImageUrls'] != null && (data['previousWorkImageUrls'] as List).isNotEmpty) ||
+                            (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty));
+
+    return hasName && hasPhone && hasAddress && hasProfilePic && hasIdCard && hasStorePhotos;
   }
 }

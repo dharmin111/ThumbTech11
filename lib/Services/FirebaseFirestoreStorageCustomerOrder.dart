@@ -99,14 +99,29 @@ class FirebaseFirestoreStorageCustomerOrder {
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       final userData = userDoc.data();
 
-      // ✅ Update request with user details AND location
+      // ✅ Preserve customer phone & name entered during task creation form
+      final String effectiveUserPhone = (request.userPhone.trim().isNotEmpty)
+          ? request.userPhone.trim()
+          : (userData?['phone'] ?? userData?['phoneNumber'] ?? user.phoneNumber ?? '');
+
+      final String effectiveUserName = (request.userName.trim().isNotEmpty)
+          ? request.userName.trim()
+          : (userData?['name'] ?? 'Customer');
+
+      final String effectiveProfileImage = (request.profileImageUrl != null && request.profileImageUrl!.isNotEmpty)
+          ? request.profileImageUrl!
+          : (userData?['profileImageUrl'] ?? '');
+
+      // ✅ Save exact fields submitted by customer during task creation
       final updatedRequest = request.copyWith(
         userId: user.uid,
-        userEmail: user.email ?? '',
-        userName: userData?['name'] ?? 'Customer',
-        userPhone: userData?['phone'] ?? '',
-        profileImageUrl: userData?['profileImageUrl'] ?? '',
-        locationModel: locationModel, // ✅ Location add
+        userEmail: (user.email != null && user.email!.isNotEmpty)
+            ? user.email!
+            : request.userEmail,
+        userName: effectiveUserName,
+        userPhone: effectiveUserPhone,
+        profileImageUrl: effectiveProfileImage,
+        locationModel: locationModel ?? request.locationModel,
       );
 
       // ✅ Save to Firestore (location included via toFirestore)
@@ -148,12 +163,22 @@ class FirebaseFirestoreStorageCustomerOrder {
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       final userData = userDoc.data();
 
+      final String effectiveUserPhone = (request.userPhone.trim().isNotEmpty)
+          ? request.userPhone.trim()
+          : (userData?['phone'] ?? userData?['phoneNumber'] ?? user.phoneNumber ?? '');
+
+      final String effectiveUserName = (request.userName.trim().isNotEmpty)
+          ? request.userName.trim()
+          : (userData?['name'] ?? 'Customer');
+
       final updatedRequest = request.copyWith(
         userId: user.uid,
-        userEmail: user.email ?? '',
-        userName: userData?['name'] ?? 'Customer',
-        userPhone: userData?['phone'] ?? '',
-        locationModel: locationModel, // ✅ Location add
+        userEmail: (user.email != null && user.email!.isNotEmpty)
+            ? user.email!
+            : request.userEmail,
+        userName: effectiveUserName,
+        userPhone: effectiveUserPhone,
+        locationModel: locationModel ?? request.locationModel,
       );
 
       final docRef = await _firestore
@@ -268,6 +293,10 @@ class FirebaseFirestoreStorageCustomerOrder {
         throw Exception('You are not authorized to repost this request');
       }
 
+      final nowTimestamp = FieldValue.serverTimestamp();
+
+      // ✅ Reset status to 'pending' AND reset createdAt to current time!
+      // Resetting createdAt gives the request a fresh timer so technician stream won't auto-expire it immediately.
       await docRef.update({
         'status': 'pending',
         'technicianId': null,
@@ -275,13 +304,16 @@ class FirebaseFirestoreStorageCustomerOrder {
         'technicianPhone': null,
         'rejectedAt': null,
         'expiredAt': null,
-        'repostedAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
+        'createdAt': nowTimestamp, // ✅ Fresh timestamp
+        'repostedAt': nowTimestamp,
+        'updatedAt': nowTimestamp,
         'repostCount': FieldValue.increment(1),
       });
 
-      // ✅ Location is preserved (not touched)
-      final request = ServiceRequestModel.fromFirestore(doc, null);
+      // ✅ Fetch updated document so ServiceRequestModel has status='pending' and fresh timestamp
+      final updatedDoc = await docRef.get();
+      final request = ServiceRequestModel.fromFirestore(updatedDoc, null);
+
       await _sendNotificationsToMatchingTechnicians(requestId, request);
       await _sendCustomerConfirmation(user.uid, requestId, request);
 

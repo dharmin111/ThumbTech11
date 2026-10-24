@@ -8,6 +8,7 @@ import '../../TechnicianCustomertermAndCondition/TermsAndConditionsScreen.dart';
 import '../Marchant_screens/MerchantRegistrationWidget.dart';
 import '../Marchant_screens/Merchant_Detail_Screen.dart';
 import 'LoginScreen.dart';
+import 'PhoneSignupScreen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -143,6 +144,118 @@ class _SignupScreenState extends State<SignupScreen> {
         "Error: $e",
         Colors.red,
       );
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
+  // ============================================================
+  // GOOGLE SIGNUP
+  // ============================================================
+  Future<void> _signupWithGoogle() async {
+    if (!_isTermsAccepted) {
+      _showSnack("Please accept Terms & Conditions", Colors.orange);
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final userCredential = await auth.signInWithGoogle();
+      final user = userCredential.user;
+
+      if (user != null) {
+        await auth.saveUserRole(
+          userId: user.uid,
+          email: user.email ?? '',
+          name: user.displayName ?? '',
+          role: _isMerchantSelected ? 'merchant' : 'customer',
+        );
+
+        _showSnack("Google Sign-Up Successful!", Colors.green);
+
+        if (mounted) {
+          if (_isMerchantSelected) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MerchantDetailScreen(
+                  userId: user.uid,
+                  userEmail: user.email ?? '',
+                ),
+              ),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const UserInfoScreen(),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Google Sign-Up Error: $e');
+      _showSnack("Google Sign-Up Failed: $e", Colors.red);
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
+  // ============================================================
+  // APPLE SIGNUP
+  // ============================================================
+  Future<void> _signupWithApple() async {
+    if (!_isTermsAccepted) {
+      _showSnack("Please accept Terms & Conditions", Colors.orange);
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final userCredential = await auth.signInWithApple();
+      final user = userCredential.user;
+
+      if (user != null) {
+        await auth.saveUserRole(
+          userId: user.uid,
+          email: user.email ?? '',
+          name: user.displayName ?? '',
+          role: _isMerchantSelected ? 'merchant' : 'customer',
+        );
+
+        _showSnack("Apple Sign-Up Successful!", Colors.green);
+
+        if (mounted) {
+          if (_isMerchantSelected) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MerchantDetailScreen(
+                  userId: user.uid,
+                  userEmail: user.email ?? '',
+                ),
+              ),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const UserInfoScreen(),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Apple Sign-Up Error: $e');
+      _showSnack("Apple Sign-Up Failed: $e", Colors.red);
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -548,6 +661,105 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                             ),
                           ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // ==================================================
+                        // SOCIAL SIGNUP: GOOGLE & APPLE
+                        // ==================================================
+                        Row(
+                          children: [
+                            const Expanded(child: Divider(color: Colors.white38)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              child: Text(
+                                "OR CONTINUE WITH",
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const Expanded(child: Divider(color: Colors.white38)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            // ==========================================
+                            // ✅ GOOGLE SIGNUP BUTTON
+                            // ==========================================
+                            Expanded(
+                              child: InkWell(
+                                onTap: isLoading ? null : _signupWithGoogle,
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  height: 50,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.15),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: Image.asset(
+                                      'assets/GA/Google.png',
+                                      width: 105,
+                                      height: 34,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (context, error, stackTrace) =>
+                                          const Icon(Icons.g_mobiledata, size: 28, color: Colors.red),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(width: 12),
+
+                            // ==========================================
+                            // ✅ APPLE SIGNUP BUTTON
+                            // ==========================================
+                            Expanded(
+                              child: InkWell(
+                                onTap: isLoading ? null : _signupWithApple,
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  height: 52,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.15),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: Image.asset(
+                                      'assets/GA/Apple.png',
+                                      width: 105,
+                                      height: 34,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (context, error, stackTrace) =>
+                                          const Icon(Icons.apple, size: 24, color: Colors.black),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
 
                         const SizedBox(height: 8),

@@ -256,11 +256,18 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
       return;
     }
 
-    // ✅ Validate manual pincodes
-    if (_selectedRole == 'technician' && _manualPincodesList.length < 4) {
-      _showError('Please add ${4 - _manualPincodesList.length} more pincode(s) (Total 4 required)');
-      return;
+    // ✅ Validate role & required technician fields
+    if (_selectedRole == 'technician') {
+      if (_profileImage == null) {
+        _showError('Please upload a Profile Picture (Required for Technicians)');
+        return;
+      }
+      if (_manualPincodesList.length < 4) {
+        _showError('Please add ${4 - _manualPincodesList.length} more pincode(s) (Total 4 required)');
+        return;
+      }
     }
+
     if (_selectedRole == 'customer' && _manualPincodesList.isEmpty) {
       _showError('Please add your pincode');
       return;

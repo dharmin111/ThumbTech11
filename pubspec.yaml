@@ -2,11 +2,10 @@ name: thumstechs
 description: "A new  Flutter project."
 publish_to: 'none'
 
-version: 1.0.1+20
+version: 1.0.1+21
 
 environment:
   sdk: ^3.11.1
-
 dependencies:
   flutter:
     sdk: flutter
@@ -18,6 +17,8 @@ dependencies:
   firebase_core: ^4.9.0
   shared_preferences: ^2.5.5
   permission_handler: ^13.0.2
+  google_sign_in: ^6.2.2
+  sign_in_with_apple: ^6.1.4
   intl: ^0.20.2
   url_launcher: ^6.3.2
   rxdart: ^0.28.0
@@ -59,11 +60,15 @@ flutter:
   assets:
     - assets/images/img_2.png
     - assets/videos/projectVideo.MP4
+    - assets/videos/startVideo.MP4
 
     - assets/images/forgetpassword.png
     - assets/images/logins.png
+    - assets/images/uppercust.png
     - assets/images/dash1.png
     - assets/images/LoginIcon.PNG
+    - assets/images/Fetching.PNG
+    - assets/images/AcceptTech.PNG
     - assets/images/d2.png
     - assets/images/das2.png
 
@@ -102,6 +107,8 @@ flutter:
     - assets/AppLogoo/machine cleaning.PNG
     - assets/AppLogoo/machinecleaning1.png
     - assets/AppLogoo/abservice.PNG
+    - assets/AppLogoo/pincode.png
+    - assets/AppLogoo/catagory.png
 #
 
 #    Here is only image for membership
@@ -131,6 +138,11 @@ flutter:
     - assets/onboarding/cust2.png
     - assets/onboarding/cust3.png
     - assets/onboarding/cust4.png
+
+
+#  Google and Apple Login Logo
+    - assets/GA/Google.png
+    - assets/GA/Apple.png
 
 
     - assets/onboarding/techon1.png

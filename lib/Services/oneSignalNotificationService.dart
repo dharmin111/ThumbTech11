@@ -465,6 +465,17 @@ class OneSignalNotificationService {
           continue;
         }
 
+        // 🔥 Check if technician is in 10-minute COOLDOWN (accepted a task recently)
+        final Timestamp? lastAcceptedTimestamp = d['lastTaskAcceptedTime'] as Timestamp?;
+        if (lastAcceptedTimestamp != null) {
+          final lastAcceptedDate = lastAcceptedTimestamp.toDate();
+          final diffMinutes = DateTime.now().difference(lastAcceptedDate).inMinutes;
+          if (diffMinutes < 10) {
+            print('⏭️ Skipping technician ${d['name']} on COOLDOWN (${10 - diffMinutes} mins left)');
+            continue; // 🚫 DO NOT SEND NOTIFICATION & DO NOT ASSIGN TASK DURING COOLDOWN
+          }
+        }
+
         final categories = List<String>.from(d['categories'] ?? []);
         List<String> technicianPincodes = [];
         if (d['pincodes'] != null && (d['pincodes'] as List).isNotEmpty) {

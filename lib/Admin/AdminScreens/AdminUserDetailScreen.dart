@@ -183,19 +183,30 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
         children: [
           // Avatar
           Container(
-            width: 80,
-            height: 80,
+            width: 85,
+            height: 85,
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  color: Colors.black.withValues(alpha: 0.15),
                   blurRadius: 10,
                 ),
               ],
             ),
-            child: Icon(roleIcon, size: 40, color: roleColor),
+            child: (userData['profileImageUrl'] != null &&
+                    userData['profileImageUrl'].toString().trim().isNotEmpty)
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(50),
+                    child: Image.network(
+                      userData['profileImageUrl'],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          Icon(roleIcon, size: 40, color: roleColor),
+                    ),
+                  )
+                : Icon(roleIcon, size: 40, color: roleColor),
           ),
           const SizedBox(height: 12),
           Text(
@@ -317,17 +328,159 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
     final pincodes = userData['pincodes'] ?? [];
     final status = userData['status'] ?? 'pending';
 
-    return _buildInfoSection(
-      title: '🔧 Technician Details',
-      icon: Icons.build,
+    final String? idCardUrl =
+        userData['idCardImageUrl'] ?? userData['idCardImage'];
+    final List<dynamic> workPhotos = userData['workImages'] ??
+        userData['previousWorkImageUrls'] ??
+        userData['imageUrls'] ??
+        [];
+
+    return Column(
       children: [
-        _buildInfoRow('Status', status.toUpperCase()),
-        if (userData['description'] != null &&
-            userData['description'].isNotEmpty)
-          _buildInfoRow('Description', userData['description']),
-        if (categories.isNotEmpty) _buildChipsRow('Categories', categories),
-        if (pincodes.isNotEmpty) _buildChipsRow('Service Areas', pincodes),
+        _buildInfoSection(
+          title: '🔧 Technician Details',
+          icon: Icons.build,
+          children: [
+            _buildInfoRow('Status', status.toUpperCase()),
+            if (userData['description'] != null &&
+                userData['description'].isNotEmpty)
+              _buildInfoRow('Description', userData['description']),
+            if (categories.isNotEmpty) _buildChipsRow('Categories', categories),
+            if (pincodes.isNotEmpty) _buildChipsRow('Service Areas', pincodes),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // ✅ Identity Proof Section
+        if (idCardUrl != null && idCardUrl.toString().trim().isNotEmpty) ...[
+          _buildImageSection(
+            title: '🪪 Identity Proof (ID Card)',
+            icon: Icons.badge_outlined,
+            imageUrls: [idCardUrl],
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        // ✅ Work Experience & Store Photos Section
+        if (workPhotos.isNotEmpty) ...[
+          _buildImageSection(
+            title: '📸 Work Experience & Store Photos',
+            icon: Icons.photo_library_outlined,
+            imageUrls: workPhotos.map((e) => e.toString()).toList(),
+          ),
+          const SizedBox(height: 16),
+        ],
       ],
+    );
+  }
+
+  // ==================== IMAGE SECTION & DIALOG ====================
+  Widget _buildImageSection({
+    required String title,
+    required IconData icon,
+    required List<String> imageUrls,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: const Color(0xFF2563EB), size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 120,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: imageUrls.length,
+              itemBuilder: (context, index) {
+                final url = imageUrls[index];
+                return GestureDetector(
+                  onTap: () => _showFullImageDialog(url),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 12),
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(
+                        url,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey.shade200,
+                            child: const Icon(Icons.broken_image,
+                                color: Colors.grey),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFullImageDialog(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            InteractiveViewer(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    padding: const EdgeInsets.all(20),
+                    color: Colors.white,
+                    child: const Text('Failed to load image'),
+                  ),
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white, size: 30),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

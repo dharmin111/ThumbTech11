@@ -9,6 +9,7 @@ import '../../Services/FirebaseFirestoreStorageCustomerOrder.dart';
 import '../../Services/TechnicianAvailabilityService.dart';
 import '../../model/ServiceRequestModel.dart';
 import 'BookingSuccessScreen.dart';
+import 'FindingTechnicianScreen.dart';
 import 'NoTechnicianFoundScreen.dart';
 
 const primaryCyan = Color(0xFF42D7D7);
@@ -80,7 +81,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Checking for available technicians...',
+              'Checking For Available Technicians ',
               style: TextStyle(
                 fontSize: 14,
                 color: darkBlue,
@@ -372,16 +373,21 @@ class _ReviewScreenState extends State<ReviewScreen> {
         throw Exception('Please login to continue');
       }
 
-      final userId = _firebaseService.getCurrentUserId()!;
-      final userEmail = _firebaseService.getCurrentUserEmail()!;
+      final userId = _firebaseService.getCurrentUserId();
+      if (userId == null || userId.isEmpty) {
+        throw Exception('User session expired. Please login again.');
+      }
 
       final userData = await _firebaseService.getCurrentUserData();
-      final userName = userData?['name'] ?? 'Customer';
+      final userEmail = _firebaseService.getCurrentUserEmail() ?? (userData?['email'] ?? '');
+      final userName = (userData?['name'] != null && userData!['name'].toString().trim().isNotEmpty)
+          ? userData!['name']
+          : 'Customer';
 
       // ✅ PHONE NUMBER: widget se lein, agar khali ho to Firestore se fallback
-      final userPhone = widget.phoneNumber.isNotEmpty
-          ? widget.phoneNumber
-          : (userData?['phone'] ?? '');
+      final userPhone = widget.phoneNumber.trim().isNotEmpty
+          ? widget.phoneNumber.trim()
+          : (userData?['phone'] ?? userData?['phoneNumber'] ?? '');
 
       // ✅ DEBUG
       print('═══════════════════════════════════════════');
@@ -405,8 +411,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
               const SizedBox(height: 16),
               Text(
                 _isEditMode
-                    ? 'Updating your request...'
-                    : 'Uploading images and finding technicians...',
+                    ? 'Updating Your Request...'
+                    : 'Preparing Your Service Request Please Wait A Moment ...',
                 style: TextStyle(
                   color: darkBlue,
                   fontWeight: FontWeight.w500,
@@ -430,7 +436,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
         userId: userId,
         userEmail: userEmail,
         userName: userName,
-        userPhone: userPhone, // ✅ Ab sahi phone number
+        userPhone: userPhone,
         serviceName: widget.serviceName,
         serviceType: widget.serviceType,
         issue: widget.issueDescription,
@@ -447,7 +453,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
       String requestId;
 
-      if (_isEditMode) {
+      if (_isEditMode && widget.editRequestId != null && widget.editRequestId!.isNotEmpty) {
         await _firebaseService.updateServiceRequest(
           requestId: widget.editRequestId!,
           request: serviceRequest,
@@ -455,18 +461,12 @@ class _ReviewScreenState extends State<ReviewScreen> {
         );
         requestId = widget.editRequestId!;
         print('✅ Service request updated with ID: $requestId');
-        print('📞 Phone saved: $userPhone');
-        print(
-            '📍 Location: ${widget.locationModel?.latitude}, ${widget.locationModel?.longitude}');
       } else {
         requestId = await _firebaseService.saveServiceRequestWithMatching(
           request: serviceRequest,
           locationModel: widget.locationModel,
         );
         print('✅ Service request saved with ID: $requestId');
-        print('📞 Phone saved: $userPhone');
-        print(
-            '📍 Location: ${widget.locationModel?.latitude}, ${widget.locationModel?.longitude}');
       }
 
       if (Navigator.canPop(context)) {
@@ -485,14 +485,16 @@ class _ReviewScreenState extends State<ReviewScreen> {
         ),
       );
 
-      Future.delayed(const Duration(seconds: 2), () {
-        Navigator.pushReplacement(
+      Future.delayed(const Duration(seconds: 1), () {
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-            builder: (context) => BookingSuccessScreen(
+            builder: (context) => FindingTechnicianScreen(
               requestId: requestId,
             ),
           ),
+          (route) => false,
         );
       });
     } catch (e) {
@@ -678,7 +680,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         const SizedBox(height: 16),
                         _buildSummaryRow(
                           imagePath: 'assets/revicon/budget.png',
-                          label: 'Your Budget',
+                          label: 'Approx Budget',
                           value: '₹${widget.budget}',
                         ),
                         const SizedBox(height: 16),
@@ -700,11 +702,11 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         if (widget.locationModel != null) ...[
                           const SizedBox(height: 16),
                           Container(
-                            width: 350,
+                            width: double.infinity,
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.green.shade50,
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: Colors.green.shade200),
                             ),
                             child: Column(
@@ -760,7 +762,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
             // No Service Charge Banner
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -768,50 +771,50 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   end: Alignment.bottomRight,
                   colors: [Colors.green.shade50, Colors.teal.shade50],
                 ),
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.green.shade200),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      borderRadius: BorderRadius.circular(12),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.verified,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.verified,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'No Service Charge',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green.shade800,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'No Service Charge',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade800,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'You only pay the technician directly after the work is completed.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.green.shade700,
+                          const SizedBox(height: 4),
+                          Text(
+                            'You only pay the technician directly after the work is completed.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.green.shade700,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
             const SizedBox(height: 3),
 
@@ -887,7 +890,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       ),
                     )
                         : Text(
-                      _isEditMode ? 'Update Booking' : 'Confirm Booking',
+                      _isEditMode ? 'Update Booking' : ' Submit Request ',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -989,7 +992,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
         return Icons.location_on;
       case 'Pincode':
         return Icons.location_city;
-      case 'Your Budget':
+      case 'Approx Budget':
         return Icons.currency_rupee;
       case 'Additional Note':
         return Icons.note_add;

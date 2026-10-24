@@ -770,9 +770,7 @@ class _StoreScreenState extends State<StoreScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              GestureDetector(
-                onTap: () => _openStoreDetail(merchant),
-                child: ClipRRect(
+                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: storePhotoUrls.isNotEmpty
                       ? Image.network(
@@ -786,7 +784,7 @@ class _StoreScreenState extends State<StoreScreen> {
                   )
                       : _buildImagePlaceholder(),
                 ),
-              ),
+
               const SizedBox(width: 12),
 
               Expanded(
@@ -798,15 +796,18 @@ class _StoreScreenState extends State<StoreScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: Text(
-                            storeName,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: darkBlue,
+                          child: GestureDetector(
+                            onTap: () => _openStoreDetail(merchant),
+                            child: Text(
+                              storeName,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: darkBlue,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (isVerified) ...[

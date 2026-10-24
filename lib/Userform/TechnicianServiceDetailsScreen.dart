@@ -1,4 +1,4 @@
-// lib/presentation/TechnicianOnboardingScreens/TechnicianServiceDetailsScreen.dart
+//lib/presentation/TechnicianOnboardingScreens/TechnicianServiceDetailsScreen.dart
 
 import 'package:flutter/material.dart';
 import 'dart:io';
@@ -400,6 +400,13 @@ class _TechnicianServiceDetailsScreenState
       return;
     }
 
+    // Validate Store / Work Photos (Must not be empty)
+    if (_previousWorkImages.isEmpty) {
+      _showError('Please upload at least 1 Store / Work photo');
+      return;
+    }
+
+    // Validate ID Card Proof (Must not be empty)
     if (_idCardImage == null) {
       _showError('Please upload your ID card for verification');
       return;
@@ -506,7 +513,7 @@ class _TechnicianServiceDetailsScreenState
                   style: const TextStyle(fontSize: 13),
                 ),
                 const SizedBox(height: 8),
-                 Text(
+                Text(
                   '📍 Service Areas (${_servicePincodes.length}):',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
@@ -571,6 +578,7 @@ class _TechnicianServiceDetailsScreenState
   }
 
   // 🔥 Build pincode section UI - SHOW ALL PINCODES
+  // 🔥 Build pincode section UI - SHOW ALL PINCODES
   Widget _buildPincodeSection() {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -589,6 +597,7 @@ class _TechnicianServiceDetailsScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ==================== HEADER ====================
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -613,6 +622,7 @@ class _TechnicianServiceDetailsScreenState
                   ),
                 ),
                 const SizedBox(width: 12),
+
                 const Expanded(
                   child: Text(
                     'Service Areas (Pincodes)',
@@ -623,6 +633,7 @@ class _TechnicianServiceDetailsScreenState
                     ),
                   ),
                 ),
+
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -644,11 +655,13 @@ class _TechnicianServiceDetailsScreenState
               ],
             ),
           ),
+
+          // ==================== CONTENT ====================
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Add pincode input
+                // ==================== PINCODE INPUT ====================
                 Row(
                   children: [
                     Expanded(
@@ -668,7 +681,9 @@ class _TechnicianServiceDetailsScreenState
                         onSubmitted: (_) => _addPincode(),
                       ),
                     ),
+
                     const SizedBox(width: 12),
+
                     ElevatedButton(
                       onPressed: _addPincode,
                       style: ElevatedButton.styleFrom(
@@ -686,21 +701,43 @@ class _TechnicianServiceDetailsScreenState
                     ),
                   ],
                 ),
+
+                // ==================== INFO TEXT ====================
+                const SizedBox(height: 8),
+
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Pre-selected pin codes based on high customer lead areas.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ),
+
+                // ==================== DIVIDER ====================
                 const SizedBox(height: 16),
                 const Divider(),
                 const SizedBox(height: 12),
 
-                // 🔥 Display pincodes list - SHOW ALL PINCODES
+                // ==================== ALL PINCODES ====================
                 if (_servicePincodes.isEmpty)
                   const Padding(
                     padding: EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        Icon(Icons.location_off, size: 40, color: Colors.grey),
+                        Icon(
+                          Icons.location_off,
+                          size: 40,
+                          color: Colors.grey,
+                        ),
                         SizedBox(height: 8),
                         Text(
                           'No pincodes added',
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(
+                            color: Colors.grey,
+                          ),
                         ),
                         Text(
                           'Add your service areas above',
@@ -723,27 +760,45 @@ class _TechnicianServiceDetailsScreenState
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+
                       const SizedBox(height: 12),
+
+                      // 🔥 SHOW ALL PINCODES
                       Wrap(
                         spacing: 12,
                         runSpacing: 12,
-                        children: _servicePincodes.asMap().entries.map((entry) {
+                        children: _servicePincodes
+                            .asMap()
+                            .entries
+                            .map((entry) {
                           int index = entry.key;
                           String pincode = entry.value;
+
                           return Chip(
                             label: Text(pincode),
-                            deleteIcon: const Icon(Icons.close, size: 16),
+
+                            deleteIcon: const Icon(
+                              Icons.close,
+                              size: 16,
+                            ),
+
                             onDeleted: () => _removePincode(pincode),
-                            backgroundColor: const Color(
-                              0xFF2563EB,
-                            ).withAlpha(25),
+
+                            backgroundColor:
+                            const Color(0xFF2563EB).withAlpha(25),
+
                             labelStyle: const TextStyle(
                               color: Color(0xFF2563EB),
                               fontWeight: FontWeight.w500,
                             ),
-                            side: const BorderSide(color: Color(0xFF2563EB)),
+
+                            side: const BorderSide(
+                              color: Color(0xFF2563EB),
+                            ),
+
                             avatar: CircleAvatar(
-                              backgroundColor: const Color(0xFF2563EB),
+                              backgroundColor:
+                              const Color(0xFF2563EB),
                               radius: 12,
                               child: Text(
                                 '${index + 1}',
@@ -756,7 +811,9 @@ class _TechnicianServiceDetailsScreenState
                           );
                         }).toList(),
                       ),
+
                       const SizedBox(height: 8),
+
                       Row(
                         children: [
                           Icon(
@@ -764,7 +821,9 @@ class _TechnicianServiceDetailsScreenState
                             size: 14,
                             color: Colors.grey[600],
                           ),
+
                           const SizedBox(width: 4),
+
                           Text(
                             '${_servicePincodes.length} service area(s) selected',
                             style: TextStyle(
@@ -842,7 +901,7 @@ class _TechnicianServiceDetailsScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                     Text(
+                    Text(
                       _isEditMode ? 'Edit Service Details' : 'Technician Registration',
                       style: TextStyle(
                         fontSize: 22,

@@ -1,9 +1,49 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// GOOGLE SIGN IN (Opens Google Account Chooser popup showing all emails)
+  Future<UserCredential> signInWithGoogle() async {
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+
+      // Force Account Chooser popup dialog to open showing all email accounts
+      try {
+        await googleSignIn.signOut();
+      } catch (_) {}
+
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+      if (googleUser == null) {
+        throw Exception("Google Sign-In canceled by user");
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      return await _auth.signInWithCredential(credential);
+    } catch (e) {
+      throw Exception("Google Sign-In error: $e");
+    }
+  }
+
+  /// APPLE SIGN IN
+  Future<UserCredential> signInWithApple() async {
+    try {
+      final AppleAuthProvider appleProvider = AppleAuthProvider();
+      return await _auth.signInWithProvider(appleProvider);
+    } catch (e) {
+      throw Exception("Apple Sign-In error: $e");
+    }
+  }
 
   /// SIGN UP - Returns UserCredential
   Future<UserCredential> signUp({
@@ -19,6 +59,7 @@ class AuthService {
       throw Exception(e.message ?? "Signup failed");
     }
   }
+
   Future<void> savePhoneNumber(String userId, String phoneNumber) async {
     await _firestore.collection('users').doc(userId).set({
       'phone': phoneNumber,
@@ -73,20 +114,39 @@ class AuthService {
       throw Exception(e.message ?? "Login failed");
     }
   }
+
   Future<void> saveUserRole({
     required String userId,
-    required String email,
+    String? email,
+    String? phoneNumber,
+    String? name,
     required String role,
   }) async {
-    await _firestore.collection('users').doc(userId).set({
+    final Map<String, dynamic> data = {
       'id': userId,
-      'email': email,
       'role': role,
       'isMerchant': role == 'merchant',
       'isActive': true,
-      'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    };
+    if (email != null && email.isNotEmpty) {
+      data['email'] = email;
+    }
+    if (name != null && name.isNotEmpty) {
+      data['name'] = name;
+    }
+    if (phoneNumber != null && phoneNumber.isNotEmpty) {
+      data['phoneNumber'] = phoneNumber;
+      data['phone'] = phoneNumber;
+    }
+
+    final docRef = _firestore.collection('users').doc(userId);
+    final doc = await docRef.get();
+    if (!doc.exists) {
+      data['createdAt'] = FieldValue.serverTimestamp();
+    }
+
+    await docRef.set(data, SetOptions(merge: true));
   }
 
   /// FIRESTORE ACCESS

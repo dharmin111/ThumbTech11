@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'AdminUserDetailScreen.dart';
 
 class AdminTaskDetailScreen extends StatefulWidget {
   final String taskId;
@@ -199,6 +200,45 @@ class _AdminTaskDetailScreenState extends State<AdminTaskDetailScreen>
               ),
               const SizedBox(height: 16),
 
+              // ✅ Assigned / Accepted Technician Info
+              _buildInfoSection(
+                title: '🛠️ Assigned Technician Information',
+                icon: Icons.engineering,
+                children: [
+                  _buildInfoRow(
+                    'Technician Name',
+                    data['technicianName'] ??
+                        ((data['technicianId'] != null &&
+                                data['technicianId'].toString().isNotEmpty)
+                            ? 'Assigned Technician'
+                            : 'No Technician Assigned Yet'),
+                  ),
+                  _buildInfoRow('Technician Phone', data['technicianPhone'] ?? 'N/A'),
+                  if (data['technicianId'] != null &&
+                      data['technicianId'].toString().isNotEmpty) ...[
+                    _buildInfoRow('Technician ID', data['technicianId']),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _openTechnicianProfile(data['technicianId']),
+                        icon: const Icon(Icons.badge_outlined, size: 16),
+                        label: const Text(
+                          'View Technician Profile & Proofs',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF2563EB),
+                          side: const BorderSide(color: Color(0xFF2563EB)),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 16),
+
               // ✅ Service Details
               _buildInfoSection(
                 title: '🔧 Service Details',
@@ -271,11 +311,170 @@ class _AdminTaskDetailScreenState extends State<AdminTaskDetailScreen>
               ),
               const SizedBox(height: 16),
 
+              // ✅ Task Uploaded Photos
+              if (data['imageUrls'] != null &&
+                  (data['imageUrls'] as List).isNotEmpty) ...[
+                _buildTaskImageSection(
+                  List<String>.from(data['imageUrls']),
+                ),
+                const SizedBox(height: 16),
+              ],
+
               // ✅ Action Buttons
               _buildActionButtons(status, statusColor),
               const SizedBox(height: 20),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // ==================== OPEN TECHNICIAN PROFILE ====================
+  Future<void> _openTechnicianProfile(String techId) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final techDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(techId)
+          .get();
+
+      if (mounted) Navigator.pop(context); // Close loading
+
+      if (techDoc.exists && techDoc.data() != null) {
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AdminUserDetailScreen(
+              userId: techId,
+              userData: techDoc.data()!,
+            ),
+          ),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Technician user profile not found')),
+        );
+      }
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading technician profile: $e')),
+        );
+      }
+    }
+  }
+
+  // ==================== TASK IMAGE SECTION ====================
+  Widget _buildTaskImageSection(List<String> imageUrls) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.photo_library_outlined,
+                  color: Color(0xFF2563EB), size: 20),
+              SizedBox(width: 8),
+              Text(
+                '📸 Task Photos (Uploaded by Customer)',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 120,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: imageUrls.length,
+              itemBuilder: (context, index) {
+                final url = imageUrls[index];
+                return GestureDetector(
+                  onTap: () => _showFullImageDialog(url),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 12),
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(
+                        url,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey.shade200,
+                            child: const Icon(Icons.broken_image,
+                                color: Colors.grey),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFullImageDialog(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            InteractiveViewer(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    padding: const EdgeInsets.all(20),
+                    color: Colors.white,
+                    child: const Text('Failed to load image'),
+                  ),
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white, size: 30),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
         ),
       ),
     );
