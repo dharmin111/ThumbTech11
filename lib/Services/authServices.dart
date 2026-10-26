@@ -9,7 +9,9 @@ class AuthService {
   /// GOOGLE SIGN IN (Opens Google Account Chooser popup showing all emails)
   Future<UserCredential> signInWithGoogle() async {
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId: '988985361848-c94os6upofc6jej5l4s3g91q28k7i6aq.apps.googleusercontent.com',
+      );
 
       // Force Account Chooser popup dialog to open showing all email accounts
       try {
