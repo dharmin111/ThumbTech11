@@ -44,26 +44,17 @@ class _SignupScreenState extends State<SignupScreen> {
     final password = passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      _showSnack(
-        "Please fill all fields",
-        Colors.orange,
-      );
+      _showSnack("Please fill all fields", Colors.orange);
       return;
     }
 
     if (password.length < 6) {
-      _showSnack(
-        "Password must be at least 6 characters",
-        Colors.orange,
-      );
+      _showSnack("Password must be at least 6 characters", Colors.orange);
       return;
     }
 
     if (!_isTermsAccepted) {
-      _showSnack(
-        "Please accept Terms & Conditions",
-        Colors.orange,
-      );
+      _showSnack("Please accept Terms & Conditions", Colors.orange);
       return;
     }
 
@@ -84,10 +75,7 @@ class _SignupScreenState extends State<SignupScreen> {
           role: _isMerchantSelected ? 'merchant' : 'customer',
         );
 
-        _showSnack(
-          "Account created successfully!",
-          Colors.green,
-        );
+        _showSnack("Account created successfully!", Colors.green);
 
         if (mounted) {
           if (_isMerchantSelected) {
@@ -103,17 +91,12 @@ class _SignupScreenState extends State<SignupScreen> {
           } else {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (context) => const UserInfoScreen(),
-              ),
+              MaterialPageRoute(builder: (context) => const UserInfoScreen()),
             );
           }
         }
       } else {
-        _showSnack(
-          "Failed to create account. Please try again.",
-          Colors.red,
-        );
+        _showSnack("Failed to create account. Please try again.", Colors.red);
       }
     } on FirebaseAuthException catch (e) {
       String errorMessage;
@@ -135,20 +118,30 @@ class _SignupScreenState extends State<SignupScreen> {
           errorMessage = 'Failed to create account: ${e.message}';
       }
 
-      _showSnack(
-        errorMessage,
-        Colors.red,
-      );
+      _showSnack(errorMessage, Colors.red);
     } catch (e) {
-      _showSnack(
-        "Error: $e",
-        Colors.red,
-      );
+      _showSnack("Error: $e", Colors.red);
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
       }
     }
+  }
+
+  String _formatAuthError(dynamic e) {
+    final msg = e.toString();
+    if (msg.contains('10') ||
+        msg.contains('DEVELOPER_ERROR') ||
+        msg.contains('ApiException')) {
+      return 'Google Error (ApiException 10): SHA-1 Fingerprint missing in Firebase Console or Play Store App Signing.';
+    }
+    if (msg.contains('canceled') || msg.contains('cancelled')) {
+      return 'Sign-In canceled by user.';
+    }
+    if (e is FirebaseAuthException) {
+      return 'Auth Error (${e.code}): ${e.message}';
+    }
+    return 'Authentication Failed: $msg';
   }
 
   // ============================================================
@@ -190,16 +183,14 @@ class _SignupScreenState extends State<SignupScreen> {
           } else {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (_) => const UserInfoScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => const UserInfoScreen()),
             );
           }
         }
       }
     } catch (e) {
       debugPrint('Google Sign-Up Error: $e');
-      _showSnack("Google Sign-Up Failed: $e", Colors.red);
+      _showSnack(_formatAuthError(e), Colors.red);
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -246,16 +237,14 @@ class _SignupScreenState extends State<SignupScreen> {
           } else {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (_) => const UserInfoScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => const UserInfoScreen()),
             );
           }
         }
       }
     } catch (e) {
       debugPrint('Apple Sign-Up Error: $e');
-      _showSnack("Apple Sign-Up Failed: $e", Colors.red);
+      _showSnack(_formatAuthError(e), Colors.red);
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -267,10 +256,7 @@ class _SignupScreenState extends State<SignupScreen> {
   // SNACKBAR
   // ============================================================
 
-  void _showSnack(
-      String msg,
-      Color color,
-      ) {
+  void _showSnack(String msg, Color color) {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -319,11 +305,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 // Aspect ratio distort nahi hoga.
                 fit: BoxFit.cover,
 
-                errorBuilder: (
-                    context,
-                    error,
-                    stackTrace,
-                    ) {
+                errorBuilder: (context, error, stackTrace) {
                   return Container(
                     color: const Color(0xFF4A6B7C),
                     child: const Center(
@@ -338,9 +320,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           SizedBox(height: 8),
                           Text(
                             'Image not found',
-                            style: TextStyle(
-                              color: Colors.grey,
-                            ),
+                            style: TextStyle(color: Colors.grey),
                           ),
                         ],
                       ),
@@ -353,7 +333,6 @@ class _SignupScreenState extends State<SignupScreen> {
             // ========================================================
             // LAYER 2 — DARK OVERLAY
             // ========================================================
-
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -366,12 +345,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       Colors.black.withOpacity(0.45),
                       Colors.black.withOpacity(0.65),
                     ],
-                    stops: const [
-                      0.0,
-                      0.35,
-                      0.55,
-                      1.0,
-                    ],
+                    stops: const [0.0, 0.35, 0.55, 1.0],
                   ),
                 ),
               ),
@@ -380,13 +354,9 @@ class _SignupScreenState extends State<SignupScreen> {
             // ========================================================
             // LAYER 3 — RESPONSIVE CONTENT
             // ========================================================
-
             SafeArea(
               child: LayoutBuilder(
-                builder: (
-                    context,
-                    constraints,
-                    ) {
+                builder: (context, constraints) {
                   final availableHeight = constraints.maxHeight;
 
                   // ====================================================
@@ -438,14 +408,14 @@ class _SignupScreenState extends State<SignupScreen> {
                     physics: const BouncingScrollPhysics(),
 
                     keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
+                        ScrollViewKeyboardDismissBehavior.onDrag,
 
                     padding: EdgeInsets.only(
                       left: horizontalPadding,
                       right: horizontalPadding,
                       top: topSpace,
                       bottom:
-                     // mediaQuery.viewInsets.bottom +
+                          // mediaQuery.viewInsets.bottom +
                           30,
                     ),
 
@@ -468,7 +438,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         // ==================================================
                         // PASSWORD
                         // ==================================================
-
                         _buildTextField(
                           controller: passwordController,
                           hint: "Password",
@@ -497,7 +466,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         // ==================================================
                         // PASSWORD HINT
                         // ==================================================
-
                         Padding(
                           padding: const EdgeInsets.only(left: 8),
 
@@ -516,7 +484,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         // ==================================================
                         // TERMS
                         // ==================================================
-
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
 
@@ -558,7 +525,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
-                                      const TermsAndConditionsScreen(),
+                                          const TermsAndConditionsScreen(),
                                     ),
                                   );
                                 },
@@ -571,9 +538,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     ),
 
                                     children: const [
-                                      TextSpan(
-                                        text: 'I agree to the ',
-                                      ),
+                                      TextSpan(text: 'I agree to the '),
 
                                       TextSpan(
                                         text: 'Terms & Conditions',
@@ -595,7 +560,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         // ==================================================
                         // SIGNUP BUTTON
                         // ==================================================
-
                         SizedBox(
                           height: 55,
                           width: double.infinity,
@@ -630,34 +594,34 @@ class _SignupScreenState extends State<SignupScreen> {
                               child: Center(
                                 child: isLoading
                                     ? const CircularProgressIndicator(
-                                  color: Colors.white,
-                                )
+                                        color: Colors.white,
+                                      )
                                     : Row(
-                                  mainAxisAlignment:
-                                  MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
 
-                                  children: [
-                                    if (_isMerchantSelected)
-                                      const Icon(
-                                        Icons.storefront,
-                                        color: Colors.white,
-                                        size: 22,
+                                        children: [
+                                          if (_isMerchantSelected)
+                                            const Icon(
+                                              Icons.storefront,
+                                              color: Colors.white,
+                                              size: 22,
+                                            ),
+
+                                          if (_isMerchantSelected)
+                                            const SizedBox(width: 8),
+
+                                          const Text(
+                                            "SIGNUP",
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                              letterSpacing: 1,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-
-                                    if (_isMerchantSelected)
-                                      const SizedBox(width: 8),
-
-                                    const Text(
-                                      "SIGNUP",
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        letterSpacing: 1,
-                                      ),
-                                    ),
-                                  ],
-                                ),
                               ),
                             ),
                           ),
@@ -668,7 +632,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         // ==================================================
                         // SOCIAL SIGNUP: GOOGLE & APPLE
                         // ==================================================
-                        Row(
+                        /*Row(
                           children: [
                             const Expanded(child: Divider(color: Colors.white38)),
                             Padding(
@@ -762,12 +726,11 @@ class _SignupScreenState extends State<SignupScreen> {
                           ],
                         ),
 
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 8),*/
 
                         // ==================================================
                         // LOGIN LINK
                         // ==================================================
-
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
 
@@ -812,7 +775,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         // ==================================================
                         // MERCHANT TOGGLE
                         // ==================================================
-
                         MerchantRegistrationWidget(
                           isMerchantSelected: _isMerchantSelected,
 
@@ -862,10 +824,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
         obscureText: obscureText,
 
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 15,
-        ),
+        style: const TextStyle(color: Colors.white, fontSize: 15),
 
         decoration: InputDecoration(
           filled: true,
@@ -879,11 +838,7 @@ class _SignupScreenState extends State<SignupScreen> {
             fontSize: 14,
           ),
 
-          prefixIcon: Icon(
-            icon,
-            color: Colors.white70,
-            size: 20,
-          ),
+          prefixIcon: Icon(icon, color: Colors.white70, size: 20),
 
           suffixIcon: suffixIcon,
 
@@ -913,10 +868,7 @@ class _SignupScreenState extends State<SignupScreen> {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
 
-            borderSide: const BorderSide(
-              color: Color(0xff42D7D7),
-              width: 2,
-            ),
+            borderSide: const BorderSide(color: Color(0xff42D7D7), width: 2),
           ),
         ),
       ),

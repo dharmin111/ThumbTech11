@@ -83,13 +83,32 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  String _formatAuthError(dynamic e) {
+    final msg = e.toString();
+    if (msg.contains('10') ||
+        msg.contains('DEVELOPER_ERROR') ||
+        msg.contains('ApiException')) {
+      return 'Google Error (ApiException 10): SHA-1 Fingerprint missing in Firebase Console or Play Store App Signing.';
+    }
+    if (msg.contains('canceled') || msg.contains('cancelled')) {
+      return 'Sign-In canceled by user.';
+    }
+    if (e is FirebaseAuthException) {
+      return 'Auth Error (${e.code}): ${e.message}';
+    }
+    return 'Authentication Failed: $msg';
+  }
+
   // ============================================================
   // GOOGLE LOGIN
   // ============================================================
 
   Future<void> _loginWithGoogle() async {
     if (!_isTermsAccepted) {
-      _showSnack('Please accept the Terms & Conditions to continue', Colors.orange);
+      _showSnack(
+        'Please accept the Terms & Conditions to continue',
+        Colors.orange,
+      );
       return;
     }
 
@@ -105,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       debugPrint('Error Google Login: $e');
-      _showSnack("Google Sign-In failed: $e", Colors.red);
+      _showSnack(_formatAuthError(e), Colors.red);
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -119,7 +138,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _loginWithApple() async {
     if (!_isTermsAccepted) {
-      _showSnack('Please accept the Terms & Conditions to continue', Colors.orange);
+      _showSnack(
+        'Please accept the Terms & Conditions to continue',
+        Colors.orange,
+      );
       return;
     }
 
@@ -135,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       debugPrint('Error Apple Login: $e');
-      _showSnack("Apple Sign-In failed: $e", Colors.red);
+      _showSnack(_formatAuthError(e), Colors.red);
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -149,7 +171,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handlePostAuthNavigation(User user) async {
     try {
-      final doc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
+      final doc = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .get();
 
       // CASE 1: No user document in Firestore -> Send to UserInfoScreen to choose role & fill profile
       if (!doc.exists || doc.data() == null) {
@@ -166,7 +191,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!isActive) {
         await FirebaseAuth.instance.signOut();
-        _showSnack('Your account has been deactivated. Please contact admin +917087234563', Colors.red);
+        _showSnack(
+          'Your account has been deactivated. Please contact admin +917087234563',
+          Colors.red,
+        );
         return;
       }
 
@@ -191,9 +219,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // CASE 4: CUSTOMER
       if (role == "customer") {
-        final hasName = (data['name'] != null && data['name'].toString().trim().isNotEmpty);
-        final hasPhone = ((data['phoneNumber'] != null && data['phoneNumber'].toString().trim().isNotEmpty) ||
-                          (data['phone'] != null && data['phone'].toString().trim().isNotEmpty));
+        final hasName =
+            (data['name'] != null && data['name'].toString().trim().isNotEmpty);
+        final hasPhone =
+            ((data['phoneNumber'] != null &&
+                data['phoneNumber'].toString().trim().isNotEmpty) ||
+            (data['phone'] != null &&
+                data['phone'].toString().trim().isNotEmpty));
 
         if (!mounted) return;
 
@@ -214,18 +246,39 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // CASE 5: TECHNICIAN
       if (role == "technician") {
-        final hasName = (data['name'] != null && data['name'].toString().trim().isNotEmpty);
-        final hasPhone = ((data['phoneNumber'] != null && data['phoneNumber'].toString().trim().isNotEmpty) ||
-                          (data['phone'] != null && data['phone'].toString().trim().isNotEmpty));
-        final hasAddress = (data['address'] != null && data['address'].toString().trim().isNotEmpty);
-        final hasProfilePic = (data['profileImageUrl'] != null && data['profileImageUrl'].toString().trim().isNotEmpty);
-        final hasIdCard = ((data['idCardImage'] != null && data['idCardImage'].toString().trim().isNotEmpty) ||
-                           (data['idCardImageUrl'] != null && data['idCardImageUrl'].toString().trim().isNotEmpty));
-        final hasStorePhotos = ((data['workImages'] != null && (data['workImages'] as List).isNotEmpty) ||
-                                (data['previousWorkImageUrls'] != null && (data['previousWorkImageUrls'] as List).isNotEmpty) ||
-                                (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty));
+        final hasName =
+            (data['name'] != null && data['name'].toString().trim().isNotEmpty);
+        final hasPhone =
+            ((data['phoneNumber'] != null &&
+                data['phoneNumber'].toString().trim().isNotEmpty) ||
+            (data['phone'] != null &&
+                data['phone'].toString().trim().isNotEmpty));
+        final hasAddress =
+            (data['address'] != null &&
+            data['address'].toString().trim().isNotEmpty);
+        final hasProfilePic =
+            (data['profileImageUrl'] != null &&
+            data['profileImageUrl'].toString().trim().isNotEmpty);
+        final hasIdCard =
+            ((data['idCardImage'] != null &&
+                data['idCardImage'].toString().trim().isNotEmpty) ||
+            (data['idCardImageUrl'] != null &&
+                data['idCardImageUrl'].toString().trim().isNotEmpty));
+        final hasStorePhotos =
+            ((data['workImages'] != null &&
+                (data['workImages'] as List).isNotEmpty) ||
+            (data['previousWorkImageUrls'] != null &&
+                (data['previousWorkImageUrls'] as List).isNotEmpty) ||
+            (data['imageUrls'] != null &&
+                (data['imageUrls'] as List).isNotEmpty));
 
-        final bool isComplete = hasName && hasPhone && hasAddress && hasProfilePic && hasIdCard && hasStorePhotos;
+        final bool isComplete =
+            hasName &&
+            hasPhone &&
+            hasAddress &&
+            hasProfilePic &&
+            hasIdCard &&
+            hasStorePhotos;
 
         if (!mounted) return;
 
@@ -251,7 +304,9 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => isApproved ? const AdminDashboard() : const AdminPendingScreen(),
+            builder: (_) => isApproved
+                ? const AdminDashboard()
+                : const AdminPendingScreen(),
           ),
         );
         return;
@@ -291,9 +346,7 @@ class _LoginScreenState extends State<LoginScreen> {
           .get();
 
       if (!merchantDoc.exists) {
-        print(
-          '❌ No merchant data found → MerchantDetailScreen',
-        );
+        print('❌ No merchant data found → MerchantDetailScreen');
 
         if (!mounted) return;
 
@@ -310,11 +363,9 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      final merchantData =
-      merchantDoc.data() as Map<String, dynamic>;
+      final merchantData = merchantDoc.data() as Map<String, dynamic>;
 
-      final status =
-          merchantData['status'] ?? 'pending';
+      final status = merchantData['status'] ?? 'pending';
 
       print('📌 Merchant Status: $status');
 
@@ -325,10 +376,8 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => StepTwoScreen(
-                userId: user.uid,
-                userEmail: user.email ?? '',
-              ),
+              builder: (_) =>
+                  StepTwoScreen(userId: user.uid, userEmail: user.email ?? ''),
             ),
           );
           break;
@@ -349,10 +398,8 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => StepFourScreen(
-                userId: user.uid,
-                userEmail: user.email ?? '',
-              ),
+              builder: (_) =>
+                  StepFourScreen(userId: user.uid, userEmail: user.email ?? ''),
             ),
           );
           break;
@@ -363,10 +410,8 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => StepFiveScreen(
-                userId: user.uid,
-                userEmail: user.email ?? '',
-              ),
+              builder: (_) =>
+                  StepFiveScreen(userId: user.uid, userEmail: user.email ?? ''),
             ),
           );
           break;
@@ -375,19 +420,15 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => StepSixScreen(
-                userId: user.uid,
-                userEmail: user.email ?? '',
-              ),
+              builder: (_) =>
+                  StepSixScreen(userId: user.uid, userEmail: user.email ?? ''),
             ),
           );
           break;
 
         case 'active':
         case 'approved':
-          print(
-            '➡️ Status: $status → Merchant Dashboard',
-          );
+          print('➡️ Status: $status → Merchant Dashboard');
 
           // TODO: Merchant Dashboard
           break;
@@ -404,9 +445,7 @@ class _LoginScreenState extends State<LoginScreen> {
           );
       }
     } catch (e) {
-      print(
-        '❌ Error in merchant navigation: $e',
-      );
+      print('❌ Error in merchant navigation: $e');
 
       if (!mounted) return;
 
@@ -426,58 +465,37 @@ class _LoginScreenState extends State<LoginScreen> {
   // ONESIGNAL
   // ============================================================
 
-  Future<void> _saveOneSignalId(
-      String userId,
-      String role,
-      ) async {
+  Future<void> _saveOneSignalId(String userId, String role) async {
     try {
       await OneSignalNotificationService.initialize();
 
       String? oneSignalId;
 
       for (int i = 0; i < 10; i++) {
-        oneSignalId =
-            OneSignal.User.pushSubscription.id;
+        oneSignalId = OneSignal.User.pushSubscription.id;
 
-        if (oneSignalId != null &&
-            oneSignalId.isNotEmpty) {
+        if (oneSignalId != null && oneSignalId.isNotEmpty) {
           break;
         }
 
-        await Future.delayed(
-          const Duration(milliseconds: 500),
-        );
+        await Future.delayed(const Duration(milliseconds: 500));
       }
 
-      if (oneSignalId == null ||
-          oneSignalId.isEmpty) {
-        print(
-          "❌ OneSignal ID not available yet",
-        );
+      if (oneSignalId == null || oneSignalId.isEmpty) {
+        print("❌ OneSignal ID not available yet");
 
         return;
       }
 
-      await FirebaseFirestore.instance
-          .collection("users")
-          .doc(userId)
-          .set(
-        {
-          'oneSignalId': oneSignalId,
-          'role': role,
-          'lastTokenUpdate':
-          FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      await FirebaseFirestore.instance.collection("users").doc(userId).set({
+        'oneSignalId': oneSignalId,
+        'role': role,
+        'lastTokenUpdate': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-      print(
-        '✅ OneSignal ID saved: $oneSignalId',
-      );
+      print('✅ OneSignal ID saved: $oneSignalId');
     } catch (e) {
-      print(
-        '❌ Error saving OneSignal ID: $e',
-      );
+      print('❌ Error saving OneSignal ID: $e');
     }
   }
 
@@ -494,21 +512,14 @@ class _LoginScreenState extends State<LoginScreen> {
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => const CustomerDashboard(
-            isGuest: true,
-          ),
+          builder: (_) => const CustomerDashboard(isGuest: true),
         ),
       );
     } catch (e) {
-      _showSnack(
-        'Error: $e',
-        Colors.red,
-      );
+      _showSnack('Error: $e', Colors.red);
     } finally {
       if (mounted) {
-        setState(
-              () => _guestNavigating = false,
-        );
+        setState(() => _guestNavigating = false);
       }
     }
   }
@@ -517,10 +528,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // SNACKBAR
   // ============================================================
 
-  void _showSnack(
-      String msg,
-      Color color,
-      ) {
+  void _showSnack(String msg, Color color) {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -556,7 +564,6 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-
             // ======================================================
             // BACKGROUND IMAGE
             // ======================================================
@@ -565,14 +572,12 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Image.asset(
                 'assets/images/signUpUI.PNG',
                 fit: BoxFit.cover,
-                errorBuilder:
-                    (context, error, stackTrace) {
+                errorBuilder: (context, error, stackTrace) {
                   return Container(
                     color: const Color(0xFF4A6B7C),
                     child: const Center(
                       child: Column(
-                        mainAxisAlignment:
-                        MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
                             Icons.broken_image,
@@ -582,9 +587,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           SizedBox(height: 8),
                           Text(
                             'Image not found',
-                            style: TextStyle(
-                              color: Colors.grey,
-                            ),
+                            style: TextStyle(color: Colors.grey),
                           ),
                         ],
                       ),
@@ -597,7 +600,6 @@ class _LoginScreenState extends State<LoginScreen> {
             // ======================================================
             // DARK GRADIENT
             // ======================================================
-
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -610,12 +612,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Colors.black.withOpacity(0.45),
                       Colors.black.withOpacity(0.65),
                     ],
-                    stops: const [
-                      0.0,
-                      0.35,
-                      0.55,
-                      1.0,
-                    ],
+                    stops: const [0.0, 0.35, 0.55, 1.0],
                   ),
                 ),
               ),
@@ -624,15 +621,10 @@ class _LoginScreenState extends State<LoginScreen> {
             // ======================================================
             // RESPONSIVE CONTENT
             // ======================================================
-
             SafeArea(
               child: LayoutBuilder(
-                builder: (
-                    context,
-                    constraints,
-                    ) {
-                  final height =
-                      constraints.maxHeight;
+                builder: (context, constraints) {
+                  final height = constraints.maxHeight;
 
                   /*
                    * Responsive top space.
@@ -647,8 +639,7 @@ class _LoginScreenState extends State<LoginScreen> {
                    * around 330+
                    */
 
-                  double topSpace =
-                      height * 0.40;
+                  double topSpace = height * 0.40;
 
                   // Prevent it becoming too small
                   if (topSpace < 250) {
@@ -664,8 +655,7 @@ class _LoginScreenState extends State<LoginScreen> {
                    * Responsive horizontal padding.
                    */
 
-                  double horizontalPadding =
-                      screenWidth * 0.065;
+                  double horizontalPadding = screenWidth * 0.065;
 
                   if (horizontalPadding < 20) {
                     horizontalPadding = 20;
@@ -676,96 +666,74 @@ class _LoginScreenState extends State<LoginScreen> {
                   }
 
                   return SingleChildScrollView(
-                    physics:
-                    const BouncingScrollPhysics(),
+                    physics: const BouncingScrollPhysics(),
 
                     keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior
-                        .onDrag,
+                        ScrollViewKeyboardDismissBehavior.onDrag,
 
                     padding: EdgeInsets.only(
                       left: horizontalPadding,
                       right: horizontalPadding,
                       top: topSpace,
                       bottom:
-                      // mediaQuery.viewInsets.bottom +
+                          // mediaQuery.viewInsets.bottom +
                           30,
                     ),
 
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
-                        minHeight:
-                        height -
-                            topSpace -
-                            30,
+                        minHeight: height - topSpace - 30,
                       ),
 
                       child: Column(
-                        crossAxisAlignment:
-                        CrossAxisAlignment.stretch,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
 
                         children: [
-
                           // ==================================================
                           // EMAIL
                           // ==================================================
 
                           _buildTextField(
-                            controller:
-                            emailController,
+                            controller: emailController,
                             hint: "Email",
                             icon: Icons.email,
-                            keyboardType:
-                            TextInputType.emailAddress,
+                            keyboardType: TextInputType.emailAddress,
                           ),
 
-                          const SizedBox(
-                            height: 18,
-                          ),
+                          const SizedBox(height: 18),
 
                           // ==================================================
                           // PASSWORD
                           // ==================================================
-
                           _buildTextField(
-                            controller:
-                            passwordController,
+                            controller: passwordController,
                             hint: "Password",
                             icon: Icons.lock,
-                            obscureText:
-                            _obscurePassword,
+                            obscureText: _obscurePassword,
 
-                            suffixIcon:
-                            IconButton(
+                            suffixIcon: IconButton(
                               onPressed: () {
                                 setState(() {
-                                  _obscurePassword =
-                                  !_obscurePassword;
+                                  _obscurePassword = !_obscurePassword;
                                 });
                               },
 
                               icon: Icon(
                                 _obscurePassword
-                                    ? Icons
-                                    .visibility_off
+                                    ? Icons.visibility_off
                                     : Icons.visibility,
-                                color:
-                                Colors.white70,
+                                color: Colors.white70,
                               ),
                             ),
                           ),
 
-                          const SizedBox(
-                            height: 4,
-                          ),
+                          const SizedBox(height: 4),
 
                           // ==================================================
                           // FORGOT PASSWORD
                           // ==================================================
-
                           Align(
-                            alignment:
-                            Alignment.centerRight,
+                            alignment: Alignment.centerRight,
 
                             child: TextButton(
                               onPressed: () {
@@ -773,7 +741,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) =>
-                                    const ForgotPasswordScreen(),
+                                        const ForgotPasswordScreen(),
                                   ),
                                 );
                               },
@@ -781,62 +749,42 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: const Text(
                                 "Forgot Password?",
                                 style: TextStyle(
-                                  color:
-                                  Color(0xff42D7D7),
-                                  fontWeight:
-                                  FontWeight.w600,
+                                  color: Color(0xff42D7D7),
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
                           ),
 
-                          const SizedBox(
-                            height: 8,
-                          ),
+                          const SizedBox(height: 8),
 
                           // ==================================================
                           // LOGIN BUTTON
                           // ==================================================
-
                           SizedBox(
                             height: 50,
                             width: double.infinity,
 
                             child: ElevatedButton(
-                              onPressed:
-                              isLoading
-                                  ? null
-                                  : loginUser,
+                              onPressed: isLoading ? null : loginUser,
 
-                              style:
-                              ElevatedButton.styleFrom(
-                                shape:
-                                RoundedRectangleBorder(
-                                  borderRadius:
-                                  BorderRadius.circular(
-                                    18,
-                                  ),
+                              style: ElevatedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
                                 ),
 
-                                backgroundColor:
-                                Colors.transparent,
+                                backgroundColor: Colors.transparent,
 
-                                padding:
-                                EdgeInsets.zero,
+                                padding: EdgeInsets.zero,
 
                                 elevation: 0,
                               ),
 
                               child: Ink(
-                                decoration:
-                                BoxDecoration(
-                                  borderRadius:
-                                  BorderRadius.circular(
-                                    18,
-                                  ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(18),
 
-                                  gradient:
-                                  const LinearGradient(
+                                  gradient: const LinearGradient(
                                     colors: [
                                       Color(0xff009999),
                                       Color(0xff008976),
@@ -847,37 +795,36 @@ class _LoginScreenState extends State<LoginScreen> {
                                 child: Center(
                                   child: isLoading
                                       ? const CircularProgressIndicator(
-                                    color:
-                                    Colors.white,
-                                  )
+                                          color: Colors.white,
+                                        )
                                       : const Text(
-                                    "Login",
-                                    style:
-                                    TextStyle(
-                                      fontSize: 22,
-                                      color:
-                                      Colors.white,
-                                      fontWeight:
-                                      FontWeight.bold,
-                                      letterSpacing:
-                                      1,
-                                    ),
-                                  ),
+                                          "Login",
+                                          style: TextStyle(
+                                            fontSize: 22,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
                                 ),
                               ),
                             ),
                           ),
 
-                          const SizedBox(height: 12),
+                          /*const SizedBox(height: 12),
 
                           // ==================================================
                           // SOCIAL LOGIN: GOOGLE & APPLE
                           // ==================================================
                           Row(
                             children: [
-                              const Expanded(child: Divider(color: Colors.white38)),
+                              const Expanded(
+                                child: Divider(color: Colors.white38),
+                              ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                ),
                                 child: Text(
                                   "OR CONTINUE WITH",
                                   style: TextStyle(
@@ -887,7 +834,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                               ),
-                              const Expanded(child: Divider(color: Colors.white38)),
+                              const Expanded(
+                                child: Divider(color: Colors.white38),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 12),
@@ -898,11 +847,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               // ==========================================
                               Expanded(
                                 child: InkWell(
-                                  onTap: isLoading ? null : _loginWithGoogle,
+                                  //onTap: isLoading ? null : _loginWithGoogle,
                                   borderRadius: BorderRadius.circular(16),
                                   child: Container(
                                     height: 50,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(16),
@@ -920,8 +872,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                         width: 105,
                                         height: 34,
                                         fit: BoxFit.contain,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            const Icon(Icons.g_mobiledata, size: 28, color: Colors.red),
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                const Icon(
+                                                  Icons.g_mobiledata,
+                                                  size: 28,
+                                                  color: Colors.red,
+                                                ),
                                       ),
                                     ),
                                   ),
@@ -935,11 +892,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               // ==========================================
                               Expanded(
                                 child: InkWell(
-                                  onTap: isLoading ? null : _loginWithApple,
+                                  //onTap: isLoading ? null : _loginWithApple,
                                   borderRadius: BorderRadius.circular(16),
                                   child: Container(
                                     height: 52,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(16),
@@ -957,27 +917,27 @@ class _LoginScreenState extends State<LoginScreen> {
                                         width: 105,
                                         height: 34,
                                         fit: BoxFit.contain,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            const Icon(Icons.apple, size: 24, color: Colors.black),
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                const Icon(
+                                                  Icons.apple,
+                                                  size: 24,
+                                                  color: Colors.black,
+                                                ),
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
                             ],
-                          ),
-
-                          const SizedBox(
-                            height: 8,
-                          ),
+                          ),*/
+                          const SizedBox(height: 8),
 
                           // ==================================================
                           // GUEST LOGIN
                           // ==================================================
-
                           TextButton(
-                            onPressed:
-                            _guestNavigating
+                            onPressed: _guestNavigating
                                 ? null
                                 : _continueAsGuest,
 
@@ -986,86 +946,61 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ? 'Opening...'
                                   : 'Visit as a Guest',
 
-                              style:
-                              const TextStyle(
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.white,
-                                fontWeight:
-                                FontWeight.w600,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
 
-                          const SizedBox(
-                            height: 8,
-                          ),
+                          const SizedBox(height: 8),
 
                           // ==================================================
                           // TERMS
                           // ==================================================
-
                           Row(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
 
                             children: [
-
                               SizedBox(
                                 width: 24,
                                 height: 24,
 
                                 child: Checkbox(
-                                  value:
-                                  _isTermsAccepted,
+                                  value: _isTermsAccepted,
 
                                   onChanged: (value) {
                                     setState(
-                                          () =>
-                                      _isTermsAccepted =
-                                          value ??
-                                              false,
+                                      () => _isTermsAccepted = value ?? false,
                                     );
                                   },
 
-                                  activeColor:
-                                  const Color(
-                                    0xff009999,
-                                  ),
+                                  activeColor: const Color(0xff009999),
 
-                                  checkColor:
-                                  Colors.white,
+                                  checkColor: Colors.white,
 
-                                  side:
-                                  const BorderSide(
-                                    color:
-                                    Colors.white70,
+                                  side: const BorderSide(
+                                    color: Colors.white70,
                                     width: 1.5,
                                   ),
 
-                                  shape:
-                                  RoundedRectangleBorder(
-                                    borderRadius:
-                                    BorderRadius
-                                        .circular(
-                                      5,
-                                    ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(5),
                                   ),
                                 ),
                               ),
 
-                              const SizedBox(
-                                width: 8,
-                              ),
+                              const SizedBox(width: 8),
 
                               Expanded(
-                                child:
-                                GestureDetector(
+                                child: GestureDetector(
                                   onTap: () {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder: (_) =>
-                                        const TermsAndConditionsScreen(),
+                                            const TermsAndConditionsScreen(),
                                       ),
                                     );
                                   },
@@ -1074,32 +1009,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                     text: TextSpan(
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: Colors
-                                            .white
-                                            .withOpacity(
-                                          0.9,
-                                        ),
+                                        color: Colors.white.withOpacity(0.9),
                                       ),
 
-                                      children:
-                                      const [
-                                        TextSpan(
-                                          text:
-                                          'I agree to the ',
-                                        ),
+                                      children: const [
+                                        TextSpan(text: 'I agree to the '),
 
                                         TextSpan(
-                                          text:
-                                          'Terms & Conditions',
-                                          style:
-                                          TextStyle(
-                                            color:
-                                            Color(
-                                              0xff42D7D7,
-                                            ),
-                                            fontWeight:
-                                            FontWeight
-                                                .bold,
+                                          text: 'Terms & Conditions',
+                                          style: TextStyle(
+                                            color: Color(0xff42D7D7),
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ],
@@ -1110,33 +1030,23 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
 
-                          const SizedBox(
-                            height: 12,
-                          ),
+                          const SizedBox(height: 12),
 
                           // ==================================================
                           // SIGNUP
                           // ==================================================
-
                           Row(
-                            mainAxisAlignment:
-                            MainAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.center,
 
                             children: [
-
                               Flexible(
                                 child: Text(
                                   "Don't have an account?",
                                   style: TextStyle(
-                                    color: Colors.white
-                                        .withOpacity(
-                                      0.9,
-                                    ),
+                                    color: Colors.white.withOpacity(0.9),
                                     fontSize: 14,
                                   ),
-                                  overflow:
-                                  TextOverflow
-                                      .ellipsis,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
 
@@ -1145,8 +1055,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) =>
-                                      const SignupScreen(),
+                                      builder: (_) => const SignupScreen(),
                                     ),
                                   );
                                 },
@@ -1155,19 +1064,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                   "Signup",
                                   style: TextStyle(
                                     fontSize: 18,
-                                    fontWeight:
-                                    FontWeight.bold,
-                                    color:
-                                    Color(0xff42D7D7),
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xff42D7D7),
                                   ),
                                 ),
                               ),
                             ],
                           ),
 
-                          const SizedBox(
-                            height: 20,
-                          ),
+                          const SizedBox(height: 20),
                         ],
                       ),
                     ),
@@ -1203,59 +1108,43 @@ class _LoginScreenState extends State<LoginScreen> {
 
         obscureText: obscureText,
 
-        style: const TextStyle(
-          color: Colors.white,
-        ),
+        style: const TextStyle(color: Colors.white),
 
         decoration: InputDecoration(
           filled: true,
 
-          fillColor:
-          Colors.white.withOpacity(0.15),
+          fillColor: Colors.white.withOpacity(0.15),
 
           hintText: hint,
 
-          hintStyle: TextStyle(
-            color: Colors.white.withOpacity(0.7),
-          ),
+          hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
 
-          prefixIcon: Icon(
-            icon,
-            color: Colors.white70,
-          ),
+          prefixIcon: Icon(icon, color: Colors.white70),
 
           suffixIcon: suffixIcon,
 
           border: OutlineInputBorder(
-            borderRadius:
-            BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(18),
 
             borderSide: BorderSide(
-              color:
-              Colors.white.withOpacity(0.4),
+              color: Colors.white.withOpacity(0.4),
               width: 1.5,
             ),
           ),
 
           enabledBorder: OutlineInputBorder(
-            borderRadius:
-            BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(18),
 
             borderSide: BorderSide(
-              color:
-              Colors.white.withOpacity(0.4),
+              color: Colors.white.withOpacity(0.4),
               width: 1.5,
             ),
           ),
 
           focusedBorder: OutlineInputBorder(
-            borderRadius:
-            BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(18),
 
-            borderSide: const BorderSide(
-              color: Color(0xff42D7D7),
-              width: 2,
-            ),
+            borderSide: const BorderSide(color: Color(0xff42D7D7), width: 2),
           ),
         ),
       ),
